@@ -1,7 +1,11 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
-    }
+pub mod common;
+mod macros;
+
+#[cfg(target_os = "windows")]
+mod windows;
+
+pub mod keyboard {
+    pub use super::common::keyboard::{
+        KeyboardAction, KeyboardEvent, KeyboardKey, KEYBOARD_EVENT_HANDLER,
+    };
 }
