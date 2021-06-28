@@ -1,6 +1,17 @@
+use super::event::{Event, EventHandler};
 use once_cell::sync::Lazy;
 
-use super::event::{Event, EventHandler};
+pub trait EmulateKeyboardInput {
+    fn press(&self);
+    fn release(&self);
+    fn click(&self) {
+        self.press();
+        self.release();
+    }
+
+    fn is_pressed(&self) -> bool;
+    fn is_toggled(&self) -> bool;
+}
 
 pub type KeyboardEvent = Event<KeyboardKey, KeyboardAction>;
 pub type KeyboardEventHandler = EventHandler<KeyboardKey, KeyboardAction>;
