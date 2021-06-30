@@ -1,4 +1,4 @@
-use super::event::{Event, EventHandler};
+use super::event::{EventDetail, EventHandler};
 use once_cell::sync::Lazy;
 
 pub trait EmulateKeyboardInput {
@@ -8,16 +8,14 @@ pub trait EmulateKeyboardInput {
         self.press();
         self.release();
     }
-
     fn is_pressed(&self) -> bool;
     fn is_toggled(&self) -> bool;
 }
 
-pub type KeyboardEvent = Event<KeyboardKey, KeyboardAction>;
-pub type KeyboardEventHandler = EventHandler<KeyboardKey, KeyboardAction>;
+pub type KeyboardEvent = EventDetail<Key, KeyboardAction>;
+pub type KeyboardEventHandler = EventHandler<Key, KeyboardAction>;
 
-pub static KEYBOARD_EVENT_HANDLER: Lazy<KeyboardEventHandler> =
-    Lazy::new(KeyboardEventHandler::default);
+pub static KEYBOARD_HANDLER: Lazy<KeyboardEventHandler> = Lazy::new(KeyboardEventHandler::default);
 
 #[derive(Debug)]
 pub enum KeyboardAction {
@@ -26,7 +24,7 @@ pub enum KeyboardAction {
 }
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum KeyboardKey {
+pub enum Key {
     Backspace,
     Tab,
     Enter,

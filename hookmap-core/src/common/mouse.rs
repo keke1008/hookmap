@@ -1,4 +1,4 @@
-use super::event::{Event, EventHandler};
+use super::event::{EventDetail, EventHandler};
 use once_cell::sync::Lazy;
 
 pub trait EmulateMouseInput {
@@ -15,10 +15,10 @@ pub trait EmulateMouseInput {
     fn rotate_wheel(speed: u32);
 }
 
-pub type MouseEvent = Event<MouseInput, MouseAction>;
-pub type MouseEventHandler = EventHandler<MouseInput, MouseAction>;
+pub type MouseEvent = EventDetail<MouseInput, MouseAction>;
+pub type MouseHandler = EventHandler<MouseInput, MouseAction>;
 
-pub static MOUSE_EVENT_HANDLER: Lazy<MouseEventHandler> = Lazy::new(MouseEventHandler::default);
+pub static MOUSE_EVENT_HANDLER: Lazy<MouseHandler> = Lazy::new(MouseHandler::default);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MouseAction {

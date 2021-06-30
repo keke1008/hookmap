@@ -1,6 +1,6 @@
 use crate::common::{
     event::{BlockInput, EventHandlerExt},
-    keyboard::{KeyboardAction, KeyboardEventHandler, KeyboardKey, KEYBOARD_EVENT_HANDLER},
+    keyboard::{Key, KeyboardAction, KeyboardEventHandler, KEYBOARD_HANDLER},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -26,7 +26,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     } else {
         KeyboardAction::Release
     };
-    match KEYBOARD_EVENT_HANDLER.call(kind, action) {
+    match KEYBOARD_HANDLER.emit(kind, action) {
         BlockInput::Block => 0,
         BlockInput::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
@@ -34,7 +34,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-impl EventHandlerExt<KeyboardKey, KeyboardAction> for KeyboardEventHandler {
+impl EventHandlerExt<Key, KeyboardAction> for KeyboardEventHandler {
     fn install_hook() -> Result<(), ()> {
         let handler = unsafe {
             winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0)

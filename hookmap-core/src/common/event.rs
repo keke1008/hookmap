@@ -10,14 +10,14 @@ pub enum BlockInput {
 }
 
 #[derive(Debug)]
-pub struct Event<K, A> {
+pub struct EventDetail<K, A> {
     pub kind: K,
     pub action: A,
     pub block_input: BlockInput,
     block_input_tx: Sender<BlockInput>,
 }
 
-impl<K, A> Event<K, A> {
+impl<K, A> EventDetail<K, A> {
     pub fn new(kind: K, action: A, block_input_tx: Sender<BlockInput>) -> Self {
         Self {
             kind,
@@ -28,18 +28,18 @@ impl<K, A> Event<K, A> {
     }
 }
 
-impl<K, A> Drop for Event<K, A> {
+impl<K, A> Drop for EventDetail<K, A> {
     fn drop(&mut self) {
         self.block_input_tx.send(self.block_input).unwrap();
     }
 }
 
-pub type EventCallback<K, A> = Box<dyn FnMut(Event<K, A>) + Send>;
-
 pub trait EventHandlerExt<K, A> {
     fn install_hook() -> Result<(), ()>;
     fn uninstall_hook() -> Result<(), ()>;
 }
+
+type EventCallback<K, A> = Box<dyn FnMut(EventDetail<K, A>) + Send>;
 
 pub struct EventHandler<K, A> {
     callback: Mutex<Option<EventCallback<K, A>>>,
@@ -51,7 +51,7 @@ where
 {
     pub fn handle_input(
         &self,
-        callback: impl FnMut(Event<K, A>) + Send + 'static,
+        callback: impl FnMut(EventDetail<K, A>) + Send + 'static,
     ) -> Result<(), ()> {
         *self.callback.lock().unwrap() = Some(Box::new(callback));
         Self::install_hook()
@@ -61,9 +61,9 @@ where
         Self::uninstall_hook()
     }
 
-    pub fn call(&self, kind: K, action: A) -> BlockInput {
+    pub fn emit(&self, kind: K, action: A) -> BlockInput {
         let (tx, rx) = mpsc::channel();
-        let event = Event::new(kind, action, tx);
+        let event = EventDetail::new(kind, action, tx);
         (self.callback.lock().unwrap().as_mut().unwrap())(event);
         rx.recv().unwrap()
     }

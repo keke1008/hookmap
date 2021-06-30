@@ -6,7 +6,7 @@ mod windows;
 
 pub mod keyboard {
     pub use super::common::keyboard::{
-        EmulateKeyboardInput, KeyboardAction, KeyboardEvent, KeyboardKey, KEYBOARD_EVENT_HANDLER,
+        EmulateKeyboardInput, Key, KeyboardAction, KeyboardEvent, KEYBOARD_HANDLER,
     };
 }
 

@@ -1,4 +1,4 @@
-use crate::keyboard::{EmulateKeyboardInput, KeyboardKey};
+use crate::keyboard::{EmulateKeyboardInput, Key};
 use std::mem;
 use winapi::{
     ctypes::c_int,
@@ -9,7 +9,7 @@ use winapi::{
     },
 };
 
-impl EmulateKeyboardInput for KeyboardKey {
+impl EmulateKeyboardInput for Key {
     fn press(&self) {
         send_key_input(self, 0);
     }
@@ -25,9 +25,9 @@ impl EmulateKeyboardInput for KeyboardKey {
     }
 }
 
-fn send_key_input(key: &KeyboardKey, flags: u32) {
+fn send_key_input(key: &Key, flags: u32) {
     let keybd_input = KEYBDINPUT {
-        wVk: <KeyboardKey as Into<u32>>::into(*key) as u16,
+        wVk: <Key as Into<u32>>::into(*key) as u16,
         wScan: 0,
         dwFlags: flags,
         time: 0,
@@ -40,6 +40,6 @@ fn send_key_input(key: &KeyboardKey, flags: u32) {
     unsafe { winuser::SendInput(1 as UINT, input, mem::size_of::<INPUT>() as c_int) };
 }
 
-fn get_key_state(key: &KeyboardKey) -> i16 {
-    unsafe { winuser::GetKeyState(<KeyboardKey as Into<u32>>::into(*key) as i32) }
+fn get_key_state(key: &Key) -> i16 {
+    unsafe { winuser::GetKeyState(<Key as Into<u32>>::into(*key) as i32) }
 }
