@@ -9,3 +9,9 @@ pub mod keyboard {
         EmulateKeyboardInput, KeyboardAction, KeyboardEvent, KeyboardKey, KEYBOARD_EVENT_HANDLER,
     };
 }
+
+pub mod mouse {
+    pub use super::common::mouse::{
+        EmulateMouseInput, MouseAction, MouseEvent, MouseInput, MOUSE_EVENT_HANDLER,
+    };
+}
