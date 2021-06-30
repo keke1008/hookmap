@@ -1,7 +1,4 @@
-use std::sync::{
-    mpsc::{self, Sender},
-    Mutex,
-};
+use std::sync::mpsc::Sender;
 
 #[derive(Debug, Clone, Copy)]
 pub enum BlockInput {
@@ -10,11 +7,35 @@ pub enum BlockInput {
 }
 
 #[derive(Debug)]
+struct BlockInputTx {
+    block_input: BlockInput,
+    tx: Sender<BlockInput>,
+}
+
+impl BlockInputTx {
+    fn new(tx: Sender<BlockInput>) -> Self {
+        Self {
+            tx,
+            block_input: BlockInput::Unblock,
+        }
+    }
+
+    fn block_input_mut(&mut self) -> &mut BlockInput {
+        &mut self.block_input
+    }
+}
+
+impl Drop for BlockInputTx {
+    fn drop(&mut self) {
+        self.tx.send(self.block_input).unwrap();
+    }
+}
+
+#[derive(Debug)]
 pub struct EventDetail<K, A> {
     pub kind: K,
     pub action: A,
-    pub block_input: BlockInput,
-    block_input_tx: Sender<BlockInput>,
+    block_input_tx: BlockInputTx,
 }
 
 impl<K, A> EventDetail<K, A> {
@@ -22,57 +43,11 @@ impl<K, A> EventDetail<K, A> {
         Self {
             kind,
             action,
-            block_input_tx,
-            block_input: BlockInput::Unblock,
+            block_input_tx: BlockInputTx::new(block_input_tx),
         }
     }
-}
 
-impl<K, A> Drop for EventDetail<K, A> {
-    fn drop(&mut self) {
-        self.block_input_tx.send(self.block_input).unwrap();
-    }
-}
-
-pub trait EventHandlerExt<K, A> {
-    fn install_hook() -> Result<(), ()>;
-    fn uninstall_hook() -> Result<(), ()>;
-}
-
-type EventCallback<K, A> = Box<dyn FnMut(EventDetail<K, A>) + Send>;
-
-pub struct EventHandler<K, A> {
-    callback: Mutex<Option<EventCallback<K, A>>>,
-}
-
-impl<K, A> EventHandler<K, A>
-where
-    Self: EventHandlerExt<K, A>,
-{
-    pub fn handle_input(
-        &self,
-        callback: impl FnMut(EventDetail<K, A>) + Send + 'static,
-    ) -> Result<(), ()> {
-        *self.callback.lock().unwrap() = Some(Box::new(callback));
-        Self::install_hook()
-    }
-
-    pub fn stop_handle_input(&self) -> Result<(), ()> {
-        Self::uninstall_hook()
-    }
-
-    pub fn emit(&self, kind: K, action: A) -> BlockInput {
-        let (tx, rx) = mpsc::channel();
-        let event = EventDetail::new(kind, action, tx);
-        (self.callback.lock().unwrap().as_mut().unwrap())(event);
-        rx.recv().unwrap()
-    }
-}
-
-impl<K, A> Default for EventHandler<K, A> {
-    fn default() -> Self {
-        Self {
-            callback: Mutex::new(None),
-        }
+    pub fn block_input_mut(&mut self) -> &mut BlockInput {
+        self.block_input_tx.block_input_mut()
     }
 }

@@ -1,4 +1,5 @@
-use super::event::{EventDetail, EventHandler};
+use super::event::EventDetail;
+use super::handler::EventHandler;
 use once_cell::sync::Lazy;
 
 pub trait EmulateKeyboardInput {

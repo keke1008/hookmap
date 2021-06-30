@@ -1,5 +1,6 @@
 use crate::common::{
-    event::{BlockInput, EventHandlerExt},
+    event::BlockInput,
+    handler::HookInstallable,
     keyboard::{Key, KeyboardAction, KeyboardEventHandler, KEYBOARD_HANDLER},
 };
 use once_cell::sync::Lazy;
@@ -34,7 +35,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-impl EventHandlerExt<Key, KeyboardAction> for KeyboardEventHandler {
+impl HookInstallable<Key, KeyboardAction> for KeyboardEventHandler {
     fn install_hook() -> Result<(), ()> {
         let handler = unsafe {
             winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0)
