@@ -2,26 +2,7 @@ use crate::{bihashmap, common::keyboard::Key};
 use bimap::BiHashMap;
 use once_cell::sync::Lazy;
 
-impl From<Key> for u32 {
-    fn from(key: Key) -> Self {
-        match key {
-            Key::Other(code) => code,
-            _ => *SCANCODE_MAP.get_by_left(&key).unwrap(),
-        }
-    }
-}
-
-impl From<u32> for Key {
-    fn from(code: u32) -> Self {
-        if let Some(key) = SCANCODE_MAP.get_by_right(&code) {
-            *key
-        } else {
-            Key::Other(code)
-        }
-    }
-}
-
-static SCANCODE_MAP: Lazy<BiHashMap<Key, u32>> = Lazy::new(|| {
+pub(super) static SCANCODE_MAP: Lazy<BiHashMap<Key, u32>> = Lazy::new(|| {
     bihashmap! {
         Key::Backspace => 0x08,
         Key::Tab => 0x09,

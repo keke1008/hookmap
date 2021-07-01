@@ -1,20 +1,23 @@
 use crate::common::{
     event::BlockInput,
     handler::HookInstallable,
-    keyboard::{Key, KeyboardAction, KeyboardEventHandler, KEYBOARD_HANDLER},
+    keyboard::{EmulateKeyboardInput, Key, KeyboardAction, KeyboardEventHandler, KEYBOARD_HANDLER},
 };
 use once_cell::sync::Lazy;
 use std::{
-    mem::MaybeUninit,
+    mem::{self, MaybeUninit},
     sync::atomic::{AtomicPtr, Ordering},
 };
 use winapi::{
     ctypes::c_int,
     shared::{
-        minwindef::{HINSTANCE, LPARAM, LRESULT, WPARAM},
+        minwindef::{HINSTANCE, LPARAM, LRESULT, UINT, WPARAM},
         windef::{HHOOK__, HWND},
     },
-    um::winuser::{self, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL},
+    um::winuser::{
+        self, INPUT, INPUT_KEYBOARD, KBDLLHOOKSTRUCT, KEYBDINPUT, KEYEVENTF_KEYUP, LPINPUT,
+        WH_KEYBOARD_LL,
+    },
 };
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
@@ -58,4 +61,39 @@ impl HookInstallable<Key, KeyboardAction> for KeyboardEventHandler {
             Ok(())
         }
     }
+}
+
+impl EmulateKeyboardInput for Key {
+    fn press(&self) {
+        send_key_input(self, 0);
+    }
+    fn release(&self) {
+        send_key_input(self, KEYEVENTF_KEYUP);
+    }
+
+    fn is_pressed(&self) -> bool {
+        get_key_state(self) & (1 << 15) != 0
+    }
+    fn is_toggled(&self) -> bool {
+        get_key_state(self) & 1 != 0
+    }
+}
+
+fn send_key_input(key: &Key, flags: u32) {
+    let keybd_input = KEYBDINPUT {
+        wVk: <Key as Into<u32>>::into(*key) as u16,
+        wScan: 0,
+        dwFlags: flags,
+        time: 0,
+        dwExtraInfo: 0,
+    };
+    let input = &mut INPUT {
+        type_: INPUT_KEYBOARD,
+        u: unsafe { mem::transmute_copy(&keybd_input) },
+    } as LPINPUT;
+    unsafe { winuser::SendInput(1 as UINT, input, mem::size_of::<INPUT>() as c_int) };
+}
+
+fn get_key_state(key: &Key) -> i16 {
+    unsafe { winuser::GetKeyState(<Key as Into<u32>>::into(*key) as i32) }
 }
