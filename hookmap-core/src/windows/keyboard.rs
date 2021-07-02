@@ -47,7 +47,7 @@ impl HookInstallable<Key, KeyboardAction> for KeyboardEventHandler {
             return Err(());
         }
         HHOOK_HANDLER.store(handler, Ordering::SeqCst);
-        unsafe { winuser::GetMessageW(MaybeUninit::uninit().assume_init(), 0 as HWND, 0, 0) };
+        unsafe { winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), 0 as HWND, 0, 0) };
         Ok(())
     }
 

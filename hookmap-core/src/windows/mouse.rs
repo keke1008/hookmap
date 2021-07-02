@@ -45,7 +45,7 @@ impl HookInstallable<MouseInput, MouseAction> for MouseEventHandler {
             return Err(());
         }
         HHOOK_HANDLER.store(handler, Ordering::SeqCst);
-        unsafe { winuser::GetMessageW(MaybeUninit::uninit().assume_init(), 0 as HWND, 0, 0) };
+        unsafe { winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), 0 as HWND, 0, 0) };
         Ok(())
     }
 
@@ -134,7 +134,7 @@ impl EmulateMouseInput for MouseInput {
 
     fn get_cursor_pos() -> (i32, i32) {
         unsafe {
-            let mut pos = MaybeUninit::uninit().assume_init();
+            let mut pos = MaybeUninit::zeroed().assume_init();
             winuser::GetCursorPos(&mut pos);
             (pos.x, pos.y)
         }
