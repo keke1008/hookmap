@@ -24,13 +24,13 @@ static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
-    let kind = event_info.vkCode.into();
+    let target = event_info.vkCode.into();
     let action = if event_info.flags >> 7 == 0 {
         KeyboardAction::Press
     } else {
         KeyboardAction::Release
     };
-    match KEYBOARD_HANDLER.emit(kind, action) {
+    match KEYBOARD_HANDLER.emit(target, action) {
         BlockInput::Block => 0,
         BlockInput::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)

@@ -32,16 +32,16 @@ impl Drop for BlockInputTx {
 }
 
 #[derive(Debug)]
-pub struct EventDetail<K, A> {
-    pub kind: K,
+pub struct EventDetail<T, A> {
+    pub target: T,
     pub action: A,
     block_input_tx: BlockInputTx,
 }
 
-impl<K, A> EventDetail<K, A> {
-    pub fn new(kind: K, action: A, block_input_tx: Sender<BlockInput>) -> Self {
+impl<T, A> EventDetail<T, A> {
+    pub fn new(target: T, action: A, block_input_tx: Sender<BlockInput>) -> Self {
         Self {
-            kind,
+            target,
             action,
             block_input_tx: BlockInputTx::new(block_input_tx),
         }
