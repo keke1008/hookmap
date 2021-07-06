@@ -1,4 +1,4 @@
-use super::event::{BlockInput, EventDetail};
+use super::event::{EventBlock, EventDetail};
 use std::{
     any, fmt,
     sync::{mpsc, Mutex},
@@ -31,7 +31,7 @@ where
         Self::uninstall_hook()
     }
 
-    pub fn emit(&self, target: T, action: A) -> BlockInput {
+    pub fn emit(&self, target: T, action: A) -> EventBlock {
         let (tx, rx) = mpsc::channel();
         let event = EventDetail::new(target, action, tx);
         (self.callback.lock().unwrap().as_mut().unwrap())(event);

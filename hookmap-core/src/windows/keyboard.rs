@@ -1,5 +1,5 @@
 use crate::common::{
-    event::BlockInput,
+    event::EventBlock,
     handler::HookInstallable,
     keyboard::{EmulateKeyboardInput, Key, KeyboardAction, KeyboardEventHandler, KEYBOARD_HANDLER},
 };
@@ -31,8 +31,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         KeyboardAction::Release
     };
     match KEYBOARD_HANDLER.emit(target, action) {
-        BlockInput::Block => 0,
-        BlockInput::Unblock => unsafe {
+        EventBlock::Block => 0,
+        EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
         },
     }

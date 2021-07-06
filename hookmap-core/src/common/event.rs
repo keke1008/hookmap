@@ -1,26 +1,26 @@
 use std::sync::mpsc::Sender;
 
 #[derive(Debug, Clone, Copy)]
-pub enum BlockInput {
+pub enum EventBlock {
     Block,
     Unblock,
 }
 
 #[derive(Debug)]
 struct BlockInputTx {
-    block_input: BlockInput,
-    tx: Sender<BlockInput>,
+    block_input: EventBlock,
+    tx: Sender<EventBlock>,
 }
 
 impl BlockInputTx {
-    fn new(tx: Sender<BlockInput>) -> Self {
+    fn new(tx: Sender<EventBlock>) -> Self {
         Self {
             tx,
-            block_input: BlockInput::Unblock,
+            block_input: EventBlock::Unblock,
         }
     }
 
-    fn block_input_mut(&mut self) -> &mut BlockInput {
+    fn block_input_mut(&mut self) -> &mut EventBlock {
         &mut self.block_input
     }
 }
@@ -39,7 +39,7 @@ pub struct EventDetail<T, A> {
 }
 
 impl<T, A> EventDetail<T, A> {
-    pub fn new(target: T, action: A, block_input_tx: Sender<BlockInput>) -> Self {
+    pub fn new(target: T, action: A, block_input_tx: Sender<EventBlock>) -> Self {
         Self {
             target,
             action,
@@ -47,7 +47,7 @@ impl<T, A> EventDetail<T, A> {
         }
     }
 
-    pub fn block_input_mut(&mut self) -> &mut BlockInput {
+    pub fn block_input_mut(&mut self) -> &mut EventBlock {
         self.block_input_tx.block_input_mut()
     }
 }
