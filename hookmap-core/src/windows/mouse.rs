@@ -83,39 +83,15 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
 impl EmulateMouseInput for MouseInput {
     fn press(&self) {
         let (mouse_data, dw_flags) = self.into_press_parameter();
-        // let (mouse_data, dw_flags) = match self {
-        //     MouseInput::LButton => (0, MOUSEEVENTF_LEFTDOWN),
-        //     MouseInput::RButton => (0, MOUSEEVENTF_RIGHTDOWN),
-        //     MouseInput::MButton => (0, MOUSEEVENTF_MIDDLEDOWN),
-        //     MouseInput::SideButton1 => (XBUTTON1, MOUSEEVENTF_XDOWN),
-        //     MouseInput::SideButton2 => (XBUTTON2, MOUSEEVENTF_XDOWN),
-        //     _ => panic!("{:?} cannnot be pressed. It's not a button.", *self),
-        // };
         send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
     }
 
     fn release(&self) {
         let (mouse_data, dw_flags) = self.into_release_parameter();
-        // let (mouse_data, dw_flags) = match self {
-        //     MouseInput::LButton => (0, MOUSEEVENTF_LEFTUP),
-        //     MouseInput::RButton => (0, MOUSEEVENTF_RIGHTUP),
-        //     MouseInput::MButton => (0, MOUSEEVENTF_MIDDLEUP),
-        //     MouseInput::SideButton1 => (XBUTTON1, MOUSEEVENTF_XUP),
-        //     MouseInput::SideButton2 => (XBUTTON2, MOUSEEVENTF_XUP),
-        //     _ => panic!("{:?} cannnot be released. It's not a button.", *self),
-        // };
         send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
     }
 
     fn is_pressed(&self) -> bool {
-        // let vk_code = match self {
-        //     MouseInput::LButton => VK_LBUTTON,
-        //     MouseInput::RButton => VK_RBUTTON,
-        //     MouseInput::MButton => VK_MBUTTON,
-        //     MouseInput::SideButton1 => VK_XBUTTON1,
-        //     MouseInput::SideButton2 => VK_XBUTTON2,
-        //     _ => panic!("Cannot check if {:?} is pressed. It's not a button.", *self),
-        // };
         let vk_code = self.into_vk_code();
         unsafe { winuser::GetKeyState(vk_code) & (1 << 15) != 0 }
     }
