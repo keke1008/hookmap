@@ -1,5 +1,5 @@
 use super::event::EventDetail;
-use super::handler::EventHandler;
+use super::handler::HookManager;
 use once_cell::sync::Lazy;
 
 pub trait EmulateMouseInput {
@@ -17,9 +17,9 @@ pub trait EmulateMouseInput {
 }
 
 pub type MouseEvent = EventDetail<MouseInput, MouseAction>;
-pub type MouseEventHandler = EventHandler<MouseInput, MouseAction>;
+pub type MouseHook = HookManager<MouseInput, MouseAction>;
 
-pub static MOUSE_EVENT_HANDLER: Lazy<MouseEventHandler> = Lazy::new(MouseEventHandler::default);
+pub static MOUSE_HOOK: Lazy<MouseHook> = Lazy::new(MouseHook::default);
 
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum MouseAction {

@@ -11,11 +11,11 @@ pub trait HookInstallable<T, A> {
 
 type EventCallback<T, A> = Box<dyn FnMut(EventDetail<T, A>) + Send>;
 
-pub struct EventHandler<T, A> {
-    callback: Mutex<Option<EventCallback<T, A>>>,
+pub struct HookManager<T, A> {
+    handler: Mutex<Option<EventCallback<T, A>>>,
 }
 
-impl<T, A> EventHandler<T, A>
+impl<T, A> HookManager<T, A>
 where
     Self: HookInstallable<T, A>,
 {
@@ -23,7 +23,7 @@ where
         &self,
         callback: impl FnMut(EventDetail<T, A>) + Send + 'static,
     ) -> Result<(), ()> {
-        *self.callback.lock().unwrap() = Some(Box::new(callback));
+        *self.handler.lock().unwrap() = Some(Box::new(callback));
         Self::install_hook()
     }
 
@@ -34,20 +34,20 @@ where
     pub fn emit(&self, target: T, action: A) -> EventBlock {
         let (tx, rx) = mpsc::channel();
         let event = EventDetail::new(target, action, tx);
-        (self.callback.lock().unwrap().as_mut().unwrap())(event);
+        (self.handler.lock().unwrap().as_mut().unwrap())(event);
         rx.recv().unwrap()
     }
 }
 
-impl<T, A> Default for EventHandler<T, A> {
+impl<T, A> Default for HookManager<T, A> {
     fn default() -> Self {
         Self {
-            callback: Mutex::new(None),
+            handler: Mutex::new(None),
         }
     }
 }
 
-impl<T, A> fmt::Debug for EventHandler<T, A> {
+impl<T, A> fmt::Debug for HookManager<T, A> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,

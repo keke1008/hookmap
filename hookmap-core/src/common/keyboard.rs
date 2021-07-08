@@ -1,5 +1,5 @@
 use super::event::EventDetail;
-use super::handler::EventHandler;
+use super::handler::HookManager;
 use once_cell::sync::Lazy;
 
 pub trait EmulateKeyboardInput {
@@ -14,9 +14,9 @@ pub trait EmulateKeyboardInput {
 }
 
 pub type KeyboardEvent = EventDetail<Key, KeyboardAction>;
-pub type KeyboardEventHandler = EventHandler<Key, KeyboardAction>;
+pub type KeyboardHook = HookManager<Key, KeyboardAction>;
 
-pub static KEYBOARD_HANDLER: Lazy<KeyboardEventHandler> = Lazy::new(KeyboardEventHandler::default);
+pub static KEYBOARD_HOOK: Lazy<KeyboardHook> = Lazy::new(KeyboardHook::default);
 
 #[derive(Debug)]
 pub enum KeyboardAction {

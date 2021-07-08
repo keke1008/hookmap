@@ -6,12 +6,12 @@ mod windows;
 
 pub mod keyboard {
     pub use super::common::keyboard::{
-        EmulateKeyboardInput, Key, KeyboardAction, KeyboardEvent, KEYBOARD_HANDLER,
+        EmulateKeyboardInput, Key, KeyboardAction, KeyboardEvent, KEYBOARD_HOOK,
     };
 }
 
 pub mod mouse {
     pub use super::common::mouse::{
-        EmulateMouseInput, MouseAction, MouseEvent, MouseInput, MOUSE_EVENT_HANDLER,
+        EmulateMouseInput, MouseAction, MouseEvent, MouseInput, MOUSE_HOOK,
     };
 }

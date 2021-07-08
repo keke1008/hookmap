@@ -2,9 +2,9 @@ use crate::{
     common::{
         event::EventBlock,
         handler::HookInstallable,
-        mouse::{EmulateMouseInput, MouseEventHandler},
+        mouse::{EmulateMouseInput, MouseHook},
     },
-    mouse::{MouseAction, MouseInput, MOUSE_EVENT_HANDLER},
+    mouse::{MouseAction, MouseInput, MOUSE_HOOK},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -29,7 +29,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     let event_info = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
     let input: MouseInput = (w_param, event_info).into();
     let action: MouseAction = (w_param, event_info).into();
-    match MOUSE_EVENT_HANDLER.emit(input, action) {
+    match MOUSE_HOOK.emit(input, action) {
         EventBlock::Block => 1,
         EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
@@ -37,7 +37,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-impl HookInstallable<MouseInput, MouseAction> for MouseEventHandler {
+impl HookInstallable<MouseInput, MouseAction> for MouseHook {
     fn install_hook() -> Result<(), ()> {
         let handler =
             unsafe { winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
