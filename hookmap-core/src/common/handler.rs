@@ -9,10 +9,10 @@ pub trait HookInstallable<T, A> {
     fn uninstall_hook() -> Result<(), ()>;
 }
 
-type EventCallback<T, A> = Box<dyn FnMut(EventDetail<T, A>) + Send>;
+type EventHandler<T, A> = Box<dyn FnMut(EventDetail<T, A>) + Send>;
 
 pub struct HookManager<T, A> {
-    handler: Mutex<Option<EventCallback<T, A>>>,
+    handler: Mutex<Option<EventHandler<T, A>>>,
 }
 
 impl<T, A> HookManager<T, A>
@@ -21,9 +21,9 @@ where
 {
     pub fn handle_input(
         &self,
-        callback: impl FnMut(EventDetail<T, A>) + Send + 'static,
+        handler: impl FnMut(EventDetail<T, A>) + Send + 'static,
     ) -> Result<(), ()> {
-        *self.handler.lock().unwrap() = Some(Box::new(callback));
+        *self.handler.lock().unwrap() = Some(Box::new(handler));
         Self::install_hook()
     }
 
