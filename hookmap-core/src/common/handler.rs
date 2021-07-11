@@ -1,18 +1,15 @@
 use super::event::{EventBlock, EventDetail};
-use std::{
-    any, fmt,
-    sync::{mpsc, Mutex},
-};
+use std::{any, fmt, sync::Mutex};
 
 pub trait HookInstallable<T, A> {
     fn install_hook() -> Result<(), ()>;
     fn uninstall_hook() -> Result<(), ()>;
 }
 
-type EventHandler<T, A> = Box<dyn FnMut(EventDetail<T, A>) + Send>;
+type EventHandler<T, A> = dyn FnMut(EventDetail<T, A>) -> EventBlock + Send;
 
 pub struct HookManager<T, A> {
-    handler: Mutex<Option<EventHandler<T, A>>>,
+    handler: Mutex<Option<Box<EventHandler<T, A>>>>,
 }
 
 impl<T, A> HookManager<T, A>
@@ -21,7 +18,7 @@ where
 {
     pub fn handle_input(
         &self,
-        handler: impl FnMut(EventDetail<T, A>) + Send + 'static,
+        handler: impl FnMut(EventDetail<T, A>) -> EventBlock + Send + 'static,
     ) -> Result<(), ()> {
         *self.handler.lock().unwrap() = Some(Box::new(handler));
         Self::install_hook()
@@ -32,10 +29,8 @@ where
     }
 
     pub fn emit(&self, target: T, action: A) -> EventBlock {
-        let (tx, rx) = mpsc::channel();
-        let event = EventDetail::new(target, action, tx);
-        (self.handler.lock().unwrap().as_mut().unwrap())(event);
-        rx.recv().unwrap()
+        let event = EventDetail::new(target, action);
+        (self.handler.lock().unwrap().as_mut().unwrap())(event)
     }
 }
 
