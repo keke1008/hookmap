@@ -1,4 +1,4 @@
-use super::event::{EventBlock, EventDetail};
+use super::event::{Event, EventBlock};
 use std::{any, fmt, sync::Mutex};
 
 pub trait HookInstallable<T, A> {
@@ -6,7 +6,7 @@ pub trait HookInstallable<T, A> {
     fn uninstall_hook() -> Result<(), ()>;
 }
 
-type EventHandler<T, A> = dyn FnMut(EventDetail<T, A>) -> EventBlock + Send;
+type EventHandler<T, A> = dyn FnMut(Event<T, A>) -> EventBlock + Send;
 
 pub struct HookManager<T, A> {
     handler: Mutex<Option<Box<EventHandler<T, A>>>>,
@@ -18,7 +18,7 @@ where
 {
     pub fn handle_input(
         &self,
-        handler: impl FnMut(EventDetail<T, A>) -> EventBlock + Send + 'static,
+        handler: impl FnMut(Event<T, A>) -> EventBlock + Send + 'static,
     ) -> Result<(), ()> {
         *self.handler.lock().unwrap() = Some(Box::new(handler));
         Self::install_hook()
@@ -29,7 +29,7 @@ where
     }
 
     pub fn emit(&self, target: T, action: A) -> EventBlock {
-        let event = EventDetail::new(target, action);
+        let event = Event::new(target, action);
         (self.handler.lock().unwrap().as_mut().unwrap())(event)
     }
 }

@@ -12,7 +12,7 @@ pub enum EventBlock {
 /// When dropped, this will send whether to pass the event to the next program or not
 /// to the thread where the hook is installed.
 #[derive(Debug)]
-pub struct EventDetail<T, A> {
+pub struct Event<T, A> {
     /// Target of the generated event.
     pub target: T,
 
@@ -20,7 +20,7 @@ pub struct EventDetail<T, A> {
     pub action: A,
 }
 
-impl<T, A> EventDetail<T, A> {
+impl<T, A> Event<T, A> {
     /// Creates a new `Event<T, A>`.
     pub fn new(target: T, action: A) -> Self {
         Self { target, action }

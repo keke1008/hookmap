@@ -1,4 +1,4 @@
-use super::event::EventDetail;
+use super::event::Event;
 use super::handler::HookManager;
 use once_cell::sync::Lazy;
 
@@ -13,7 +13,7 @@ pub trait EmulateKeyboardInput {
     fn is_toggled(&self) -> bool;
 }
 
-pub type KeyboardEvent = EventDetail<Key, KeyboardAction>;
+pub type KeyboardEvent = Event<Key, KeyboardAction>;
 pub type KeyboardHook = HookManager<Key, KeyboardAction>;
 
 pub static KEYBOARD_HOOK: Lazy<KeyboardHook> = Lazy::new(KeyboardHook::default);

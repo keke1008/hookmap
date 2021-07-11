@@ -1,4 +1,4 @@
-use super::event::EventDetail;
+use super::event::Event;
 use super::handler::HookManager;
 use once_cell::sync::Lazy;
 
@@ -16,7 +16,7 @@ pub trait EmulateMouseInput {
     fn rotate_wheel(speed: u32);
 }
 
-pub type MouseEvent = EventDetail<MouseInput, MouseAction>;
+pub type MouseEvent = Event<MouseInput, MouseAction>;
 pub type MouseHook = HookManager<MouseInput, MouseAction>;
 
 pub static MOUSE_HOOK: Lazy<MouseHook> = Lazy::new(MouseHook::default);
