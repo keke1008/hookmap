@@ -9,8 +9,6 @@ pub enum EventBlock {
 }
 
 /// Information about the generated event.
-/// When dropped, this will send whether to pass the event to the next program or not
-/// to the thread where the hook is installed.
 #[derive(Debug)]
 pub struct Event<T, A> {
     /// Target of the generated event.
