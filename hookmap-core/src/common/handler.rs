@@ -3,7 +3,6 @@ use std::{any, fmt, sync::Mutex};
 
 pub trait HookInstallable<T, A> {
     fn install_hook() -> Result<(), ()>;
-    fn uninstall_hook() -> Result<(), ()>;
 }
 
 type EventHandler<T, A> = dyn FnMut(Event<T, A>) -> EventBlock + Send;
@@ -22,10 +21,6 @@ where
     ) -> Result<(), ()> {
         *self.handler.lock().unwrap() = Some(Box::new(handler));
         Self::install_hook()
-    }
-
-    pub fn stop_handle_input(&self) -> Result<(), ()> {
-        Self::uninstall_hook()
     }
 
     pub fn emit(&self, target: T, action: A) -> EventBlock {

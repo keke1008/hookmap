@@ -48,20 +48,6 @@ impl HookInstallable<MouseInput, MouseAction> for MouseHook {
         unsafe { winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), 0 as HWND, 0, 0) };
         Ok(())
     }
-
-    fn uninstall_hook() -> Result<(), ()> {
-        let handler = HHOOK_HANDLER.swap(std::ptr::null_mut(), Ordering::SeqCst);
-        if handler.is_null() {
-            return Err(());
-        }
-        let result =
-            unsafe { winuser::UnhookWindowsHookEx(HHOOK_HANDLER.swap(handler, Ordering::SeqCst)) };
-        if result == 0 {
-            Err(())
-        } else {
-            Ok(())
-        }
-    }
 }
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {

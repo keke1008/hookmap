@@ -50,17 +50,6 @@ impl HookInstallable<Key, KeyboardAction> for KeyboardHook {
         unsafe { winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), 0 as HWND, 0, 0) };
         Ok(())
     }
-
-    fn uninstall_hook() -> Result<(), ()> {
-        let result = unsafe {
-            winuser::UnhookWindowsHookEx(HHOOK_HANDLER.swap(std::ptr::null_mut(), Ordering::SeqCst))
-        };
-        if result == 0 {
-            Err(())
-        } else {
-            Ok(())
-        }
-    }
 }
 
 impl EmulateKeyboardInput for Key {
