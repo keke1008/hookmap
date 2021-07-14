@@ -20,7 +20,7 @@ pub trait EmulateMouseInput {
 
 pub type MouseEvent = Event<MouseInput, MouseAction>;
 
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum MouseAction {
     Press,
     Release,

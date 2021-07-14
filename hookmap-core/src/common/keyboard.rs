@@ -17,7 +17,7 @@ pub trait EmulateKeyboardInput {
 
 pub type KeyboardEvent = Event<Key, KeyboardAction>;
 
-#[derive(Debug)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum KeyboardAction {
     Press,
     Release,
