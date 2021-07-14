@@ -1,5 +1,5 @@
 /// Indicates whether to pass the generated event to the next program or not .
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EventBlock {
     /// Do not pass the generated event to the next program.
     Block,

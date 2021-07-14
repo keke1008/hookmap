@@ -1,5 +1,5 @@
-use crate::{
-    common::keyboard::Key,
+use crate::common::{
+    keyboard::Key,
     mouse::{MouseAction, MouseInput},
 };
 use winapi::{
