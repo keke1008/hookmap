@@ -23,11 +23,15 @@ impl<T, A> HandlerFunction<T, A> {
         Self::default()
     }
 
-    pub fn set_handler<F>(&self, handler: F)
+    pub fn register_handler<F>(&self, handler: F)
     where
         F: FnMut(Event<T, A>) -> EventBlock + Send + 'static,
     {
         *self.handler.lock().unwrap() = Some(Box::new(handler));
+    }
+
+    pub fn is_handler_registered(&self) -> bool {
+        self.handler.lock().unwrap().is_some()
     }
 
     pub fn emit(&self, event: Event<T, A>) -> EventBlock {
@@ -70,9 +74,18 @@ where
     }
 
     pub fn handle_input(&self) {
-        <Self as InstallKeyboardHook>::install();
-        <Self as InstallMouseHook>::install();
-        <Self as HandleInput>::handle_input();
+        let registered_keyboard_handler = self.keyboard.is_handler_registered();
+        let registered_mouse_handler = self.mouse.is_handler_registered();
+
+        if registered_keyboard_handler {
+            <Self as InstallKeyboardHook>::install();
+        }
+        if registered_mouse_handler {
+            <Self as InstallMouseHook>::install();
+        }
+        if registered_keyboard_handler || registered_mouse_handler {
+            <Self as HandleInput>::handle_input();
+        }
     }
 }
 
