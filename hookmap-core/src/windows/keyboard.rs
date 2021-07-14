@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 use std::{
     mem,
     sync::atomic::{AtomicPtr, Ordering},
+    thread,
 };
 use winapi::{
     ctypes::c_int,
@@ -32,7 +33,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     let event = KeyboardEvent::new(target, action);
 
     match INPUT_HANDLER.keyboard.emit(event) {
-        EventBlock::Block => 0,
+        EventBlock::Block => 1,
         EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
         },
@@ -72,11 +73,14 @@ fn send_key_input(key: &Key, flags: u32) {
         time: 0,
         dwExtraInfo: 0,
     };
-    let input = &mut INPUT {
+    let mut input = INPUT {
         type_: INPUT_KEYBOARD,
         u: unsafe { mem::transmute_copy(&keybd_input) },
-    } as LPINPUT;
-    unsafe { winuser::SendInput(1, input, mem::size_of::<INPUT>() as c_int) };
+    };
+
+    thread::spawn(move || unsafe {
+        winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int);
+    });
 }
 
 fn get_key_state(key: &Key) -> i16 {

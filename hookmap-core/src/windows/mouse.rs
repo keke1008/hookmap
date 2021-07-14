@@ -7,6 +7,7 @@ use once_cell::sync::Lazy;
 use std::{
     mem::{self, MaybeUninit},
     sync::atomic::{AtomicPtr, Ordering},
+    thread,
 };
 use winapi::{
     ctypes::c_int,
@@ -57,7 +58,10 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
         type_: 0,
         u: unsafe { mem::transmute(mouse_input) },
     };
-    unsafe { winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int) };
+
+    thread::spawn(move || unsafe {
+        winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int);
+    });
 }
 
 impl EmulateMouseInput for MouseInput {
