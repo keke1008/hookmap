@@ -1,10 +1,7 @@
-use crate::{
-    common::{
-        event::EventBlock,
-        handler::HookInstallable,
-        mouse::{EmulateMouseInput, MouseHook},
-    },
-    mouse::{MouseAction, MouseInput, MOUSE_HOOK},
+use crate::common::{
+    event::EventBlock,
+    handler::{InputHandler, INPUT_HANDLER},
+    mouse::{EmulateMouseInput, InstallMouseHook, MouseAction, MouseEvent, MouseInput},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -15,7 +12,7 @@ use winapi::{
     ctypes::c_int,
     shared::{
         minwindef::{HINSTANCE, LPARAM, LRESULT, WPARAM},
-        windef::{HHOOK__, HWND},
+        windef::HHOOK__,
     },
     um::winuser::{
         self, INPUT, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_MOVE, MOUSEEVENTF_WHEEL, MOUSEINPUT,
@@ -27,9 +24,11 @@ static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
-    let input: MouseInput = (w_param, event_info).into();
+    let target: MouseInput = (w_param, event_info).into();
     let action: MouseAction = (w_param, event_info).into();
-    match MOUSE_HOOK.emit(input, action) {
+    let event = MouseEvent::new(target, action);
+
+    match INPUT_HANDLER.mouse.emit(event) {
         EventBlock::Block => 1,
         EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
@@ -37,16 +36,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-impl HookInstallable<MouseInput, MouseAction> for MouseHook {
-    fn install_hook() -> Result<(), ()> {
+impl InstallMouseHook for InputHandler {
+    fn install() {
         let handler =
             unsafe { winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
-        if handler.is_null() {
-            return Err(());
-        }
         HHOOK_HANDLER.store(handler, Ordering::SeqCst);
-        unsafe { winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), 0 as HWND, 0, 0) };
-        Ok(())
     }
 }
 
