@@ -16,8 +16,7 @@ use winapi::{
         windef::HHOOK__,
     },
     um::winuser::{
-        self, INPUT, INPUT_KEYBOARD, KBDLLHOOKSTRUCT, KEYBDINPUT, KEYEVENTF_KEYUP, LPINPUT,
-        WH_KEYBOARD_LL,
+        self, INPUT, INPUT_KEYBOARD, KBDLLHOOKSTRUCT, KEYBDINPUT, KEYEVENTF_KEYUP, WH_KEYBOARD_LL,
     },
 };
 
