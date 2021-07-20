@@ -24,7 +24,7 @@ pub type MouseEvent = Event<MouseInput, MouseAction>;
 pub enum MouseAction {
     Press,
     Release,
-    Move(i32, i32),
+    Move((i32, i32)),
     Wheel(i32),
 }
 

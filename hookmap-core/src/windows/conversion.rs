@@ -96,7 +96,7 @@ impl From<(WPARAM, MSLLHOOKSTRUCT)> for MouseInput {
 impl From<(WPARAM, MSLLHOOKSTRUCT)> for MouseAction {
     fn from((w_param, mouse_struct): (WPARAM, MSLLHOOKSTRUCT)) -> Self {
         match w_param as u32 {
-            WM_MOUSEMOVE => MouseAction::Move(mouse_struct.pt.x, mouse_struct.pt.y),
+            WM_MOUSEMOVE => MouseAction::Move((mouse_struct.pt.x, mouse_struct.pt.y)),
             WM_MOUSEWHEEL => {
                 let speed = winuser::GET_WHEEL_DELTA_WPARAM(mouse_struct.mouseData as usize);
                 MouseAction::Wheel(speed as i32)
