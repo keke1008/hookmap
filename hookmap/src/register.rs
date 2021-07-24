@@ -4,7 +4,7 @@ use crate::{
     modifier::Modifier,
 };
 use derive_new::new;
-use hookmap_core::{keyboard::Key, mouse::MouseInput};
+use hookmap_core::{Key, MouseInput};
 use std::sync::{Arc, Mutex};
 
 #[derive(new, Debug)]

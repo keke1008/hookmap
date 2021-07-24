@@ -1,7 +1,4 @@
-use hookmap_core::{
-    keyboard::{EmulateKeyboardInput, Key},
-    mouse::{EmulateMouseInput, MouseInput},
-};
+use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, Key, MouseInput};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]

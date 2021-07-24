@@ -3,7 +3,7 @@ use crate::{
     modifier::{Modifier, ModifierChecker},
 };
 use derive_new::new;
-use hookmap_core::{keyboard::Key, mouse::MouseInput, EventBlock};
+use hookmap_core::{EventBlock, Key, MouseInput};
 use std::{collections::HashMap, fmt::Debug, hash::Hash};
 
 #[derive(new)]
