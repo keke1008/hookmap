@@ -26,7 +26,7 @@ impl MouseParameter {
 }
 
 impl MouseInput {
-    pub(super) fn into_press(&self) -> Option<MouseParameter> {
+    pub(super) fn into_press(self) -> Option<MouseParameter> {
         match self {
             MouseInput::LButton => Some(MouseParameter::new(0, MOUSEEVENTF_LEFTDOWN)),
             MouseInput::RButton => Some(MouseParameter::new(0, MOUSEEVENTF_RIGHTDOWN)),
@@ -37,7 +37,7 @@ impl MouseInput {
         }
     }
 
-    pub(super) fn into_release(&self) -> Option<MouseParameter> {
+    pub(super) fn into_release(self) -> Option<MouseParameter> {
         match self {
             MouseInput::LButton => Some(MouseParameter::new(0, MOUSEEVENTF_LEFTUP)),
             MouseInput::RButton => Some(MouseParameter::new(0, MOUSEEVENTF_RIGHTUP)),
@@ -48,7 +48,7 @@ impl MouseInput {
         }
     }
 
-    pub(super) fn into_vk_code(&self) -> Option<i32> {
+    pub(super) fn into_vk_code(self) -> Option<i32> {
         match self {
             MouseInput::LButton => Some(VK_LBUTTON),
             MouseInput::RButton => Some(VK_RBUTTON),
