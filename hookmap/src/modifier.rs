@@ -1,4 +1,4 @@
-use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, Key, MouseInput};
+use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, EventBlock, Key, MouseInput};
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
@@ -63,4 +63,10 @@ impl ModifierChecker {
                 .or_insert_with(|| mouse.is_pressed())
         })
     }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ModifierEventBlock {
+    pub(crate) keyboard: HashMap<Key, EventBlock>,
+    pub(crate) mouse: HashMap<MouseInput, EventBlock>,
 }
