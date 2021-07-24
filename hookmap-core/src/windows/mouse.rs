@@ -31,8 +31,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     let target = MouseEventInfo::new(w_param, mouse_struct).into_input();
     let action = MouseEventInfo::new(w_param, mouse_struct).into_action();
 
-    if target.is_some() && action.is_some() {
-        let event = MouseEvent::new(target.unwrap(), action.unwrap());
+    if let (Some(target), Some(action)) = (target, action) {
+        let event = MouseEvent::new(target, action);
         if INPUT_HANDLER.mouse.lock().unwrap().emit(event) == EventBlock::Block {
             return 1;
         }
