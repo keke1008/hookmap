@@ -117,7 +117,7 @@ impl<T, A> std::fmt::Debug for HandlerFunction<T, A> {
 
 /// A keyboard and mouse Event Handler.
 ///
-/// FFI requires static variables, so instead of creating a new instance, use `hookmap_core::INPUT_HANDLER`.
+/// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
     pub keyboard: Mutex<HandlerFunction<Key, KeyboardAction>>,
