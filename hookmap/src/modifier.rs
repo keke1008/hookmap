@@ -12,15 +12,11 @@ impl Modifier {
         Self::default()
     }
 
-    pub fn add_key(&mut self, key: Key) {
-        self.keyboard.insert(key);
-    }
-
     pub fn added_key(&self, key: Key) -> Self {
-        let mut keyboard_hander = self.keyboard.clone();
-        keyboard_hander.insert(key);
+        let mut keyboard_handler = self.keyboard.clone();
+        keyboard_handler.insert(key);
         Self {
-            keyboard: keyboard_hander,
+            keyboard: keyboard_handler,
             mouse: self.mouse.clone(),
         }
     }
