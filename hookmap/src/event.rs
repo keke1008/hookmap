@@ -4,6 +4,7 @@ use std::{
     sync::mpsc::{self, Receiver, Sender},
 };
 
+/// An enum that represents the state of a button.
 #[derive(Debug, PartialEq, Eq, Clone, Copy)]
 pub enum Button {
     Press,
@@ -38,16 +39,20 @@ impl Drop for BlockInput {
 }
 
 #[derive(Debug)]
+/// A struct struct that represents information about a generated and controls whether the event is
+/// blocked or not.
 pub struct EventInfo<I: Debug> {
     pub info: I,
     block_input: BlockInput,
 }
 
 impl<I: Debug> EventInfo<I> {
+    /// Blocks a generated event.
     pub fn block_event(&mut self) {
         self.block_input.event_block = EventBlock::Block;
     }
 
+    /// Do not block a generated event.
     pub fn unblock_event(&mut self) {
         self.block_input.event_block = EventBlock::Unblock;
     }
