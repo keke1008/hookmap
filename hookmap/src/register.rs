@@ -5,14 +5,14 @@ use crate::{
 };
 use derive_new::new;
 use hookmap_core::{Key, MouseInput};
-use std::sync::{Arc, Mutex};
+use std::{cell::RefCell, rc::Weak, sync::Arc};
 
 /// A struct to register keyboard handlers.
 #[derive(new, Debug)]
 pub struct KeyboardRegister {
+    handler: Weak<RefCell<Handler>>,
+    modifier: Arc<Modifier>,
     key: Key,
-    modifier: Modifier,
-    handler: Arc<Mutex<Handler>>,
 }
 
 impl KeyboardRegister {
@@ -31,12 +31,13 @@ impl KeyboardRegister {
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .keyboard
             .on_press
             .get(self.key)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified key is pressed or released.
@@ -63,12 +64,13 @@ impl KeyboardRegister {
         F: FnMut(EventInfo<Button>) + Send + 'static,
     {
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .keyboard
             .on_press_or_release
             .get(self.key)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified key is released.
@@ -86,12 +88,13 @@ impl KeyboardRegister {
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .keyboard
             .on_release
             .get(self.key)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 }
 
@@ -106,9 +109,9 @@ fn is_button(mouse: MouseInput) -> bool {
 /// A struct to register mouse handlers.
 #[derive(new, Debug)]
 pub struct MouseRegister {
+    handler: Weak<RefCell<Handler>>,
+    modifier: Arc<Modifier>,
     mouse: MouseInput,
-    modifier: Modifier,
-    handler: Arc<Mutex<Handler>>,
 }
 
 impl MouseRegister {
@@ -132,11 +135,12 @@ impl MouseRegister {
     {
         assert_eq!(self.mouse, MouseInput::Move);
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .mouse
             .cursor
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified mouse button is pressed.
@@ -160,12 +164,13 @@ impl MouseRegister {
     {
         assert!(is_button(self.mouse));
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .mouse
             .on_press
             .get(self.mouse)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified mouse button is pressed or released.
@@ -197,12 +202,13 @@ impl MouseRegister {
     {
         assert!(is_button(self.mouse));
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .mouse
             .on_press_or_release
             .get(self.mouse)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified mouse button is released.
@@ -225,12 +231,13 @@ impl MouseRegister {
     {
         assert!(is_button(self.mouse));
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .mouse
             .on_release
             .get(self.mouse)
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the mouse wheel is rotated.
@@ -259,10 +266,11 @@ impl MouseRegister {
     {
         assert_eq!(self.mouse, MouseInput::Wheel);
         self.handler
-            .lock()
+            .upgrade()
             .unwrap()
+            .borrow_mut()
             .mouse
             .wheel
-            .push(callback, self.modifier);
+            .push(callback, Arc::clone(&self.modifier));
     }
 }

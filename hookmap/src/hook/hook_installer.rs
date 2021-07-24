@@ -3,7 +3,10 @@ use crate::{handler::Handler, modifier::ModifierEventBlock, Button};
 use hookmap_core::{
     EventBlock, KeyboardAction, KeyboardEvent, MouseAction, MouseEvent, INPUT_HANDLER,
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    rc::Rc,
+    sync::{Arc, Mutex},
+};
 
 #[derive(Debug)]
 pub(super) struct HookInstaller {
@@ -99,13 +102,12 @@ impl HookInstaller {
 
 impl From<Hook> for HookInstaller {
     fn from(hook: Hook) -> Self {
-        let handler = Arc::try_unwrap(hook.handler).unwrap();
-        let modifier_event_block = Arc::try_unwrap(hook.modifier_event_block)
+        let handler = Rc::try_unwrap(hook.handler).unwrap().into_inner();
+        let modifier_event_block = Rc::try_unwrap(hook.modifier_event_block)
             .unwrap()
-            .into_inner()
-            .unwrap();
+            .into_inner();
         Self {
-            handler,
+            handler: Mutex::new(handler),
             modifier_event_block,
         }
     }
