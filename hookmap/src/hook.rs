@@ -30,7 +30,7 @@ impl Hook {
     /// ```
     /// use hookmap::{Hook, Key};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed."));
+    /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
     pub fn bind_key(&self, key: Key) -> KeyboardRegister {
@@ -44,7 +44,7 @@ impl Hook {
     /// ```
     /// use hookmap::{Hook, MouseInput};
     /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::Wheel).on_rotate(|_| println!("The mouse wheel rotated."));
+    /// hook.bind_mouse(MouseInput::Wheel).on_rotate(|_| println!("The mouse wheel rotated"));
     /// ```
     ///
     pub fn bind_mouse(&self, mouse: MouseInput) -> MouseRegister {
@@ -62,7 +62,7 @@ impl Hook {
     /// let modifier_space = hook.modifier_key(Key::Space);
     /// modifier_space
     ///     .bind_key(Key::A)
-    ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed."));
+    ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
     pub fn modifier_key(&self, key: Key) -> Self {
@@ -83,7 +83,7 @@ impl Hook {
     /// let modifier_left = hook.modifier_mouse_button(MouseInput::LButton);
     /// modifier_left
     ///     .bind_key(Key::A)
-    ///     .on_press(|_| println!("The A key is pressed while the left mouse button is pressed."));
+    ///     .on_press(|_| println!("The A key is pressed while the left mouse button is pressed"));
     /// ```
     ///
     pub fn modifier_mouse_button(&self, mouse_button: MouseInput) -> Self {
