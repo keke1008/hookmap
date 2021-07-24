@@ -2,7 +2,29 @@ use crate::{bihashmap, common::keyboard::Key};
 use bimap::BiHashMap;
 use once_cell::sync::Lazy;
 
-pub(super) static SCANCODE_MAP: Lazy<BiHashMap<Key, u32>> = Lazy::new(|| {
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct KeyCode(pub(super) u32);
+
+impl From<Key> for KeyCode {
+    fn from(key: Key) -> Self {
+        let code = match key {
+            Key::Other(code) => code,
+            _ => *VK_CODE_MAP.get_by_left(&key).unwrap(),
+        };
+        KeyCode(code)
+    }
+}
+
+impl From<KeyCode> for Key {
+    fn from(code: KeyCode) -> Self {
+        match VK_CODE_MAP.get_by_right(&code.0) {
+            Some(key) => *key,
+            None => Key::Other(code.0),
+        }
+    }
+}
+
+pub(super) static VK_CODE_MAP: Lazy<BiHashMap<Key, u32>> = Lazy::new(|| {
     bihashmap! {
         Key::Backspace => 0x08,
         Key::Tab => 0x09,

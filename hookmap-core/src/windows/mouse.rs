@@ -1,7 +1,7 @@
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
-    mouse::{EmulateMouseInput, InstallMouseHook, MouseAction, MouseEvent, MouseInput},
+    mouse::{EmulateMouseInput, InstallMouseHook, MouseEvent, MouseInput},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -21,20 +21,23 @@ use winapi::{
     },
 };
 
+use self::conversion::MouseEventInfo;
+mod conversion;
+
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
-    let event_info = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
-    let target: MouseInput = (w_param, event_info).into();
-    let action: MouseAction = (w_param, event_info).into();
-    let event = MouseEvent::new(target, action);
+    let mouse_struct = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
+    let target = MouseEventInfo::new(w_param, mouse_struct).into_input();
+    let action = MouseEventInfo::new(w_param, mouse_struct).into_action();
 
-    match INPUT_HANDLER.mouse.emit(event) {
-        EventBlock::Block => 1,
-        EventBlock::Unblock => unsafe {
-            winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
-        },
+    if target.is_some() && action.is_some() {
+        let event = MouseEvent::new(target.unwrap(), action.unwrap());
+        if INPUT_HANDLER.mouse.lock().unwrap().emit(event) == EventBlock::Block {
+            return 1;
+        }
     }
+    unsafe { winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param) }
 }
 
 impl InstallMouseHook for InputHandler {
@@ -66,18 +69,22 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
 
 impl EmulateMouseInput for MouseInput {
     fn press(&self) {
-        let (mouse_data, dw_flags) = self.into_press_parameter();
-        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
+        if let Some(parameter) = self.into_press() {
+            send_mouse_input(0, 0, parameter.mouse_data as u32, parameter.dw_flags as u32);
+        }
     }
 
     fn release(&self) {
-        let (mouse_data, dw_flags) = self.into_release_parameter();
-        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
+        if let Some(parameter) = self.into_release() {
+            send_mouse_input(0, 0, parameter.mouse_data as u32, parameter.dw_flags as u32);
+        }
     }
 
     fn is_pressed(&self) -> bool {
-        let vk_code = self.into_vk_code();
-        unsafe { winuser::GetKeyState(vk_code) & (1 << 15) != 0 }
+        match self.into_vk_code() {
+            Some(vk_code) => unsafe { winuser::GetKeyState(vk_code) & (1 << 15) != 0 },
+            None => false,
+        }
     }
 
     fn move_rel(dx: i32, dy: i32) {

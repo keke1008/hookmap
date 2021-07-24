@@ -1,7 +1,4 @@
-use crate::common::{
-    keyboard::Key,
-    mouse::{MouseAction, MouseInput},
-};
+use crate::common::mouse::{MouseAction, MouseInput};
 use winapi::{
     shared::minwindef::{HIWORD, WPARAM},
     um::winuser::{
@@ -14,60 +11,50 @@ use winapi::{
     },
 };
 
-mod keycode;
-use keycode::SCANCODE_MAP;
+pub(super) struct MouseParameter {
+    mouse_data: u16,
+    dw_flags: u32,
+}
 
-impl From<Key> for u32 {
-    fn from(key: Key) -> Self {
-        match key {
-            Key::Other(code) => code,
-            _ => *SCANCODE_MAP.get_by_left(&key).unwrap(),
+impl MouseParameter {
+    fn new(mouse_data: u16, dw_flags: u32) -> Self {
+        Self {
+            mouse_data,
+            dw_flags,
         }
     }
 }
 
-impl From<u32> for Key {
-    fn from(code: u32) -> Self {
-        if let Some(key) = SCANCODE_MAP.get_by_right(&code) {
-            *key
-        } else {
-            Key::Other(code)
-        }
+pub(super) fn mouse_to_press_parameter(mouse: &MouseInput) -> Option<MouseParameter> {
+    match mouse {
+        MouseInput::LButton => Some(MouseParameter::new(0, MOUSEEVENTF_LEFTDOWN)),
+        MouseInput::RButton => Some(MouseParameter::new(0, MOUSEEVENTF_RIGHTDOWN)),
+        MouseInput::MButton => Some(MouseParameter::new(0, MOUSEEVENTF_MIDDLEDOWN)),
+        MouseInput::SideButton1 => Some(MouseParameter::new(XBUTTON1, MOUSEEVENTF_XDOWN)),
+        MouseInput::SideButton2 => Some(MouseParameter::new(XBUTTON2, MOUSEEVENTF_XDOWN)),
+        _ => None,
     }
 }
 
-impl MouseInput {
-    pub(super) fn into_press_parameter(self) -> (u16, u32) {
-        match self {
-            MouseInput::LButton => (0, MOUSEEVENTF_LEFTDOWN),
-            MouseInput::RButton => (0, MOUSEEVENTF_RIGHTDOWN),
-            MouseInput::MButton => (0, MOUSEEVENTF_MIDDLEDOWN),
-            MouseInput::SideButton1 => (XBUTTON1, MOUSEEVENTF_XDOWN),
-            MouseInput::SideButton2 => (XBUTTON2, MOUSEEVENTF_XDOWN),
-            _ => panic!("{:?} cannnot be pressed. It's not a button.", self),
-        }
+pub(super) fn mouse_to_release_parameter(mouse: &MouseInput) -> Option<MouseParameter> {
+    match mouse {
+        MouseInput::LButton => Some(MouseParameter::new(0, MOUSEEVENTF_LEFTUP)),
+        MouseInput::RButton => Some(MouseParameter::new(0, MOUSEEVENTF_RIGHTUP)),
+        MouseInput::MButton => Some(MouseParameter::new(0, MOUSEEVENTF_MIDDLEUP)),
+        MouseInput::SideButton1 => Some(MouseParameter::new(XBUTTON1, MOUSEEVENTF_XUP)),
+        MouseInput::SideButton2 => Some(MouseParameter::new(XBUTTON2, MOUSEEVENTF_XUP)),
+        _ => None,
     }
+}
 
-    pub(super) fn into_release_parameter(self) -> (u16, u32) {
-        match self {
-            MouseInput::LButton => (0, MOUSEEVENTF_LEFTUP),
-            MouseInput::RButton => (0, MOUSEEVENTF_RIGHTUP),
-            MouseInput::MButton => (0, MOUSEEVENTF_MIDDLEUP),
-            MouseInput::SideButton1 => (XBUTTON1, MOUSEEVENTF_XUP),
-            MouseInput::SideButton2 => (XBUTTON2, MOUSEEVENTF_XUP),
-            _ => panic!("{:?} cannnot be released. It's not a button.", self),
-        }
-    }
-
-    pub(super) fn into_vk_code(self) -> i32 {
-        match self {
-            MouseInput::LButton => VK_LBUTTON,
-            MouseInput::RButton => VK_RBUTTON,
-            MouseInput::MButton => VK_MBUTTON,
-            MouseInput::SideButton1 => VK_XBUTTON1,
-            MouseInput::SideButton2 => VK_XBUTTON2,
-            _ => panic!("Cannot check if {:?} is pressed. It's not a button.", self),
-        }
+pub(super) fn mouse_to_vk_code(mouse: &MouseInput) -> Option<i32> {
+    match mouse {
+        MouseInput::LButton => Some(VK_LBUTTON),
+        MouseInput::RButton => Some(VK_RBUTTON),
+        MouseInput::MButton => Some(VK_MBUTTON),
+        MouseInput::SideButton1 => Some(VK_XBUTTON1),
+        MouseInput::SideButton2 => Some(VK_XBUTTON2),
+        _ => None,
     }
 }
 

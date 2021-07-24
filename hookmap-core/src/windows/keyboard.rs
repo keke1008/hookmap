@@ -20,18 +20,21 @@ use winapi::{
     },
 };
 
+mod conversion;
+use conversion::KeyCode;
+
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
-    let target = event_info.vkCode.into();
+    let target = KeyCode(event_info.vkCode).into();
     let action = match event_info.flags >> 7 {
         0 => KeyboardAction::Press,
         _ => KeyboardAction::Release,
     };
     let event = KeyboardEvent::new(target, action);
 
-    match INPUT_HANDLER.keyboard.emit(event) {
+    match INPUT_HANDLER.keyboard.lock().unwrap().emit(event) {
         EventBlock::Block => 1,
         EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
@@ -66,7 +69,7 @@ impl EmulateKeyboardInput for Key {
 
 fn send_key_input(key: &Key, flags: u32) {
     let keybd_input = KEYBDINPUT {
-        wVk: <Key as Into<u32>>::into(*key) as u16,
+        wVk: <Key as Into<KeyCode>>::into(*key).0 as u16,
         wScan: 0,
         dwFlags: flags,
         time: 0,
@@ -83,5 +86,6 @@ fn send_key_input(key: &Key, flags: u32) {
 }
 
 fn get_key_state(key: &Key) -> i16 {
-    unsafe { winuser::GetKeyState(<Key as Into<u32>>::into(*key) as i32) }
+    let key_code: KeyCode = (*key).into();
+    unsafe { winuser::GetKeyState(key_code.0 as i32) as i16 }
 }
