@@ -17,15 +17,13 @@ pub trait HandleInput {
 
 type EventCallback<T, A> = Box<dyn FnMut(Event<T, A>) -> EventBlock + Send>;
 
-/// An optional thread-safe input event handler.
+/// An optional input event handler.
 pub struct HandlerFunction<T, A> {
-    handler: Mutex<Option<EventCallback<T, A>>>,
+    handler: Option<EventCallback<T, A>>,
 }
 
 impl<T, A> HandlerFunction<T, A> {
-    /// Creates a new `HandlerFunction<T, A>`.
-    ///
-    /// A value of `Mutex` in the field `handler` is initialized with `None`.
+    /// Creates a new `HandlerFunction<T, A>` with `None`.
     ///
     /// # Examples
     ///
@@ -40,10 +38,6 @@ impl<T, A> HandlerFunction<T, A> {
 
     /// Registers a callback function.
     ///
-    /// # Panics
-    ///
-    /// Panics if a mutex lock fails.
-    ///
     /// # Examples
     ///
     /// ```
@@ -57,18 +51,14 @@ impl<T, A> HandlerFunction<T, A> {
     /// });
     /// ```
     ///
-    pub fn register_handler<F>(&self, handler: F)
+    pub fn register_handler<F>(&mut self, handler: F)
     where
         F: FnMut(Event<T, A>) -> EventBlock + Send + 'static,
     {
-        *self.handler.lock().unwrap() = Some(Box::new(handler));
+        self.handler = Some(Box::new(handler));
     }
 
     /// Returns `true` if the `HandlerFunction` registers a callback function.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a mutex lock fails.
     ///
     /// # Examples
     ///
@@ -83,14 +73,14 @@ impl<T, A> HandlerFunction<T, A> {
     /// ```
     ///
     pub fn is_handler_registered(&self) -> bool {
-        self.handler.lock().unwrap().is_some()
+        self.handler.is_some()
     }
 
     /// Calls a registered handler and returns value returned by the handler.
     ///
     /// # Panics
     ///
-    /// Panics if the handler has not yet been registered or a mutex fails to lock.
+    /// Panics if the handler has not yet been registered.
     ///
     /// # Examples
     /// ```
@@ -102,16 +92,14 @@ impl<T, A> HandlerFunction<T, A> {
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
-    pub fn emit(&self, event: Event<T, A>) -> EventBlock {
-        (self.handler.lock().unwrap().as_mut().unwrap())(event)
+    pub fn emit(&mut self, event: Event<T, A>) -> EventBlock {
+        (self.handler.as_mut().unwrap())(event)
     }
 }
 
 impl<T, A> Default for HandlerFunction<T, A> {
     fn default() -> Self {
-        Self {
-            handler: Mutex::new(None),
-        }
+        Self { handler: None }
     }
 }
 
@@ -130,10 +118,10 @@ impl<T, A> std::fmt::Debug for HandlerFunction<T, A> {
 /// A keyboard and mouse Event Handler.
 ///
 /// FFI requires static variables, so instead of creating a new instance, use `hookmap_core::INPUT_HANDLER`.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct InputHandler {
-    pub keyboard: HandlerFunction<Key, KeyboardAction>,
-    pub mouse: HandlerFunction<MouseInput, MouseAction>,
+    pub keyboard: Mutex<HandlerFunction<Key, KeyboardAction>>,
+    pub mouse: Mutex<HandlerFunction<MouseInput, MouseAction>>,
 }
 
 impl InputHandler
@@ -157,6 +145,10 @@ where
 
     /// Handles keyboard and mouse event and blocks a thread.
     ///
+    /// # Panics
+    ///
+    /// Panics if a mutex lock fails.
+    ///
     /// # Examples
     ///
     /// ```no_run
@@ -164,8 +156,8 @@ where
     /// INPUT_HANDLER.handle_input();
     /// ```
     pub fn handle_input(&self) {
-        let registered_keyboard_handler = self.keyboard.is_handler_registered();
-        let registered_mouse_handler = self.mouse.is_handler_registered();
+        let registered_keyboard_handler = self.keyboard.lock().unwrap().is_handler_registered();
+        let registered_mouse_handler = self.mouse.lock().unwrap().is_handler_registered();
 
         if registered_keyboard_handler {
             <Self as InstallKeyboardHook>::install();
@@ -175,15 +167,6 @@ where
         }
         if registered_keyboard_handler || registered_mouse_handler {
             <Self as HandleInput>::handle_input();
-        }
-    }
-}
-
-impl Default for InputHandler {
-    fn default() -> Self {
-        Self {
-            keyboard: HandlerFunction::new(),
-            mouse: HandlerFunction::new(),
         }
     }
 }
