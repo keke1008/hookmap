@@ -39,7 +39,7 @@ impl Drop for BlockInput {
 }
 
 #[derive(Debug)]
-/// A struct struct that represents information about a generated and controls whether the event is
+/// A struct struct that represents information about a generated event and controls whether the event is
 /// blocked or not.
 pub struct EventInfo<I: Debug> {
     pub info: I,

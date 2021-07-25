@@ -4,7 +4,6 @@ use crate::{
     modifier::{ModifierEventBlock, ModifierSet},
     runtime::HookInstaller,
 };
-
 use hookmap_core::{EventBlock, Key, MouseInput};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
@@ -58,7 +57,7 @@ impl Hook {
         )
     }
 
-    /// Returns a new instance of `Hook`.
+    /// Returns a new instance of [`Modifier`].
     /// The hooks assigned through this instance will be active only when the given key is pressed.
     ///
     /// # Example
@@ -84,7 +83,7 @@ impl Hook {
         )
     }
 
-    /// Returns a new instance of `Hook`.
+    /// Returns a new instance of [`Modifier`].
     /// The hooks assigned through this instance will be active only when the given mouse button is pressed.
     ///
     /// # Example
