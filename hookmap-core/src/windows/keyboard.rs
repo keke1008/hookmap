@@ -1,3 +1,4 @@
+use super::DW_EXTRA_INFO;
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
@@ -27,6 +28,9 @@ static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
+    if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
+        return call_next_hook(code, w_param, l_param);
+    }
     let target = KeyCode(event_info.vkCode).into();
     let action = match event_info.flags >> 7 {
         0 => KeyboardAction::Press,
@@ -38,9 +42,18 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             set_keyboard_state(target, action);
             1
         }
-        EventBlock::Unblock => unsafe {
-            winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
-        },
+        EventBlock::Unblock => call_next_hook(code, w_param, l_param),
+    }
+}
+
+fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    unsafe {
+        winuser::CallNextHookEx(
+            HHOOK_HANDLER.load(Ordering::SeqCst),
+            n_code,
+            w_param,
+            l_param,
+        )
     }
 }
 
@@ -89,7 +102,7 @@ fn send_key_input(key: &Key, flags: u32) {
         wScan: 0,
         dwFlags: flags,
         time: 0,
-        dwExtraInfo: 0,
+        dwExtraInfo: DW_EXTRA_INFO,
     };
     let mut input = INPUT {
         type_: INPUT_KEYBOARD,

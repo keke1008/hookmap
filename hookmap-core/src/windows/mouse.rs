@@ -1,3 +1,4 @@
+use super::DW_EXTRA_INFO;
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
@@ -28,6 +29,9 @@ static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let mouse_struct = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
+    if mouse_struct.dwExtraInfo & DW_EXTRA_INFO != 0 {
+        return call_next_hook(code, w_param, l_param);
+    }
     let target = MouseEventInfo::new(w_param, mouse_struct).into_input();
     let action = MouseEventInfo::new(w_param, mouse_struct).into_action();
 
@@ -38,7 +42,18 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             return 1;
         }
     }
-    unsafe { winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param) }
+    call_next_hook(code, w_param, l_param)
+}
+
+fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    unsafe {
+        winuser::CallNextHookEx(
+            HHOOK_HANDLER.load(Ordering::SeqCst),
+            n_code,
+            w_param,
+            l_param,
+        )
+    }
 }
 
 fn set_mouse_state(target: MouseInput, action: MouseAction) {
@@ -71,7 +86,7 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
         dy,
         mouseData: mouse_data,
         dwFlags: dw_flags,
-        dwExtraInfo: 0,
+        dwExtraInfo: DW_EXTRA_INFO,
         time: 0,
     };
     let mut input = INPUT {
