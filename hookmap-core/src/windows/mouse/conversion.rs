@@ -48,13 +48,13 @@ impl MouseInput {
         }
     }
 
-    pub(super) fn into_vk_code(self) -> Option<i32> {
+    pub(super) fn into_vk_code(self) -> Option<u32> {
         match self {
-            MouseInput::LButton => Some(VK_LBUTTON),
-            MouseInput::RButton => Some(VK_RBUTTON),
-            MouseInput::MButton => Some(VK_MBUTTON),
-            MouseInput::SideButton1 => Some(VK_XBUTTON1),
-            MouseInput::SideButton2 => Some(VK_XBUTTON2),
+            MouseInput::LButton => Some(VK_LBUTTON as u32),
+            MouseInput::RButton => Some(VK_RBUTTON as u32),
+            MouseInput::MButton => Some(VK_MBUTTON as u32),
+            MouseInput::SideButton1 => Some(VK_XBUTTON1 as u32),
+            MouseInput::SideButton2 => Some(VK_XBUTTON2 as u32),
             _ => None,
         }
     }
