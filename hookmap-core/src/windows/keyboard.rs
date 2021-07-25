@@ -33,13 +33,29 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         _ => KeyboardAction::Release,
     };
     let event = KeyboardEvent::new(target, action);
-
     match INPUT_HANDLER.keyboard.lock().unwrap().emit(event) {
-        EventBlock::Block => 1,
+        EventBlock::Block => {
+            set_keyboard_state(target, action);
+            1
+        }
         EventBlock::Unblock => unsafe {
             winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param)
         },
     }
+}
+
+fn set_keyboard_state(target: Key, action: KeyboardAction) {
+    let mut buffer = [0; 256];
+    let vk_code = <Key as Into<KeyCode>>::into(target).0 as usize;
+    unsafe {
+        winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+        match action {
+            KeyboardAction::Press => buffer[vk_code] |= 1 << 7,
+            KeyboardAction::Release => buffer[vk_code] &= !0u8 >> 1,
+        }
+        winuser::SetKeyboardState(&buffer as *const _ as *mut _);
+        winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+    };
 }
 
 impl InstallKeyboardHook for InputHandler {

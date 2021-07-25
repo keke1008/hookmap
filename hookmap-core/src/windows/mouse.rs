@@ -1,7 +1,7 @@
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
-    mouse::{EmulateMouseInput, InstallMouseHook, MouseEvent, MouseInput},
+    mouse::{EmulateMouseInput, InstallMouseHook, MouseAction, MouseEvent, MouseInput},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -34,10 +34,27 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if let (Some(target), Some(action)) = (target, action) {
         let event = MouseEvent::new(target, action);
         if INPUT_HANDLER.mouse.lock().unwrap().emit(event) == EventBlock::Block {
+            set_mouse_state(target, action);
             return 1;
         }
     }
     unsafe { winuser::CallNextHookEx(HHOOK_HANDLER.load(Ordering::SeqCst), code, w_param, l_param) }
+}
+
+fn set_mouse_state(target: MouseInput, action: MouseAction) {
+    let mut buffer = [0; 256];
+    if let Some(vk_code) = target.into_vk_code() {
+        unsafe {
+            winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+            match action {
+                MouseAction::Press => buffer[vk_code as usize] |= 1 << 7,
+                MouseAction::Release => buffer[vk_code as usize] &= !0u8 >> 1,
+                _ => unreachable!(),
+            }
+            winuser::SetKeyboardState(&buffer as *const _ as *mut _);
+            winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+        }
+    }
 }
 
 impl InstallMouseHook for InputHandler {
