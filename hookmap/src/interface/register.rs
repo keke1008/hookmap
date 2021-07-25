@@ -1,7 +1,7 @@
 use crate::{
     event::{Button, EventInfo},
     handler::Handler,
-    modifier::Modifier,
+    modifier::ModifierSet,
 };
 use derive_new::new;
 use hookmap_core::{Key, MouseInput};
@@ -11,7 +11,7 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 #[derive(new, Debug)]
 pub struct KeyboardRegister {
     handler: Weak<RefCell<Handler>>,
-    modifier: Arc<Modifier>,
+    modifier: Arc<ModifierSet>,
     key: Key,
 }
 
@@ -110,7 +110,7 @@ fn is_button(mouse: MouseInput) -> bool {
 #[derive(new, Debug)]
 pub struct MouseRegister {
     handler: Weak<RefCell<Handler>>,
-    modifier: Arc<Modifier>,
+    modifier: Arc<ModifierSet>,
     mouse: MouseInput,
 }
 

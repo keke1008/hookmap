@@ -1,5 +1,4 @@
-use super::Hook;
-use crate::{handler::Handler, modifier::ModifierEventBlock, Button};
+use crate::{handler::Handler, modifier::ModifierEventBlock, Button, Hook};
 use hookmap_core::{
     EventBlock, KeyboardAction, KeyboardEvent, MouseAction, MouseEvent, INPUT_HANDLER,
 };

@@ -1,9 +1,10 @@
-use super::{hook_installer::HookInstaller, modifier::Modifier};
+use super::{KeyboardRegister, Modifier, MouseRegister};
 use crate::{
     handler::Handler,
-    modifier::{Modifier as ModifierSet, ModifierEventBlock},
-    register::{KeyboardRegister, MouseRegister},
+    modifier::{ModifierEventBlock, ModifierSet},
+    runtime::HookInstaller,
 };
+
 use hookmap_core::{EventBlock, Key, MouseInput};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 

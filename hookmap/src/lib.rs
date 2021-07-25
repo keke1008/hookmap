@@ -1,9 +1,10 @@
 pub mod event;
+pub mod interface;
+
 mod handler;
-pub mod hook;
 mod modifier;
-pub mod register;
+mod runtime;
 
 pub use event::{Button, EventInfo};
-pub use hook::Hook;
 pub use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, EventBlock, Key, MouseInput};
+pub use interface::{Hook, KeyboardRegister, Modifier, MouseRegister};

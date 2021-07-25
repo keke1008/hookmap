@@ -2,12 +2,12 @@ use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, EventBlock, Key, Mou
 use std::collections::{HashMap, HashSet};
 
 #[derive(Debug, Default, Clone)]
-pub struct Modifier {
+pub struct ModifierSet {
     pub(crate) keyboard: HashSet<Key>,
     pub(crate) mouse: HashSet<MouseInput>,
 }
 
-impl Modifier {
+impl ModifierSet {
     pub fn new() -> Self {
         Self::default()
     }
@@ -42,11 +42,11 @@ impl ModifierChecker {
         Self::default()
     }
 
-    pub(crate) fn check(&mut self, modifier: &Modifier) -> bool {
+    pub(crate) fn check(&mut self, modifier: &ModifierSet) -> bool {
         self.check_keyboard(modifier) && self.check_mouse(modifier)
     }
 
-    fn check_keyboard(&mut self, modifier: &Modifier) -> bool {
+    fn check_keyboard(&mut self, modifier: &ModifierSet) -> bool {
         modifier.keyboard.iter().all(|key| {
             *self
                 .keyboard
@@ -55,7 +55,7 @@ impl ModifierChecker {
         })
     }
 
-    fn check_mouse(&mut self, modifier: &Modifier) -> bool {
+    fn check_mouse(&mut self, modifier: &ModifierSet) -> bool {
         modifier.mouse.iter().all(|mouse| {
             *self
                 .mouse

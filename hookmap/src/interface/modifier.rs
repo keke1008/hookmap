@@ -1,7 +1,7 @@
+use super::{KeyboardRegister, MouseRegister};
 use crate::{
     handler::Handler,
-    modifier::{Modifier as ModifierSet, ModifierEventBlock},
-    register::{KeyboardRegister, MouseRegister},
+    modifier::{ModifierEventBlock, ModifierSet},
 };
 use hookmap_core::{EventBlock, Key, MouseInput};
 use std::{cell::RefCell, rc::Weak, sync::Arc};

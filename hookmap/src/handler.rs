@@ -1,6 +1,6 @@
 use crate::{
     event::{Button, EventInfo},
-    modifier::{Modifier, ModifierChecker},
+    modifier::{ModifierChecker, ModifierSet},
 };
 use derive_new::new;
 use hookmap_core::{EventBlock, Key, MouseInput};
@@ -9,7 +9,7 @@ use std::{collections::HashMap, fmt::Debug, hash::Hash, sync::Arc};
 #[derive(new)]
 pub(crate) struct HandlerFunction<I: Send + Debug> {
     handler: Box<dyn FnMut(EventInfo<I>) + Send>,
-    modifier: Arc<Modifier>,
+    modifier: Arc<ModifierSet>,
 }
 
 impl<I: Send + Debug> HandlerFunction<I> {
@@ -23,7 +23,7 @@ impl<I: Send + Debug> HandlerFunction<I> {
 pub(crate) struct HandlerVec<I: Copy + Send + Debug>(Vec<HandlerFunction<I>>);
 
 impl<I: Copy + Send + Debug> HandlerVec<I> {
-    pub(crate) fn push<F>(&mut self, handler: F, modifier: Arc<Modifier>)
+    pub(crate) fn push<F>(&mut self, handler: F, modifier: Arc<ModifierSet>)
     where
         F: FnMut(EventInfo<I>) + Send + 'static,
     {
