@@ -28,7 +28,7 @@ impl<T, A> HandlerFunction<T, A> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{keyboard::{Key, KeyboardAction}, EventBlock, HandlerFunction};
+    /// use hookmap_core::{Key, KeyboardAction, EventBlock, HandlerFunction};
     /// let handler = HandlerFunction::<Key, KeyboardAction>::new();
     /// ```
     ///
@@ -41,9 +41,9 @@ impl<T, A> HandlerFunction<T, A> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{keyboard::{Key, KeyboardAction}, EventBlock, HandlerFunction};
+    /// use hookmap_core::{Key, KeyboardAction, EventBlock, HandlerFunction};
     ///
-    /// let handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
     /// handler.register_handler(|e| {
     ///     println!("Event target: {:?}", e.target);
     ///     println!("Event action: {:?}", e.action);
@@ -63,9 +63,9 @@ impl<T, A> HandlerFunction<T, A> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{keyboard::{Key, KeyboardAction}, Event, EventBlock, HandlerFunction};
+    /// use hookmap_core::{Key, KeyboardAction, Event, EventBlock, HandlerFunction};
     ///
-    /// let handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
     /// assert!(!handler.is_handler_registered());
     ///
     /// handler.register_handler(|_| EventBlock::Unblock);
@@ -84,9 +84,9 @@ impl<T, A> HandlerFunction<T, A> {
     ///
     /// # Examples
     /// ```
-    /// use hookmap_core::{keyboard::{Key, KeyboardAction}, Event, EventBlock, HandlerFunction};
+    /// use hookmap_core::{Key, KeyboardAction, Event, EventBlock, HandlerFunction};
     ///
-    /// let handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
     /// handler.register_handler(|_| EventBlock::Block);
     /// let event_block = handler.emit(Event::new(Key::A, KeyboardAction::Press));
     /// assert_eq!(event_block, EventBlock::Block);
