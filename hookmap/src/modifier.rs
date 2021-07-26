@@ -1,7 +1,7 @@
 use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, EventBlock, Key, MouseInput};
 use std::collections::{HashMap, HashSet};
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default)]
 pub struct ModifierSet {
     pub(crate) keyboard: HashSet<Key>,
     pub(crate) mouse: HashSet<MouseInput>,

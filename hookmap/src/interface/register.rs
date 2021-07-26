@@ -4,7 +4,7 @@ use crate::{
     modifier::ModifierSet,
 };
 use derive_new::new;
-use hookmap_core::{Key, MouseInput};
+use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, Key, MouseInput};
 use std::{cell::RefCell, rc::Weak, sync::Arc};
 
 /// A struct to register keyboard handlers.
@@ -26,7 +26,7 @@ impl KeyboardRegister {
     /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
-    pub fn on_press<F>(self, callback: F)
+    pub fn on_press<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
@@ -59,7 +59,7 @@ impl KeyboardRegister {
     /// });
     /// ```
     ///
-    pub fn on_press_or_release<F>(self, callback: F)
+    pub fn on_press_or_release<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<Button>) + Send + 'static,
     {
@@ -83,7 +83,7 @@ impl KeyboardRegister {
     /// hook.bind_key(Key::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
-    pub fn on_release<F>(self, callback: F)
+    pub fn on_release<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
@@ -95,6 +95,29 @@ impl KeyboardRegister {
             .on_release
             .get(self.key)
             .push(callback, Arc::clone(&self.modifier));
+    }
+
+    pub fn as_key(&self, key: Key) {
+        self.on_press(move |mut e| {
+            key.press();
+            e.block_event();
+        });
+        self.on_release(move |mut e| {
+            key.release();
+            e.block_event();
+        });
+    }
+
+    pub fn as_mouse(&self, mouse: MouseInput) {
+        is_button(mouse);
+        self.on_press(move |mut e| {
+            mouse.press();
+            e.block_event();
+        });
+        self.on_release(move |mut e| {
+            mouse.press();
+            e.block_event();
+        });
     }
 }
 
@@ -129,7 +152,7 @@ impl MouseRegister {
     ///     println!("Current mouse cursor position(x, y): ({}, {})", event.info.0, event.info.1);
     /// });
     /// ```
-    pub fn on_move<F>(self, callback: F)
+    pub fn on_move<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<(i32, i32)>) + Send + 'static,
     {
@@ -158,7 +181,7 @@ impl MouseRegister {
     ///     .on_press(|_| println!("The left mouse button is pressed"));
     /// ```
     ///
-    pub fn on_press<F>(self, callback: F)
+    pub fn on_press<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
@@ -196,7 +219,7 @@ impl MouseRegister {
     /// });
     /// ```
     ///
-    pub fn on_press_or_release<F>(self, callback: F)
+    pub fn on_press_or_release<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<Button>) + Send + 'static,
     {
@@ -225,7 +248,7 @@ impl MouseRegister {
     ///     .on_release(|_| println!("The left mouse button is released"));
     /// ```
     ///
-    pub fn on_release<F>(self, callback: F)
+    pub fn on_release<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<()>) + Send + 'static,
     {
@@ -260,7 +283,7 @@ impl MouseRegister {
     /// });
     /// ```
     ///
-    pub fn on_rotate<F>(self, callback: F)
+    pub fn on_rotate<F>(&self, callback: F)
     where
         F: FnMut(EventInfo<i32>) + Send + 'static,
     {
@@ -272,5 +295,34 @@ impl MouseRegister {
             .mouse
             .wheel
             .push(callback, Arc::clone(&self.modifier));
+    }
+
+    pub fn as_key(&self, key: Key) {
+        match self.mouse {
+            MouseInput::Move => self.on_move(move |_| key.click()),
+            MouseInput::Wheel => self.on_rotate(move |_| key.click()),
+            _ => {
+                self.on_press(move |mut e| {
+                    key.press();
+                    e.block_event();
+                });
+                self.on_release(move |mut e| {
+                    key.press();
+                    e.block_event();
+                });
+            }
+        }
+    }
+
+    pub fn as_mouse(&self, mouse: MouseInput) {
+        is_button(mouse);
+        self.on_press(move |mut e| {
+            mouse.press();
+            e.block_event();
+        });
+        self.on_release(move |mut e| {
+            mouse.press();
+            e.block_event();
+        });
     }
 }
