@@ -7,6 +7,7 @@ mod windows;
 pub use common::{
     event::{Event, EventBlock},
     handler::{HandlerFunction, InputHandler, INPUT_HANDLER},
-    keyboard::{EmulateKeyboardInput, Key, KeyboardAction, KeyboardEvent},
-    mouse::{EmulateMouseInput, MouseAction, MouseEvent, MouseInput},
+    keyboard::{Key, KeyboardEvent},
+    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse, MouseCursor, MouseEvent, MouseWheel},
+    ButtonAction, EmulateButtonInput,
 };

@@ -1,3 +1,5 @@
+use crate::ButtonAction;
+
 /// Indicates whether to pass the generated event to the next program or not .
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum EventBlock {
@@ -10,17 +12,17 @@ pub enum EventBlock {
 
 /// Information about the generated event.
 #[derive(Debug)]
-pub struct Event<T, A> {
+pub struct Event<T> {
     /// Target of the generated event.
     pub target: T,
 
     /// Action of the generated event.
-    pub action: A,
+    pub action: ButtonAction,
 }
 
-impl<T, A> Event<T, A> {
+impl<T> Event<T> {
     /// Creates a new `Event<T, A>`.
-    pub fn new(target: T, action: A) -> Self {
+    pub fn new(target: T, action: ButtonAction) -> Self {
         Self { target, action }
     }
 }

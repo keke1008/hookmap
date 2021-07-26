@@ -2,7 +2,8 @@ use super::{call_next_hook, set_button_state, DW_EXTRA_INFO};
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
-    keyboard::{EmulateKeyboardInput, InstallKeyboardHook, Key, KeyboardAction, KeyboardEvent},
+    keyboard::{InstallKeyboardHook, Key, KeyboardEvent},
+    {ButtonAction, EmulateButtonInput},
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -20,9 +21,8 @@ use winapi::{
         self, INPUT, INPUT_KEYBOARD, KBDLLHOOKSTRUCT, KEYBDINPUT, KEYEVENTF_KEYUP, WH_KEYBOARD_LL,
     },
 };
-
 mod conversion;
-use conversion::KeyCode;
+use conversion::VkCode;
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
@@ -31,10 +31,10 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
-    let target = KeyCode(event_info.vkCode).into();
+    let target = VkCode(event_info.vkCode).into();
     let action = match event_info.flags >> 7 {
-        0 => KeyboardAction::Press,
-        _ => KeyboardAction::Release,
+        0 => ButtonAction::Press,
+        _ => ButtonAction::Release,
     };
     let event = KeyboardEvent::new(target, action);
     match INPUT_HANDLER.keyboard.lock().unwrap().emit(event) {
@@ -55,7 +55,7 @@ impl InstallKeyboardHook for InputHandler {
     }
 }
 
-impl EmulateKeyboardInput for Key {
+impl EmulateButtonInput for Key {
     fn press(&self) {
         send_key_input(self, 0);
     }
@@ -73,7 +73,7 @@ impl EmulateKeyboardInput for Key {
 
 fn send_key_input(key: &Key, flags: u32) {
     let keybd_input = KEYBDINPUT {
-        wVk: <Key as Into<KeyCode>>::into(*key).0 as u16,
+        wVk: <Key as Into<VkCode>>::into(*key).0 as u16,
         wScan: 0,
         dwFlags: flags,
         time: 0,
@@ -90,6 +90,6 @@ fn send_key_input(key: &Key, flags: u32) {
 }
 
 fn get_key_state(key: &Key) -> i16 {
-    let key_code: KeyCode = (*key).into();
+    let key_code: VkCode = (*key).into();
     unsafe { winuser::GetKeyState(key_code.0 as i32) as i16 }
 }

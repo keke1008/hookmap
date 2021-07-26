@@ -7,55 +7,32 @@ pub trait InstallMouseHook {
     fn install();
 }
 
-/// Emulates mouse input.
-/// This needs to implement for `MouseInput`.
-pub trait EmulateMouseInput {
-    /// Emulates a action of pressing a mouse button.
-    fn press(&self);
+pub type MouseEvent = Event<Mouse>;
 
-    /// Emulates a action of releasing a mouse button.
-    fn release(&self);
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+pub enum Mouse {
+    LButton,
+    RButton,
+    MButton,
+    SideButton1,
+    SideButton2,
+}
 
-    /// Presses a mouse button and releases it immediately.
-    fn click(&self) {
-        self.press();
-        self.release();
-    }
+pub struct MouseWheel;
+pub struct MouseCursor;
 
-    /// Returns `true` if a mouse button is pressed.
-    fn is_pressed(&self) -> bool;
+pub trait EmulateMouseWheel {
+    /// Rotates a mouse wheel.
+    fn rotate(speed: u32);
+}
 
-    /// Returns a position of a mouse cursor.
-    fn get_cursor_pos() -> (i32, i32);
-
+pub trait EmulateMouseCursor {
     /// Moves a mouse cursor absolutely.
     fn move_abs(x: i32, y: i32);
 
     /// Moves a mouse cursor relatively.
     fn move_rel(dx: i32, dy: i32);
 
-    /// Rotates a mouse wheel.
-    fn rotate_wheel(speed: u32);
-}
-
-pub type MouseEvent = Event<MouseInput, MouseAction>;
-
-/// A Mouse input action.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum MouseAction {
-    Press,
-    Release,
-    Move((i32, i32)),
-    Wheel(i32),
-}
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum MouseInput {
-    LButton,
-    RButton,
-    MButton,
-    SideButton1,
-    SideButton2,
-    Wheel,
-    Move,
+    /// Returns a position of a mouse cursor.
+    fn get_pos() -> (i32, i32);
 }

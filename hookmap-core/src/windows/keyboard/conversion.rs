@@ -3,20 +3,20 @@ use bimap::BiHashMap;
 use once_cell::sync::Lazy;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(super) struct KeyCode(pub(super) u32);
+pub struct VkCode(pub(super) u32);
 
-impl From<Key> for KeyCode {
+impl From<Key> for VkCode {
     fn from(key: Key) -> Self {
         let code = match key {
             Key::Other(code) => code,
             _ => *VK_CODE_MAP.get_by_left(&key).unwrap(),
         };
-        KeyCode(code)
+        VkCode(code)
     }
 }
 
-impl From<KeyCode> for Key {
-    fn from(code: KeyCode) -> Self {
+impl From<VkCode> for Key {
+    fn from(code: VkCode) -> Self {
         match VK_CODE_MAP.get_by_right(&code.0) {
             Some(key) => *key,
             None => Key::Other(code.0),

@@ -1,10 +1,8 @@
-use super::{
-    event::{Event, EventBlock},
-    keyboard::{InstallKeyboardHook, Key, KeyboardAction},
-    mouse::{InstallMouseHook, MouseAction, MouseInput},
-};
+use crate::{KeyboardEvent, MouseEvent};
+
+use super::{event::EventBlock, keyboard::InstallKeyboardHook, mouse::InstallMouseHook};
 use once_cell::sync::Lazy;
-use std::sync::Mutex;
+use std::{fmt::Debug, sync::Mutex};
 
 pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::new);
 
@@ -15,14 +13,14 @@ pub trait HandleInput {
     fn handle_input();
 }
 
-type EventCallback<T, A> = Box<dyn FnMut(Event<T, A>) -> EventBlock + Send>;
+type EventCallback<E> = Box<dyn FnMut(E) -> EventBlock + Send>;
 
 /// An optional input event handler.
-pub struct HandlerFunction<T, A> {
-    handler: Option<EventCallback<T, A>>,
+pub struct HandlerFunction<E> {
+    handler: Option<EventCallback<E>>,
 }
 
-impl<T, A> HandlerFunction<T, A> {
+impl<E> HandlerFunction<E> {
     /// Creates a new `HandlerFunction<T, A>` with `None`.
     ///
     /// # Examples
@@ -53,7 +51,7 @@ impl<T, A> HandlerFunction<T, A> {
     ///
     pub fn register_handler<F>(&mut self, handler: F)
     where
-        F: FnMut(Event<T, A>) -> EventBlock + Send + 'static,
+        F: FnMut(E) -> EventBlock + Send + 'static,
     {
         self.handler = Some(Box::new(handler));
     }
@@ -92,26 +90,25 @@ impl<T, A> HandlerFunction<T, A> {
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
-    pub fn emit(&mut self, event: Event<T, A>) -> EventBlock {
+    pub fn emit(&mut self, event: E) -> EventBlock {
         (self.handler.as_mut().unwrap())(event)
     }
 }
 
-impl<T, A> Default for HandlerFunction<T, A> {
-    fn default() -> Self {
-        Self { handler: None }
-    }
-}
-
-impl<T, A> std::fmt::Debug for HandlerFunction<T, A> {
+impl<E> std::fmt::Debug for HandlerFunction<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
-            "{}<{}, {}>",
+            "{}<{}>",
             std::any::type_name::<Self>(),
-            std::any::type_name::<T>(),
-            std::any::type_name::<A>()
+            std::any::type_name::<E>(),
         )
+    }
+}
+
+impl<E> Default for HandlerFunction<E> {
+    fn default() -> Self {
+        Self { handler: None }
     }
 }
 
@@ -120,8 +117,10 @@ impl<T, A> std::fmt::Debug for HandlerFunction<T, A> {
 /// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
-    pub keyboard: Mutex<HandlerFunction<Key, KeyboardAction>>,
-    pub mouse: Mutex<HandlerFunction<MouseInput, MouseAction>>,
+    pub keyboard: Mutex<HandlerFunction<KeyboardEvent>>,
+    pub mouse_button: Mutex<HandlerFunction<MouseEvent>>,
+    pub mouse_wheel: Mutex<HandlerFunction<i32>>,
+    pub mouse_cursor: Mutex<HandlerFunction<(i32, i32)>>,
 }
 
 impl InputHandler
@@ -157,7 +156,9 @@ where
     /// ```
     pub fn handle_input(&self) {
         let registered_keyboard_handler = self.keyboard.lock().unwrap().is_handler_registered();
-        let registered_mouse_handler = self.mouse.lock().unwrap().is_handler_registered();
+        let registered_mouse_handler = self.mouse_button.lock().unwrap().is_handler_registered()
+            || self.mouse_wheel.lock().unwrap().is_handler_registered()
+            || self.mouse_button.lock().unwrap().is_handler_registered();
 
         if registered_keyboard_handler {
             <Self as InstallKeyboardHook>::install();

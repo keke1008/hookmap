@@ -2,7 +2,11 @@ use super::{call_next_hook, set_button_state, DW_EXTRA_INFO};
 use crate::common::{
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
-    mouse::{EmulateMouseInput, InstallMouseHook, MouseEvent, MouseInput},
+    mouse::{
+        EmulateMouseCursor, EmulateMouseWheel, InstallMouseHook, Mouse, MouseCursor, MouseEvent,
+        MouseWheel,
+    },
+    EmulateButtonInput,
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -22,8 +26,8 @@ use winapi::{
     },
 };
 
-use self::conversion::MouseEventInfo;
 mod conversion;
+use conversion::{MouseEventInfo, MouseParameter};
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
@@ -32,19 +36,25 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if mouse_struct.dwExtraInfo & DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
-    let target = MouseEventInfo::new(w_param, mouse_struct).into_input();
-    let action = MouseEventInfo::new(w_param, mouse_struct).into_action();
+    let event_info = MouseEventInfo::new(w_param, mouse_struct);
 
-    if let (Some(target), Some(action)) = (target, action) {
-        let event = MouseEvent::new(target, action);
-        if INPUT_HANDLER.mouse.lock().unwrap().emit(event) == EventBlock::Block {
-            if let Some(vk_code) = target.into_vk_code() {
-                set_button_state(vk_code, action);
+    let event_block = match event_info {
+        Some(MouseEventInfo::Button(target, action)) => {
+            let event = MouseEvent::new(target, action);
+            let event_block = INPUT_HANDLER.mouse_button.lock().unwrap().emit(event);
+            if event_block == EventBlock::Block {
+                set_button_state(target.into_vk_code(), action);
             }
-            return 1;
+            event_block
         }
+        Some(MouseEventInfo::Wheel(speed)) => INPUT_HANDLER.mouse_wheel.lock().unwrap().emit(speed),
+        Some(MouseEventInfo::Cursor(pos)) => INPUT_HANDLER.mouse_cursor.lock().unwrap().emit(pos),
+        _ => EventBlock::Unblock,
+    };
+    match event_block {
+        EventBlock::Block => 1,
+        EventBlock::Unblock => call_next_hook(code, w_param, l_param),
     }
-    call_next_hook(code, w_param, l_param)
 }
 
 impl InstallMouseHook for InputHandler {
@@ -74,26 +84,41 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     });
 }
 
-impl EmulateMouseInput for MouseInput {
+impl EmulateButtonInput for Mouse {
     fn press(&self) {
-        if let Some(parameter) = self.into_press() {
-            send_mouse_input(0, 0, parameter.mouse_data as u32, parameter.dw_flags as u32);
-        }
+        let MouseParameter {
+            mouse_data,
+            dw_flags,
+        } = self.into_press();
+        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
     }
 
     fn release(&self) {
-        if let Some(parameter) = self.into_release() {
-            send_mouse_input(0, 0, parameter.mouse_data as u32, parameter.dw_flags as u32);
-        }
+        let MouseParameter {
+            mouse_data,
+            dw_flags,
+        } = self.into_release();
+        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
     }
 
     fn is_pressed(&self) -> bool {
-        match self.into_vk_code() {
-            Some(vk_code) => unsafe { winuser::GetKeyState(vk_code as i32) & (1 << 15) != 0 },
-            None => false,
-        }
+        let vk_code = self.into_vk_code();
+        unsafe { winuser::GetKeyState(vk_code as i32) & (1 << 15) != 0 }
     }
 
+    fn is_toggled(&self) -> bool {
+        let vk_code = self.into_vk_code();
+        unsafe { winuser::GetKeyState(vk_code as i32) & 1 != 0 }
+    }
+}
+
+impl EmulateMouseWheel for MouseWheel {
+    fn rotate(speed: u32) {
+        send_mouse_input(0, 0, speed * WHEEL_DELTA as u32, MOUSEEVENTF_WHEEL);
+    }
+}
+
+impl EmulateMouseCursor for MouseCursor {
     fn move_rel(dx: i32, dy: i32) {
         send_mouse_input(dx, dy, 0, MOUSEEVENTF_MOVE);
     }
@@ -102,11 +127,7 @@ impl EmulateMouseInput for MouseInput {
         send_mouse_input(x, y, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE);
     }
 
-    fn rotate_wheel(speed: u32) {
-        send_mouse_input(0, 0, speed * WHEEL_DELTA as u32, MOUSEEVENTF_WHEEL);
-    }
-
-    fn get_cursor_pos() -> (i32, i32) {
+    fn get_pos() -> (i32, i32) {
         unsafe {
             let mut pos = MaybeUninit::zeroed().assume_init();
             winuser::GetCursorPos(&mut pos);

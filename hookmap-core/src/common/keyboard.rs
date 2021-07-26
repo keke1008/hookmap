@@ -7,36 +7,7 @@ pub trait InstallKeyboardHook {
     fn install();
 }
 
-/// Emulates keyboard input.
-/// This needs to implement for `Key`.
-pub trait EmulateKeyboardInput {
-    /// Emulates a action of pressing a key.
-    fn press(&self);
-
-    /// Emulates a action of releasing a key.
-    fn release(&self);
-
-    /// Presses a key and releases it immediately.
-    fn click(&self) {
-        self.press();
-        self.release();
-    }
-
-    /// Returns `true` if a key is pressed.
-    fn is_pressed(&self) -> bool;
-
-    /// Return `true` if a key is toggled on.
-    fn is_toggled(&self) -> bool;
-}
-
-pub type KeyboardEvent = Event<Key, KeyboardAction>;
-
-/// A keyboard input action.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum KeyboardAction {
-    Press,
-    Release,
-}
+pub type KeyboardEvent = Event<Key>;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum Key {
