@@ -4,13 +4,6 @@ use std::{
     sync::mpsc::{self, Receiver, Sender},
 };
 
-/// An enum that represents the state of a button.
-#[derive(Debug, PartialEq, Eq, Clone, Copy)]
-pub enum Button {
-    Press,
-    Release,
-}
-
 #[derive(Debug)]
 struct BlockInput {
     event_block: EventBlock,

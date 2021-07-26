@@ -1,21 +1,30 @@
 use crate::{
-    event::{Button, EventInfo},
-    handler::Handler,
+    event::EventInfo,
+    handler::{ButtonHandler, HandlerVec},
     modifier::ModifierSet,
 };
-use derive_new::new;
-use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, Key, MouseInput};
-use std::{cell::RefCell, rc::Weak, sync::Arc};
+use hookmap_core::{ButtonAction, EmulateButtonInput, Key, Mouse};
+use std::{cell::RefCell, hash::Hash, rc::Weak, sync::Arc};
 
-/// A struct to register keyboard handlers.
-#[derive(new, Debug)]
-pub struct KeyboardRegister {
-    handler: Weak<RefCell<Handler>>,
+pub struct ButtonRegister<B: Eq + Hash + Copy> {
+    handler: Weak<RefCell<ButtonHandler<B>>>,
     modifier: Arc<ModifierSet>,
-    key: Key,
+    button: B,
 }
 
-impl KeyboardRegister {
+impl<B: Eq + Hash + Copy> ButtonRegister<B> {
+    pub(crate) fn new(
+        handler: Weak<RefCell<ButtonHandler<B>>>,
+        modifier: Arc<ModifierSet>,
+        button: B,
+    ) -> Self {
+        Self {
+            handler,
+            modifier,
+            button,
+        }
+    }
+
     /// Registers a handler called when the specified key is pressed.
     ///
     /// # Example
@@ -34,9 +43,8 @@ impl KeyboardRegister {
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .keyboard
             .on_press
-            .get(self.key)
+            .get(self.button)
             .push(callback, Arc::clone(&self.modifier));
     }
 
@@ -61,15 +69,14 @@ impl KeyboardRegister {
     ///
     pub fn on_press_or_release<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<Button>) + Send + 'static,
+        F: FnMut(EventInfo<ButtonAction>) + Send + 'static,
     {
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .keyboard
             .on_press_or_release
-            .get(self.key)
+            .get(self.button)
             .push(callback, Arc::clone(&self.modifier));
     }
 
@@ -91,9 +98,8 @@ impl KeyboardRegister {
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .keyboard
             .on_release
-            .get(self.key)
+            .get(self.button)
             .push(callback, Arc::clone(&self.modifier));
     }
 
@@ -108,8 +114,7 @@ impl KeyboardRegister {
         });
     }
 
-    pub fn as_mouse(&self, mouse: MouseInput) {
-        is_button(mouse);
+    pub fn as_mouse(&self, mouse: Mouse) {
         self.on_press(move |mut e| {
             mouse.press();
             e.block_event();
@@ -121,23 +126,21 @@ impl KeyboardRegister {
     }
 }
 
-fn is_button(mouse: MouseInput) -> bool {
-    mouse == MouseInput::LButton
-        || mouse == MouseInput::RButton
-        || mouse == MouseInput::MButton
-        || mouse == MouseInput::SideButton1
-        || mouse == MouseInput::SideButton2
-}
-
-/// A struct to register mouse handlers.
-#[derive(new, Debug)]
-pub struct MouseRegister {
-    handler: Weak<RefCell<Handler>>,
+/// A struct for registering a handler for the mouse cursor.
+#[derive(Debug)]
+pub struct MouseCursorRegister {
+    handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
     modifier: Arc<ModifierSet>,
-    mouse: MouseInput,
 }
 
-impl MouseRegister {
+impl MouseCursorRegister {
+    pub(crate) fn new(
+        handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
+        modifier: Arc<ModifierSet>,
+    ) -> Self {
+        Self { handler, modifier }
+    }
+
     /// Registers a handler called when the mouse cursor is moved.
     ///
     /// # Panics
@@ -156,111 +159,24 @@ impl MouseRegister {
     where
         F: FnMut(EventInfo<(i32, i32)>) + Send + 'static,
     {
-        assert_eq!(self.mouse, MouseInput::Move);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .mouse
-            .cursor
             .push(callback, Arc::clone(&self.modifier));
     }
+}
 
-    /// Registers a handler called when the specified mouse button is pressed.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no mouse button is specified.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, MouseInput};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::LButton)
-    ///     .on_press(|_| println!("The left mouse button is pressed"));
-    /// ```
-    ///
-    pub fn on_press<F>(&self, callback: F)
-    where
-        F: FnMut(EventInfo<()>) + Send + 'static,
-    {
-        assert!(is_button(self.mouse));
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .mouse
-            .on_press
-            .get(self.mouse)
-            .push(callback, Arc::clone(&self.modifier));
-    }
+/// A struct for registering a handler for the mouse wheel.
+#[derive(Debug)]
+pub struct MouseWheelRegister {
+    handler: Weak<RefCell<HandlerVec<i32>>>,
+    modifier: Arc<ModifierSet>,
+}
 
-    /// Registers a handler called when the specified mouse button is pressed or released.
-    ///
-    /// # Arguments
-    ///
-    /// * `callback` - A function that takes `EventInfo` containing whether the specified mouse
-    /// button is pressed or released as an argument.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no mouse button is specified.
-    ///
-    /// # Example
-    /// ```
-    /// use hookmap::{Button, Hook, MouseInput};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::LButton).on_press_or_release(|event| {
-    ///     match event.info {
-    ///         Button::Press => println!("The left mouse button is pressed"),
-    ///         Button::Release => println!("The left mouse button is released"),
-    ///     };
-    /// });
-    /// ```
-    ///
-    pub fn on_press_or_release<F>(&self, callback: F)
-    where
-        F: FnMut(EventInfo<Button>) + Send + 'static,
-    {
-        assert!(is_button(self.mouse));
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .mouse
-            .on_press_or_release
-            .get(self.mouse)
-            .push(callback, Arc::clone(&self.modifier));
-    }
-
-    /// Registers a handler called when the specified mouse button is released.
-    ///
-    /// # Panics
-    ///
-    /// Panics if no mouse button is specified.
-    ///
-    /// # Example
-    /// ```
-    /// use hookmap::{Hook, MouseInput};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::LButton)
-    ///     .on_release(|_| println!("The left mouse button is released"));
-    /// ```
-    ///
-    pub fn on_release<F>(&self, callback: F)
-    where
-        F: FnMut(EventInfo<()>) + Send + 'static,
-    {
-        assert!(is_button(self.mouse));
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .mouse
-            .on_release
-            .get(self.mouse)
-            .push(callback, Arc::clone(&self.modifier));
+impl MouseWheelRegister {
+    pub(crate) fn new(handler: Weak<RefCell<HandlerVec<i32>>>, modifier: Arc<ModifierSet>) -> Self {
+        Self { handler, modifier }
     }
 
     /// Registers a handler called when the mouse wheel is rotated.
@@ -287,42 +203,10 @@ impl MouseRegister {
     where
         F: FnMut(EventInfo<i32>) + Send + 'static,
     {
-        assert_eq!(self.mouse, MouseInput::Wheel);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .mouse
-            .wheel
             .push(callback, Arc::clone(&self.modifier));
-    }
-
-    pub fn as_key(&self, key: Key) {
-        match self.mouse {
-            MouseInput::Move => self.on_move(move |_| key.click()),
-            MouseInput::Wheel => self.on_rotate(move |_| key.click()),
-            _ => {
-                self.on_press(move |mut e| {
-                    key.press();
-                    e.block_event();
-                });
-                self.on_release(move |mut e| {
-                    key.press();
-                    e.block_event();
-                });
-            }
-        }
-    }
-
-    pub fn as_mouse(&self, mouse: MouseInput) {
-        is_button(mouse);
-        self.on_press(move |mut e| {
-            mouse.press();
-            e.block_event();
-        });
-        self.on_release(move |mut e| {
-            mouse.press();
-            e.block_event();
-        });
     }
 }

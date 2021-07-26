@@ -1,10 +1,10 @@
 use crate::{
-    event::{Button, EventInfo},
+    event::EventInfo,
     modifier::{ModifierChecker, ModifierSet},
 };
 use derive_new::new;
-use hookmap_core::{EventBlock, Key, MouseInput};
-use std::{collections::HashMap, fmt::Debug, hash::Hash, sync::Arc};
+use hookmap_core::{ButtonAction, EventBlock, Key, Mouse};
+use std::{cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, rc::Rc, sync::Arc};
 
 #[derive(new)]
 pub(crate) struct HandlerFunction<I: Send + Debug> {
@@ -47,23 +47,29 @@ impl<I: Copy + Send + Debug> Default for HandlerVec<I> {
     }
 }
 
-pub(crate) struct HandlerMap<K, I>(HashMap<K, HandlerVec<I>>)
+impl<I: Copy + Send + Debug> Debug for HandlerVec<I> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "HandlerVec")
+    }
+}
+
+pub(crate) struct HandlerMap<B, I>(HashMap<B, HandlerVec<I>>)
 where
-    K: Eq + Hash,
+    B: Eq + Hash,
     I: Copy + Send + Debug;
 
-impl<K, I> HandlerMap<K, I>
+impl<B, I> HandlerMap<B, I>
 where
-    K: Eq + Hash,
+    B: Eq + Hash,
     I: Copy + Send + Debug,
 {
-    pub(crate) fn get(&mut self, key: K) -> &mut HandlerVec<I> {
-        self.0.entry(key).or_default()
+    pub(crate) fn get(&mut self, button: B) -> &mut HandlerVec<I> {
+        self.0.entry(button).or_default()
     }
 
-    pub(crate) fn call_available(&mut self, key: K, event_info: I) -> Vec<EventBlock> {
+    pub(crate) fn call_available(&mut self, button: B, event_info: I) -> Vec<EventBlock> {
         self.0
-            .get_mut(&key)
+            .get_mut(&button)
             .map(|handler| handler.call_available(event_info))
             .unwrap_or_default()
     }
@@ -79,26 +85,34 @@ where
     }
 }
 
-#[derive(Default)]
-pub(crate) struct KeyboardHandler {
-    pub(crate) on_press_or_release: HandlerMap<Key, Button>,
-    pub(crate) on_press: HandlerMap<Key, ()>,
-    pub(crate) on_release: HandlerMap<Key, ()>,
+pub(crate) struct ButtonHandler<T: Eq + Hash> {
+    pub(crate) on_press_or_release: HandlerMap<T, ButtonAction>,
+    pub(crate) on_press: HandlerMap<T, ()>,
+    pub(crate) on_release: HandlerMap<T, ()>,
 }
 
-#[derive(Default)]
-pub(crate) struct MouseHandler {
-    pub(crate) on_press_or_release: HandlerMap<MouseInput, Button>,
-    pub(crate) on_press: HandlerMap<MouseInput, ()>,
-    pub(crate) on_release: HandlerMap<MouseInput, ()>,
-    pub(crate) wheel: HandlerVec<i32>,
-    pub(crate) cursor: HandlerVec<(i32, i32)>,
+impl<T: Eq + Hash> Debug for ButtonHandler<T> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "ButtonHandler")
+    }
+}
+
+impl<T: Eq + Hash> Default for ButtonHandler<T> {
+    fn default() -> Self {
+        Self {
+            on_press: Default::default(),
+            on_release: Default::default(),
+            on_press_or_release: Default::default(),
+        }
+    }
 }
 
 #[derive(Default)]
 pub struct Handler {
-    pub(crate) keyboard: KeyboardHandler,
-    pub(crate) mouse: MouseHandler,
+    pub(crate) keyboard: Rc<RefCell<ButtonHandler<Key>>>,
+    pub(crate) mouse_button: Rc<RefCell<ButtonHandler<Mouse>>>,
+    pub(crate) mouse_cursor: Rc<RefCell<HandlerVec<(i32, i32)>>>,
+    pub(crate) mouse_wheel: Rc<RefCell<HandlerVec<i32>>>,
 }
 
 impl Debug for Handler {

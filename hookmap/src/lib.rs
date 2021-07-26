@@ -5,6 +5,9 @@ mod handler;
 mod modifier;
 mod runtime;
 
-pub use event::{Button, EventInfo};
-pub use hookmap_core::{EmulateKeyboardInput, EmulateMouseInput, EventBlock, Key, MouseInput};
-pub use interface::{Hook, KeyboardRegister, Modifier, MouseRegister};
+pub use event::EventInfo;
+pub use hookmap_core::{
+    ButtonAction, EmulateButtonInput, EmulateMouseCursor, EmulateMouseWheel, EventBlock, Key,
+    Mouse, MouseCursor, MouseWheel,
+};
+pub use interface::{Hook, Modifier, SelectHandleTarget};
