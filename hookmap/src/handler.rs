@@ -8,14 +8,14 @@ use std::{collections::HashMap, fmt::Debug, hash::Hash, sync::Arc};
 
 #[derive(new)]
 pub(crate) struct HandlerFunction<I: Send + Debug> {
-    handler: Box<dyn FnMut(EventInfo<I>) + Send>,
+    callback: Box<dyn FnMut(EventInfo<I>) + Send>,
     modifier: Arc<ModifierSet>,
 }
 
 impl<I: Send + Debug> HandlerFunction<I> {
     fn call(&mut self, event_info: I) -> EventBlock {
         let (event_detail, rx) = EventInfo::channel(event_info);
-        (self.handler)(event_detail);
+        (self.callback)(event_detail);
         rx.recv().unwrap()
     }
 }
