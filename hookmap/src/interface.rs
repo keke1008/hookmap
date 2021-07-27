@@ -9,14 +9,15 @@ pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 use hookmap_core::{EventBlock, Key, Mouse};
 
 pub trait SelectHandleTarget {
-    /// Returns a [`KeyboardRegister`] for registering a hook to the key.
+    /// Returns a [`ButtonRegister`] for registering a hook to the key.
     ///
     /// # Example
     ///
     /// ```
     /// use hookmap::{Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind_key(Key::A)
+    ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
     fn bind_key(&self, key: Key) -> ButtonRegister<Key>;
@@ -28,15 +29,36 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::{Hook, Mouse, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_mouse(Mouse::RButton).on_press(|_| println!("The right mouse button is pressed"));
+    /// hook.bind_mouse(Mouse::RButton)
+    ///     .on_press(|_| println!("The right mouse button has been pressed"));
     /// ```
     ///
     fn bind_mouse(&self, mouse: Mouse) -> ButtonRegister<Mouse>;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_wheel()
+    ///     .on_rotate(|e| println!("The mouse wheel rotated."));
+    /// ```
+    ///
     fn bind_mouse_wheel(&self) -> MouseWheelRegister;
 
     /// Returns a [`MouseCursorRegister`] for registering a hook to the mouse wheel.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor()
+    ///     .on_move(|_| println!("The mouse cursor has moved"));
+    /// ```
+    ///
     fn bind_mouse_cursor(&self) -> MouseCursorRegister;
 
     /// Returns a new instance of [`Modifier`].
@@ -66,7 +88,7 @@ pub trait SelectHandleTarget {
     /// let modifier_left = hook.modifier_mouse_button(Mouse::LButton, EventBlock::Unblock);
     /// modifier_left
     ///     .bind_key(Key::A)
-    ///     .on_press(|_| println!("The A key is pressed while the left mouse button is pressed"));
+    ///     .on_press(|_| println!("The A key has been pressed while the left mouse button is pressed"));
     /// ```
     ///
     fn modifier_mouse_button(&self, mouse: Mouse, event_block: EventBlock) -> Modifier;

@@ -1,3 +1,7 @@
+//! # Hookmap
+//!
+//! Register hotkeys and emulate input.
+
 pub mod event;
 pub mod interface;
 
