@@ -12,8 +12,13 @@ struct BlockInput {
 
 impl BlockInput {
     fn new(tx: Sender<EventBlock>) -> Self {
+        let event_block = if cfg!(feature = "block-input-event") {
+            EventBlock::Block
+        } else {
+            EventBlock::Unblock
+        };
         Self {
-            event_block: EventBlock::Unblock,
+            event_block: event_block,
             event_block_tx: Some(tx),
         }
     }

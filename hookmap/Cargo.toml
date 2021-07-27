@@ -9,3 +9,6 @@ edition = "2018"
 [dependencies]
 hookmap-core = { "path" = "../hookmap-core" }
 derive-new = "0.5.9"
+
+[features]
+block-input-event = []
