@@ -27,14 +27,14 @@ impl Hook {
     /// # Example
     ///
     /// ```no_run
-    /// use hookmap::{Hook, Key};
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
     /// hook.handle_input(); // Blocking the current thread.
     /// ```
     ///
     pub fn handle_input(self) {
-        let hook_installer: HookInstaller = self.into();
+        let hook_installer = HookInstaller::from(self);
         hook_installer.install_hook();
     }
 }

@@ -30,7 +30,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key};
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
     /// ```
@@ -57,12 +57,12 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     ///
     /// # Example
     /// ```
-    /// use hookmap::{Button, Hook, Key};
+    /// use hookmap::{ButtonAction, Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_key(Key::A).on_press_or_release(|event| {
     ///     match event.info {
-    ///         Button::Press => println!("The A key is pressed"),
-    ///         Button::Release => println!("The A key is released"),
+    ///         ButtonAction::Press => println!("The A key is pressed"),
+    ///         ButtonAction::Release => println!("The A key is released"),
     ///     };
     /// });
     /// ```
@@ -85,7 +85,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key};
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_key(Key::A).on_release(|_| println!("The A key is released"));
     /// ```
@@ -143,15 +143,12 @@ impl MouseCursorRegister {
 
     /// Registers a handler called when the mouse cursor is moved.
     ///
-    /// # Panics
-    ///
-    /// Panics if `MouseInput::Move` is not specified.
     ///
     /// # Example
     /// ```
-    /// use hookmap::{Hook, MouseInput};
+    /// use hookmap::{Hook, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::Move).on_move(|event| {
+    /// hook.bind_mouse_cursor().on_move(|event| {
     ///     println!("Current mouse cursor position(x, y): ({}, {})", event.info.0, event.info.1);
     /// });
     /// ```
@@ -186,15 +183,11 @@ impl MouseWheelRegister {
     /// * `callback` - A function that takes `EventInfo` containing a rotation speed of the mouse
     /// wheel as an argument.
     ///
-    /// # Panics
-    ///
-    /// Panics if `MouseInput::Wheel` is not specified.
-    ///
     /// # Example
     /// ```
-    /// use hookmap::{Hook, MouseInput};
+    /// use hookmap::{Hook, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::Wheel).on_rotate(|event| {
+    /// hook.bind_mouse_wheel().on_rotate(|event| {
     ///     println!("Mouse wheel rotation speed: {}", event.info);
     /// });
     /// ```

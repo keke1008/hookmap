@@ -1,6 +1,5 @@
-use crate::{KeyboardEvent, MouseEvent};
-
 use super::{event::EventBlock, keyboard::InstallKeyboardHook, mouse::InstallMouseHook};
+use crate::{KeyboardEvent, MouseEvent};
 use once_cell::sync::Lazy;
 use std::{fmt::Debug, sync::Mutex};
 
@@ -26,8 +25,8 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{Key, KeyboardAction, EventBlock, HandlerFunction};
-    /// let handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// use hookmap_core::{HandlerFunction, KeyboardEvent};
+    /// let handler = HandlerFunction::<KeyboardEvent>::new();
     /// ```
     ///
     pub fn new() -> Self {
@@ -39,9 +38,9 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{Key, KeyboardAction, EventBlock, HandlerFunction};
+    /// use hookmap_core::{EventBlock, HandlerFunction, KeyboardEvent};
     ///
-    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
     /// handler.register_handler(|e| {
     ///     println!("Event target: {:?}", e.target);
     ///     println!("Event action: {:?}", e.action);
@@ -61,9 +60,9 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{Key, KeyboardAction, Event, EventBlock, HandlerFunction};
+    /// use hookmap_core::{EventBlock, HandlerFunction, KeyboardEvent};
     ///
-    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
     /// assert!(!handler.is_handler_registered());
     ///
     /// handler.register_handler(|_| EventBlock::Unblock);
@@ -82,11 +81,11 @@ impl<E> HandlerFunction<E> {
     ///
     /// # Examples
     /// ```
-    /// use hookmap_core::{Key, KeyboardAction, Event, EventBlock, HandlerFunction};
+    /// use hookmap_core::{ButtonAction, Event, EventBlock, HandlerFunction, Key, KeyboardEvent};
     ///
-    /// let mut handler = HandlerFunction::<Key, KeyboardAction>::new();
+    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
     /// handler.register_handler(|_| EventBlock::Block);
-    /// let event_block = handler.emit(Event::new(Key::A, KeyboardAction::Press));
+    /// let event_block = handler.emit(Event::new(Key::A, ButtonAction::Press));
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///

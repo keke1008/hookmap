@@ -14,7 +14,7 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key};
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
     /// ```
@@ -26,9 +26,9 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, MouseInput};
+    /// use hookmap::{Hook, Mouse, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_mouse(MouseInput::Wheel).on_rotate(|_| println!("The mouse wheel rotated"));
+    /// hook.bind_mouse(Mouse::RButton).on_press(|_| println!("The right mouse button is pressed"));
     /// ```
     ///
     fn bind_mouse(&self, mouse: Mouse) -> ButtonRegister<Mouse>;
@@ -45,7 +45,7 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, EventBlock};
+    /// use hookmap::{Hook, Key, EventBlock, SelectHandleTarget};
     /// let hook = Hook::new();
     /// let modifier_space = hook.modifier_key(Key::Space, EventBlock::Unblock);
     /// modifier_space
@@ -61,9 +61,9 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, MouseInput, EventBlock};
+    /// use hookmap::{Hook, Key, Mouse, EventBlock, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// let modifier_left = hook.modifier_mouse_button(MouseInput::LButton, EventBlock::Unblock);
+    /// let modifier_left = hook.modifier_mouse_button(Mouse::LButton, EventBlock::Unblock);
     /// modifier_left
     ///     .bind_key(Key::A)
     ///     .on_press(|_| println!("The A key is pressed while the left mouse button is pressed"));
