@@ -1,7 +1,6 @@
 use super::event::Event;
 
 /// Installs a mouse hook in the way of each platform.
-/// This needs to implement for `InputHandler`.
 pub trait InstallMouseHook {
     /// Installs a mouse hook.
     fn install();
@@ -21,11 +20,13 @@ pub enum Mouse {
 pub struct MouseWheel;
 pub struct MouseCursor;
 
+/// Emulates the mouse wheel input.
 pub trait EmulateMouseWheel {
     /// Rotates a mouse wheel.
     fn rotate(speed: u32);
 }
 
+/// Emulates the mouse cursor input.
 pub trait EmulateMouseCursor {
     /// Moves a mouse cursor absolutely.
     fn move_abs(x: i32, y: i32);

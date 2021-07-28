@@ -4,7 +4,6 @@ pub mod keyboard;
 pub mod mouse;
 
 /// Emulates button input.
-/// This needs to be implemented for `Key` and `Mouse`.
 pub trait EmulateButtonInput {
     /// Emulates a button press operation.
     fn press(&self);
