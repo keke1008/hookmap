@@ -157,7 +157,7 @@ where
         let registered_keyboard_handler = self.keyboard.lock().unwrap().is_handler_registered();
         let registered_mouse_handler = self.mouse_button.lock().unwrap().is_handler_registered()
             || self.mouse_wheel.lock().unwrap().is_handler_registered()
-            || self.mouse_button.lock().unwrap().is_handler_registered();
+            || self.mouse_cursor.lock().unwrap().is_handler_registered();
 
         if registered_keyboard_handler {
             <Self as InstallKeyboardHook>::install();
