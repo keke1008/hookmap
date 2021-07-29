@@ -55,12 +55,12 @@ impl<I: Debug> EventInfo<I> {
         self.block_input.event_block = EventBlock::Unblock;
     }
 
-    pub(crate) fn channel(info: I) -> (Self, Receiver<EventBlock>) {
+    pub(crate) fn new_and_rx(info: I) -> (Self, Receiver<EventBlock>) {
         let (tx, rx) = mpsc::channel();
-        let event_detail = EventInfo {
+        let event_info = EventInfo {
             block_input: BlockInput::new(tx),
             info,
         };
-        (event_detail, rx)
+        (event_info, rx)
     }
 }

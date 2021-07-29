@@ -12,7 +12,7 @@ pub enum EventBlock {
 
 /// Information about the generated event.
 #[derive(Debug)]
-pub struct Event<T> {
+pub struct ButtonEvent<T> {
     /// Target of the generated event.
     pub target: T,
 
@@ -20,8 +20,8 @@ pub struct Event<T> {
     pub action: ButtonAction,
 }
 
-impl<T> Event<T> {
-    /// Creates a new `Event<T, A>`.
+impl<T> ButtonEvent<T> {
+    /// Creates a new `ButtonEvent<T, A>`.
     pub fn new(target: T, action: ButtonAction) -> Self {
         Self { target, action }
     }

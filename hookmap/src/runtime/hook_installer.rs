@@ -1,6 +1,8 @@
 use super::runtime_handler::RuntimeHandler;
 use crate::{handler::ButtonHandler, modifier::ModifierEventBlock, Hook};
-use hookmap_core::{ButtonAction, Event, EventBlock, KeyboardEvent, MouseEvent, INPUT_HANDLER};
+use hookmap_core::{
+    ButtonAction, ButtonEvent, EventBlock, KeyboardEvent, MouseEvent, INPUT_HANDLER,
+};
 use std::{
     hash::Hash,
     rc::Rc,
@@ -65,7 +67,7 @@ impl HookInstaller {
 
     fn call_handler<T: Hash + Eq + Copy>(
         handler: &mut ButtonHandler<T>,
-        event: &Event<T>,
+        event: &ButtonEvent<T>,
     ) -> Vec<EventBlock> {
         let mut event_block = handler
             .on_press_or_release

@@ -1,4 +1,4 @@
-use super::event::Event;
+use super::event::ButtonEvent;
 
 /// Installs a keyboard hook in the way of each platform.
 /// This needs to implement for `InputHandler`.
@@ -7,7 +7,7 @@ pub trait InstallKeyboardHook {
     fn install();
 }
 
-pub type KeyboardEvent = Event<Key>;
+pub type KeyboardEvent = ButtonEvent<Key>;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum Key {

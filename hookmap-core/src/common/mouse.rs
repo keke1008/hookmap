@@ -1,4 +1,4 @@
-use super::event::Event;
+use super::event::ButtonEvent;
 
 /// Installs a mouse hook in the way of each platform.
 pub trait InstallMouseHook {
@@ -6,7 +6,7 @@ pub trait InstallMouseHook {
     fn install();
 }
 
-pub type MouseEvent = Event<Mouse>;
+pub type MouseEvent = ButtonEvent<Mouse>;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum Mouse {
