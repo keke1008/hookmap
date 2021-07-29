@@ -1,7 +1,7 @@
 use hookmap_core::EventBlock;
 use std::{
     fmt::Debug,
-    sync::mpsc::{self, Receiver, Sender},
+    sync::mpsc::{self, Sender},
 };
 
 #[derive(Debug)]
@@ -11,15 +11,15 @@ struct BlockInput {
 }
 
 impl BlockInput {
-    fn new(tx: Sender<EventBlock>) -> Self {
+    fn new(tx: Option<Sender<EventBlock>>) -> Self {
         let event_block = if cfg!(feature = "block-input-event") {
             EventBlock::Block
         } else {
             EventBlock::Unblock
         };
         Self {
-            event_block: event_block,
-            event_block_tx: Some(tx),
+            event_block,
+            event_block_tx: tx,
         }
     }
 
@@ -55,12 +55,17 @@ impl<I: Debug> EventInfo<I> {
         self.block_input.event_block = EventBlock::Unblock;
     }
 
-    pub(crate) fn new_and_rx(info: I) -> (Self, Receiver<EventBlock>) {
-        let (tx, rx) = mpsc::channel();
-        let event_info = EventInfo {
-            block_input: BlockInput::new(tx),
+    pub(crate) fn new(info: I) -> Self {
+        EventInfo {
+            block_input: BlockInput::new(None),
             info,
-        };
-        (event_info, rx)
+        }
+    }
+
+    pub(crate) fn send_with(mut self, callback: impl FnOnce(EventInfo<I>)) -> EventBlock {
+        let (tx, rx) = mpsc::channel();
+        self.block_input.event_block_tx = Some(tx);
+        (callback)(self);
+        rx.recv().unwrap()
     }
 }

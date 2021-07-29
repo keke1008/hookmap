@@ -14,9 +14,7 @@ pub(crate) struct HandlerFunction<I: Send + Debug> {
 
 impl<I: Send + Debug> HandlerFunction<I> {
     fn call(&mut self, info: I) -> EventBlock {
-        let (event_info, rx) = EventInfo::new_and_rx(info);
-        (self.callback)(event_info);
-        rx.recv().unwrap()
+        EventInfo::new(info).send_with(self.callback)
     }
 }
 

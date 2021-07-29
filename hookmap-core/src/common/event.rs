@@ -11,7 +11,7 @@ pub enum EventBlock {
 }
 
 /// Information about the generated event.
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct ButtonEvent<T> {
     /// Target of the generated event.
     pub target: T,
