@@ -81,11 +81,11 @@ impl<E> HandlerFunction<E> {
     ///
     /// # Examples
     /// ```
-    /// use hookmap_core::{ButtonAction, Event, EventBlock, HandlerFunction, Key, KeyboardEvent};
+    /// use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, HandlerFunction, Key, KeyboardEvent};
     ///
     /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
     /// handler.register_handler(|_| EventBlock::Block);
-    /// let event_block = handler.emit(Event::new(Key::A, ButtonAction::Press));
+    /// let event_block = handler.emit(ButtonEvent::new(Key::A, ButtonAction::Press));
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
