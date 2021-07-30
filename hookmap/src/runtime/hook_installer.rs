@@ -1,4 +1,4 @@
-use super::runtime_handler::RuntimeHandler;
+use super::{interruption::EVENT_SENDER, runtime_handler::RuntimeHandler};
 use crate::{handler::ButtonHandler, modifier::ModifierEventBlock, Hook};
 use hookmap_core::{
     ButtonAction, ButtonEvent, EventBlock, KeyboardEvent, MouseEvent, INPUT_HANDLER,
@@ -20,29 +20,30 @@ impl HookInstaller {
         let this = Arc::new(self);
         INPUT_HANDLER
             .keyboard
-            .lock()
+            .write()
             .unwrap()
             .register_handler(Arc::clone(&this).keyboard_handler());
         INPUT_HANDLER
             .mouse_button
-            .lock()
+            .write()
             .unwrap()
             .register_handler(Arc::clone(&this).mouse_button_handler());
         INPUT_HANDLER
             .mouse_wheel
-            .lock()
+            .write()
             .unwrap()
             .register_handler(Arc::clone(&this).mouse_wheel_handler());
         INPUT_HANDLER
             .mouse_cursor
-            .lock()
+            .write()
             .unwrap()
             .register_handler(this.mouse_cursor_handler());
         INPUT_HANDLER.handle_input();
     }
 
-    fn keyboard_handler(self: Arc<Self>) -> impl FnMut(KeyboardEvent) -> EventBlock {
-        move |event: KeyboardEvent| {
+    fn keyboard_handler(self: Arc<Self>) -> impl Fn(KeyboardEvent) -> EventBlock {
+        let res = move |event: KeyboardEvent| {
+            EVENT_SENDER.lock().unwrap().keyboard.send_event(event);
             let handler = &mut self.handler.lock().unwrap().keyboard;
             let event_block = Self::call_handler(handler, &event);
             if let Some(event_block) = self.modifier_event_block.keyboard.get(&event.target) {
@@ -50,11 +51,13 @@ impl HookInstaller {
             } else {
                 Self::determine_event_block(event_block)
             }
-        }
+        };
+        res
     }
 
-    fn mouse_button_handler(self: Arc<Self>) -> impl FnMut(MouseEvent) -> EventBlock {
+    fn mouse_button_handler(self: Arc<Self>) -> impl Fn(MouseEvent) -> EventBlock {
         move |event: MouseEvent| {
+            EVENT_SENDER.lock().unwrap().mouse_button.send_event(event);
             let handler = &mut self.handler.lock().unwrap().mouse_button;
             let event_block = Self::call_handler(handler, &event);
             if let Some(event_block) = self.modifier_event_block.mouse.get(&event.target) {
@@ -83,26 +86,28 @@ impl HookInstaller {
         event_block
     }
 
-    fn mouse_wheel_handler(self: Arc<Self>) -> impl FnMut(i32) -> EventBlock {
-        move |event_info| {
+    fn mouse_wheel_handler(self: Arc<Self>) -> impl Fn(i32) -> EventBlock {
+        move |event| {
+            EVENT_SENDER.lock().unwrap().mouse_wheel.send_event(event);
             let event_block = self
                 .handler
                 .lock()
                 .unwrap()
                 .mouse_wheel
-                .call_available(event_info);
+                .call_available(event);
             Self::determine_event_block(event_block)
         }
     }
 
-    fn mouse_cursor_handler(self: Arc<Self>) -> impl FnMut((i32, i32)) -> EventBlock {
-        move |event_info| {
+    fn mouse_cursor_handler(self: Arc<Self>) -> impl Fn((i32, i32)) -> EventBlock {
+        move |event| {
+            EVENT_SENDER.lock().unwrap().mouse_cursor.send_event(event);
             let event_block = self
                 .handler
                 .lock()
                 .unwrap()
                 .mouse_cursor
-                .call_available(event_info);
+                .call_available(event);
             Self::determine_event_block(event_block)
         }
     }

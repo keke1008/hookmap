@@ -7,20 +7,22 @@ use hookmap_core::{ButtonAction, EventBlock, Key, Mouse};
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, rc::Rc, sync::Arc};
 
 #[derive(new)]
-pub(crate) struct HandlerFunction<I: Send + Debug> {
+pub(crate) struct HandlerFunction<I: Send + Debug + 'static> {
     callback: Box<dyn FnMut(EventInfo<I>) + Send>,
     modifier: Arc<ModifierSet>,
 }
 
-impl<I: Send + Debug> HandlerFunction<I> {
+impl<I: Send + Debug + 'static> HandlerFunction<I> {
     fn call(&mut self, info: I) -> EventBlock {
-        EventInfo::new(info).send_with(&mut self.callback)
+        let (event_info, rx) = EventInfo::new_and_rx(info);
+        (self.callback)(event_info);
+        rx.recv().unwrap()
     }
 }
 
-pub(crate) struct HandlerVec<I: Copy + Send + Debug>(Vec<HandlerFunction<I>>);
+pub(crate) struct HandlerVec<I: Copy + Send + Debug + 'static>(Vec<HandlerFunction<I>>);
 
-impl<I: Copy + Send + Debug> HandlerVec<I> {
+impl<I: Copy + Send + Debug + 'static> HandlerVec<I> {
     pub(crate) fn push<F>(&mut self, handler: F, modifier: Arc<ModifierSet>)
     where
         F: FnMut(EventInfo<I>) + Send + 'static,
@@ -54,12 +56,12 @@ impl<I: Copy + Send + Debug> Debug for HandlerVec<I> {
 pub(crate) struct HandlerMap<B, I>(HashMap<B, HandlerVec<I>>)
 where
     B: Eq + Hash,
-    I: Copy + Send + Debug;
+    I: Copy + Send + Debug + 'static;
 
 impl<B, I> HandlerMap<B, I>
 where
     B: Eq + Hash,
-    I: Copy + Send + Debug,
+    I: Copy + Send + Debug + 'static,
 {
     pub(crate) fn get(&mut self, button: B) -> &mut HandlerVec<I> {
         self.0.entry(button).or_default()
