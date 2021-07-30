@@ -15,3 +15,4 @@ pub use hookmap_core::{
     Mouse, MouseCursor, MouseWheel,
 };
 pub use interface::{Hook, Modifier, SelectHandleTarget};
+pub use runtime::interruption;
