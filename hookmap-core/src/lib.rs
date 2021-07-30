@@ -10,8 +10,8 @@
 //!
 //! * [`EmulateButtonInput`] for [`Key`]
 //! * [`EmulateButtonInput`] for [`Mouse`]
-//! * [`EmulateMouseCursor`] for [`MouseCursor`]
-//! * [`EmulateMouseWheel`] for [`MouseWheel`]
+//! * [`EmulateMouseCursor`] for [`Mouse`]
+//! * [`EmulateMouseWheel`] for [`Mouse`]
 //! * [`InstallKeyboardHook`] for [`InputHandler`]
 //! * [`InstallMouseHook`] for [`InputHandler`]
 //! * [`HandleInput`] for [`InputHandler`]
@@ -30,6 +30,6 @@ pub use common::{
     event::{ButtonEvent, EventBlock},
     handler::{HandlerFunction, InputHandler, INPUT_HANDLER},
     keyboard::{Key, KeyboardEvent},
-    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse, MouseCursor, MouseEvent, MouseWheel},
+    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse, MouseEvent},
     ButtonAction, EmulateButtonInput,
 };

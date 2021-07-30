@@ -17,9 +17,6 @@ pub enum Mouse {
     SideButton2,
 }
 
-pub struct MouseWheel;
-pub struct MouseCursor;
-
 /// Emulates the mouse wheel input.
 pub trait EmulateMouseWheel {
     /// Rotates a mouse wheel.

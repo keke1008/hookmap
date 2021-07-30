@@ -1,6 +1,6 @@
 use crate::{
     common::{mouse::Mouse, ButtonAction},
-    EmulateMouseCursor, MouseCursor,
+    EmulateMouseCursor,
 };
 use winapi::{
     shared::minwindef::{HIWORD, WPARAM},
@@ -78,7 +78,7 @@ impl MouseEventInfo {
     pub(super) fn new(w_param: WPARAM, event_info: MSLLHOOKSTRUCT) -> Option<Self> {
         let event_info = match Self::get_target(w_param, event_info)? {
             MouseTarget::Button(button) => Self::Button(button, Self::get_action(w_param as u32)?),
-            MouseTarget::Cursor => Self::Cursor(MouseCursor::get_pos()),
+            MouseTarget::Cursor => Self::Cursor(Mouse::get_pos()),
             MouseTarget::Wheel => {
                 let speed = winuser::GET_WHEEL_DELTA_WPARAM(event_info.mouseData as usize);
                 Self::Wheel(speed as i32 / WHEEL_DELTA as i32)

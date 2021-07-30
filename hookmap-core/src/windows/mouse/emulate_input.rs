@@ -1,6 +1,6 @@
 use super::DW_EXTRA_INFO;
 use crate::common::{
-    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse, MouseCursor, MouseWheel},
+    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
     EmulateButtonInput,
 };
 use crate::windows::mouse::MouseParameter;
@@ -57,16 +57,16 @@ impl EmulateButtonInput for Mouse {
     }
 }
 
-impl EmulateMouseWheel for MouseWheel {
+impl EmulateMouseWheel for Mouse {
     fn rotate(speed: i32) {
         let speed = speed * WHEEL_DELTA as i32;
         send_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
     }
 }
 
-impl EmulateMouseCursor for MouseCursor {
+impl EmulateMouseCursor for Mouse {
     fn move_rel(dx: i32, dy: i32) {
-        let (x, y) = MouseCursor::get_pos();
+        let (x, y) = Self::get_pos();
         unsafe { winuser::SetCursorPos(x + dx, y + dy) };
     }
 
