@@ -1,7 +1,7 @@
 use super::DW_EXTRA_INFO;
 use crate::common::{keyboard::Key, EmulateButtonInput};
 use crate::windows::keyboard::VkCode;
-use std::{mem, thread};
+use std::mem;
 use winapi::{
     ctypes::c_int,
     um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP},
@@ -36,9 +36,9 @@ fn send_key_input(key: &Key, flags: u32) {
         u: unsafe { mem::transmute_copy(&keybd_input) },
     };
 
-    thread::spawn(move || unsafe {
+    unsafe {
         winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int);
-    });
+    }
 }
 
 fn get_key_state(key: &Key) -> i16 {

@@ -4,10 +4,7 @@ use crate::common::{
     EmulateButtonInput,
 };
 use crate::windows::mouse::MouseParameter;
-use std::{
-    mem::{self, MaybeUninit},
-    thread,
-};
+use std::mem::{self, MaybeUninit};
 use winapi::{
     ctypes::c_int,
     um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
@@ -27,9 +24,9 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
         u: unsafe { mem::transmute(mouse_input) },
     };
 
-    thread::spawn(move || unsafe {
+    unsafe {
         winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int);
-    });
+    }
 }
 
 impl EmulateButtonInput for Mouse {
