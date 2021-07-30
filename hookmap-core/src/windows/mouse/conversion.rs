@@ -1,13 +1,16 @@
-use crate::common::{mouse::Mouse, ButtonAction};
+use crate::{
+    common::{mouse::Mouse, ButtonAction},
+    EmulateMouseCursor, MouseCursor,
+};
 use winapi::{
     shared::minwindef::{HIWORD, WPARAM},
     um::winuser::{
         self, MOUSEEVENTF_LEFTDOWN, MOUSEEVENTF_LEFTUP, MOUSEEVENTF_MIDDLEDOWN,
         MOUSEEVENTF_MIDDLEUP, MOUSEEVENTF_RIGHTDOWN, MOUSEEVENTF_RIGHTUP, MOUSEEVENTF_XDOWN,
         MOUSEEVENTF_XUP, MSLLHOOKSTRUCT, VK_LBUTTON, VK_MBUTTON, VK_RBUTTON, VK_XBUTTON1,
-        VK_XBUTTON2, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP, WM_MOUSEMOVE,
-        WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONUP, XBUTTON1,
-        XBUTTON2,
+        VK_XBUTTON2, WHEEL_DELTA, WM_LBUTTONDOWN, WM_LBUTTONUP, WM_MBUTTONDOWN, WM_MBUTTONUP,
+        WM_MOUSEMOVE, WM_MOUSEWHEEL, WM_RBUTTONDOWN, WM_RBUTTONUP, WM_XBUTTONDOWN, WM_XBUTTONUP,
+        XBUTTON1, XBUTTON2,
     },
 };
 
@@ -64,6 +67,7 @@ enum MouseTarget {
     Cursor,
 }
 
+#[derive(Clone, Copy)]
 pub(super) enum MouseEventInfo {
     Button(Mouse, ButtonAction),
     Wheel(i32),
@@ -74,9 +78,10 @@ impl MouseEventInfo {
     pub(super) fn new(w_param: WPARAM, event_info: MSLLHOOKSTRUCT) -> Option<Self> {
         let event_info = match Self::get_target(w_param, event_info)? {
             MouseTarget::Button(button) => Self::Button(button, Self::get_action(w_param as u32)?),
-            MouseTarget::Cursor => Self::Cursor((event_info.pt.x, event_info.pt.y)),
+            MouseTarget::Cursor => Self::Cursor(MouseCursor::get_pos()),
             MouseTarget::Wheel => {
-                Self::Wheel(winuser::GET_WHEEL_DELTA_WPARAM(event_info.mouseData as usize) as i32)
+                let speed = winuser::GET_WHEEL_DELTA_WPARAM(event_info.mouseData as usize);
+                Self::Wheel(speed as i32 / WHEEL_DELTA as i32)
             }
         };
         Some(event_info)

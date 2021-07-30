@@ -5,7 +5,7 @@ use crate::{
         handler::{InputHandler, INPUT_HANDLER},
         mouse::{InstallMouseHook, MouseEvent},
     },
-    EmulateButtonInput, EmulateMouseCursor, EmulateMouseWheel, MouseCursor, MouseWheel,
+    EmulateButtonInput,
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -32,7 +32,6 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.is_none() {
         return call_next_hook(code, w_param, l_param);
     }
-
     thread::spawn(move || match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
             let event = MouseEvent::new(target, action);
@@ -43,19 +42,19 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             }
         }
         MouseEventInfo::Wheel(speed) => {
-            let event_block = INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed);
-            if event_block == EventBlock::Unblock {
-                MouseWheel::rotate(speed);
-            }
+            INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed);
         }
         MouseEventInfo::Cursor(pos) => {
-            let event_block = INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos);
-            if event_block == EventBlock::Unblock {
-                MouseCursor::move_abs(pos.0, pos.1);
-            }
+            INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos);
         }
     });
-    1
+
+    match event_info.unwrap() {
+        MouseEventInfo::Wheel(_) | MouseEventInfo::Cursor(_) => {
+            call_next_hook(code, w_param, l_param)
+        }
+        MouseEventInfo::Button(_, _) => 1,
+    }
 }
 
 impl InstallMouseHook for InputHandler {

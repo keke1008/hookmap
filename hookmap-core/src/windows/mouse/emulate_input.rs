@@ -10,10 +10,7 @@ use std::{
 };
 use winapi::{
     ctypes::c_int,
-    um::winuser::{
-        self, INPUT, MOUSEEVENTF_ABSOLUTE, MOUSEEVENTF_MOVE, MOUSEEVENTF_WHEEL, MOUSEINPUT,
-        WHEEL_DELTA,
-    },
+    um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
 };
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
@@ -64,24 +61,26 @@ impl EmulateButtonInput for Mouse {
 }
 
 impl EmulateMouseWheel for MouseWheel {
-    fn rotate(speed: u32) {
-        send_mouse_input(0, 0, speed * WHEEL_DELTA as u32, MOUSEEVENTF_WHEEL);
+    fn rotate(speed: i32) {
+        let speed = speed * WHEEL_DELTA as i32;
+        send_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
     }
 }
 
 impl EmulateMouseCursor for MouseCursor {
     fn move_rel(dx: i32, dy: i32) {
-        send_mouse_input(dx, dy, 0, MOUSEEVENTF_MOVE);
+        let (x, y) = MouseCursor::get_pos();
+        unsafe { winuser::SetCursorPos(x + dx, y + dy) };
     }
 
     fn move_abs(x: i32, y: i32) {
-        send_mouse_input(x, y, 0, MOUSEEVENTF_MOVE | MOUSEEVENTF_ABSOLUTE);
+        unsafe { winuser::SetCursorPos(x, y) };
     }
 
     fn get_pos() -> (i32, i32) {
         unsafe {
             let mut pos = MaybeUninit::zeroed().assume_init();
-            winuser::GetCursorPos(&mut pos);
+            winuser::GetPhysicalCursorPos(&mut pos);
             (pos.x, pos.y)
         }
     }
