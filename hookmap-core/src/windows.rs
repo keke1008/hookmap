@@ -29,12 +29,12 @@ fn set_button_state(vk_code: u32, action: ButtonAction) {
     let vk_code = vk_code as usize;
     let mut buffer = [0; 256];
     unsafe {
-        winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+        winuser::GetKeyboardState(buffer.as_mut_ptr());
         match action {
             ButtonAction::Press => buffer[vk_code] |= 1 << 7,
             ButtonAction::Release => buffer[vk_code] &= !0u8 >> 1,
         }
-        winuser::SetKeyboardState(&buffer as *const _ as *mut _);
-        winuser::GetKeyboardState(&buffer as *const _ as *mut _);
+        winuser::SetKeyboardState(buffer.as_mut_ptr());
+        winuser::GetKeyboardState(buffer.as_mut_ptr());
     };
 }
