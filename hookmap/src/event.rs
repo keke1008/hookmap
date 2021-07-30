@@ -1,7 +1,7 @@
 use hookmap_core::EventBlock;
 use std::{
     fmt::Debug,
-    sync::mpsc::{self, Sender},
+    sync::mpsc::{self, Receiver, Sender},
 };
 
 #[derive(Debug)]
@@ -39,12 +39,12 @@ impl Drop for BlockInput {
 #[derive(Debug)]
 /// A struct struct that represents information about a generated event and controls whether the event is
 /// blocked or not.
-pub struct EventInfo<I: Debug> {
+pub struct EventInfo<I: Debug + Send + 'static> {
     pub info: I,
     block_input: BlockInput,
 }
 
-impl<I: Debug> EventInfo<I> {
+impl<I: Debug + Send + 'static> EventInfo<I> {
     /// Blocks a generated event.
     pub fn block_event(&mut self) {
         self.block_input.event_block = EventBlock::Block;
@@ -55,17 +55,12 @@ impl<I: Debug> EventInfo<I> {
         self.block_input.event_block = EventBlock::Unblock;
     }
 
-    pub(crate) fn new(info: I) -> Self {
-        EventInfo {
-            block_input: BlockInput::new(None),
-            info,
-        }
-    }
-
-    pub(crate) fn send_with(mut self, callback: impl FnOnce(EventInfo<I>)) -> EventBlock {
+    pub(crate) fn new_and_rx(info: I) -> (Self, Receiver<EventBlock>) {
         let (tx, rx) = mpsc::channel();
-        self.block_input.event_block_tx = Some(tx);
-        (callback)(self);
-        rx.recv().unwrap()
+        let event_info = EventInfo {
+            block_input: BlockInput::new(Some(tx)),
+            info,
+        };
+        (event_info, rx)
     }
 }
