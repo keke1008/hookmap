@@ -45,11 +45,11 @@ impl HookInstaller {
         let res = move |event: KeyboardEvent| {
             EVENT_SENDER.lock().unwrap().keyboard.send_event(event);
             let handler = &mut self.handler.lock().unwrap().keyboard;
-            let event_block = Self::call_handler(handler, &event);
+            let event_blocks = Self::call_handler(handler, &event);
             if let Some(event_block) = self.modifier_event_block.keyboard.get(&event.target) {
                 *event_block
             } else {
-                Self::determine_event_block(event_block)
+                Self::determine_event_block(event_blocks)
             }
         };
         res
@@ -59,11 +59,11 @@ impl HookInstaller {
         move |event: MouseEvent| {
             EVENT_SENDER.lock().unwrap().mouse_button.send_event(event);
             let handler = &mut self.handler.lock().unwrap().mouse_button;
-            let event_block = Self::call_handler(handler, &event);
+            let event_blocks = Self::call_handler(handler, &event);
             if let Some(event_block) = self.modifier_event_block.mouse.get(&event.target) {
                 *event_block
             } else {
-                Self::determine_event_block(event_block)
+                Self::determine_event_block(event_blocks)
             }
         }
     }
@@ -72,48 +72,48 @@ impl HookInstaller {
         handler: &mut ButtonHandler<T>,
         event: &ButtonEvent<T>,
     ) -> Vec<EventBlock> {
-        let mut event_block = handler
+        let mut event_blocks = handler
             .on_press_or_release
             .call_available(event.target, event.action);
         match event.action {
             ButtonAction::Press => {
-                event_block.append(&mut handler.on_press.call_available(event.target, ()));
+                event_blocks.append(&mut handler.on_press.call_available(event.target, ()));
             }
             ButtonAction::Release => {
-                event_block.append(&mut handler.on_release.call_available(event.target, ()));
+                event_blocks.append(&mut handler.on_release.call_available(event.target, ()));
             }
         }
-        event_block
+        event_blocks
     }
 
     fn mouse_wheel_handler(self: Arc<Self>) -> impl Fn(i32) -> EventBlock {
         move |event| {
             EVENT_SENDER.lock().unwrap().mouse_wheel.send_event(event);
-            let event_block = self
+            let event_blocks = self
                 .handler
                 .lock()
                 .unwrap()
                 .mouse_wheel
                 .call_available(event);
-            Self::determine_event_block(event_block)
+            Self::determine_event_block(event_blocks)
         }
     }
 
     fn mouse_cursor_handler(self: Arc<Self>) -> impl Fn((i32, i32)) -> EventBlock {
         move |event| {
             EVENT_SENDER.lock().unwrap().mouse_cursor.send_event(event);
-            let event_block = self
+            let event_blocks = self
                 .handler
                 .lock()
                 .unwrap()
                 .mouse_cursor
                 .call_available(event);
-            Self::determine_event_block(event_block)
+            Self::determine_event_block(event_blocks)
         }
     }
 
-    fn determine_event_block(event_block: Vec<EventBlock>) -> EventBlock {
-        if event_block.into_iter().any(|e| e == EventBlock::Block) {
+    fn determine_event_block(event_blocks: Vec<EventBlock>) -> EventBlock {
+        if event_blocks.into_iter().any(|e| e == EventBlock::Block) {
             EventBlock::Block
         } else {
             EventBlock::Unblock
