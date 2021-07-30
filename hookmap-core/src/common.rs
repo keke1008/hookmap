@@ -17,6 +17,14 @@ pub trait EmulateButtonInput {
         self.release();
     }
 
+    /// Dynamically change whether to press or release.
+    fn input(&self, action: ButtonAction) {
+        match action {
+            ButtonAction::Press => self.press(),
+            ButtonAction::Release => self.release(),
+        }
+    }
+
     /// Returns `true` if a button is pressed.
     fn is_pressed(&self) -> bool;
 
