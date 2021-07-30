@@ -23,7 +23,7 @@ pub struct MouseCursor;
 /// Emulates the mouse wheel input.
 pub trait EmulateMouseWheel {
     /// Rotates a mouse wheel.
-    fn rotate(speed: u32);
+    fn rotate(speed: i32);
 }
 
 /// Emulates the mouse cursor input.
