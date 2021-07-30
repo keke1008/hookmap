@@ -1,11 +1,17 @@
 use super::{call_next_hook, set_button_state, MouseEventInfo, DW_EXTRA_INFO};
-use crate::common::{
-    event::EventBlock,
-    handler::{InputHandler, INPUT_HANDLER},
-    mouse::{InstallMouseHook, MouseEvent},
+use crate::{
+    common::{
+        event::EventBlock,
+        handler::{InputHandler, INPUT_HANDLER},
+        mouse::{InstallMouseHook, MouseEvent},
+    },
+    EmulateButtonInput, EmulateMouseCursor, EmulateMouseWheel, MouseCursor, MouseWheel,
 };
 use once_cell::sync::Lazy;
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::{
+    sync::atomic::{AtomicPtr, Ordering},
+    thread,
+};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -23,24 +29,33 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         return call_next_hook(code, w_param, l_param);
     }
     let event_info = MouseEventInfo::new(w_param, mouse_struct);
-
-    let event_block = match event_info {
-        Some(MouseEventInfo::Button(target, action)) => {
-            let event = MouseEvent::new(target, action);
-            let event_block = INPUT_HANDLER.mouse_button.lock().unwrap().emit(event);
-            if event_block == EventBlock::Block {
-                set_button_state(target.into_vk_code(), action);
-            }
-            event_block
-        }
-        Some(MouseEventInfo::Wheel(speed)) => INPUT_HANDLER.mouse_wheel.lock().unwrap().emit(speed),
-        Some(MouseEventInfo::Cursor(pos)) => INPUT_HANDLER.mouse_cursor.lock().unwrap().emit(pos),
-        _ => EventBlock::Unblock,
-    };
-    match event_block {
-        EventBlock::Block => 1,
-        EventBlock::Unblock => call_next_hook(code, w_param, l_param),
+    if event_info.is_none() {
+        return call_next_hook(code, w_param, l_param);
     }
+
+    thread::spawn(move || match event_info.unwrap() {
+        MouseEventInfo::Button(target, action) => {
+            let event = MouseEvent::new(target, action);
+            let event_block = INPUT_HANDLER.mouse_button.read().unwrap().emit(event);
+            match event_block {
+                EventBlock::Block => set_button_state(target.into_vk_code(), action),
+                EventBlock::Unblock => target.input(action),
+            }
+        }
+        MouseEventInfo::Wheel(speed) => {
+            let event_block = INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed);
+            if event_block == EventBlock::Unblock {
+                MouseWheel::rotate(speed);
+            }
+        }
+        MouseEventInfo::Cursor(pos) => {
+            let event_block = INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos);
+            if event_block == EventBlock::Unblock {
+                MouseCursor::move_abs(pos.0, pos.1);
+            }
+        }
+    });
+    1
 }
 
 impl InstallMouseHook for InputHandler {
