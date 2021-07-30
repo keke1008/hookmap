@@ -1,5 +1,11 @@
-use super::{interruption::EVENT_SENDER, runtime_handler::RuntimeHandler};
-use crate::{handler::ButtonHandler, modifier::ModifierEventBlock, Hook};
+use super::{
+    alone_modifier::{AloneModifierList, AloneModifierMap},
+    interruption::EVENT_SENDER,
+    modifier_event_block::ModifierEventBlock,
+    runtime_handler::RuntimeHandler,
+};
+use crate::{handler::ButtonHandler, Hook};
+
 use hookmap_core::{
     ButtonAction, ButtonEvent, EventBlock, KeyboardEvent, MouseEvent, INPUT_HANDLER,
 };
@@ -13,6 +19,7 @@ use std::{
 pub(crate) struct HookInstaller {
     handler: Mutex<RuntimeHandler>,
     modifier_event_block: ModifierEventBlock,
+    alone_modifier: Mutex<AloneModifierList>,
 }
 
 impl HookInstaller {
@@ -45,7 +52,8 @@ impl HookInstaller {
         let res = move |event: KeyboardEvent| {
             EVENT_SENDER.lock().unwrap().keyboard.send_event(event);
             let handler = &mut self.handler.lock().unwrap().keyboard;
-            let event_blocks = Self::call_handler(handler, &event);
+            let alone_modifiers = &mut self.alone_modifier.lock().unwrap().keyboard_alone_modifiers;
+            let event_blocks = Self::call_handler(handler, alone_modifiers, &event);
             if let Some(event_block) = self.modifier_event_block.keyboard.get(&event.target) {
                 *event_block
             } else {
@@ -59,7 +67,8 @@ impl HookInstaller {
         move |event: MouseEvent| {
             EVENT_SENDER.lock().unwrap().mouse_button.send_event(event);
             let handler = &mut self.handler.lock().unwrap().mouse_button;
-            let event_blocks = Self::call_handler(handler, &event);
+            let alone_modifiers = &mut self.alone_modifier.lock().unwrap().mouse_alone_modifiers;
+            let event_blocks = Self::call_handler(handler, alone_modifiers, &event);
             if let Some(event_block) = self.modifier_event_block.mouse.get(&event.target) {
                 *event_block
             } else {
@@ -70,6 +79,7 @@ impl HookInstaller {
 
     fn call_handler<T: Hash + Eq + Copy>(
         handler: &mut ButtonHandler<T>,
+        alone_modifier: &mut AloneModifierMap<T>,
         event: &ButtonEvent<T>,
     ) -> Vec<EventBlock> {
         let mut event_blocks = handler
@@ -78,9 +88,14 @@ impl HookInstaller {
         match event.action {
             ButtonAction::Press => {
                 event_blocks.append(&mut handler.on_press.call_available(event.target, ()));
+                alone_modifier.press_event(event.target);
             }
             ButtonAction::Release => {
                 event_blocks.append(&mut handler.on_release.call_available(event.target, ()));
+                if alone_modifier.is_alone(event.target) {
+                    event_blocks
+                        .append(&mut handler.on_release_alone.call_available(event.target, ()));
+                }
             }
         }
         event_blocks
@@ -125,12 +140,13 @@ impl From<Hook> for HookInstaller {
     fn from(hook: Hook) -> Self {
         let handler = Rc::try_unwrap(hook.handler).unwrap();
         let handler = RuntimeHandler::from(handler);
-        let modifier_event_block = Rc::try_unwrap(hook.modifier_event_block)
-            .unwrap()
-            .into_inner();
+        let modifiers_list = Rc::try_unwrap(hook.modifiers_list).unwrap().into_inner();
+        let modifier_event_block = ModifierEventBlock::from(modifiers_list.clone());
+        let alone_modifier = AloneModifierList::from(modifiers_list);
         Self {
             handler: Mutex::new(handler),
             modifier_event_block,
+            alone_modifier: Mutex::new(alone_modifier),
         }
     }
 }
