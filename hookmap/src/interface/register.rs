@@ -125,7 +125,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
         });
     }
 
-    /// When the specific button is pressed, the mouse button passed in the argument will be pressed.
+    /// When the specified button is pressed, the mouse button passed in the argument will be pressed.
     /// The same applies when the button is released.
     ///
     /// # Example

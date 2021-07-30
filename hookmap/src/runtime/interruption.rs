@@ -105,7 +105,7 @@ impl Interruption {
         rx.recv().unwrap()
     }
 
-    /// Waits for the keyboard event with the specific action.
+    /// Waits for the keyboard event with the specified action.
     ///
     /// ```
     /// use hookmap::*;
@@ -143,7 +143,7 @@ impl Interruption {
         rx.recv().unwrap()
     }
 
-    /// Waits for the mouse button event with the specific action.
+    /// Waits for the mouse button event with the specified action.
     ///
     /// ```
     /// use hookmap::*;
