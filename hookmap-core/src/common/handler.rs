@@ -1,7 +1,7 @@
 use super::{event::EventBlock, keyboard::InstallKeyboardHook, mouse::InstallMouseHook};
 use crate::{KeyboardEvent, MouseEvent};
 use once_cell::sync::Lazy;
-use std::{fmt::Debug, sync::Mutex};
+use std::{fmt::Debug, sync::RwLock};
 
 pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::new);
 
@@ -12,7 +12,7 @@ pub trait HandleInput {
     fn handle_input();
 }
 
-type EventCallback<E> = Box<dyn FnMut(E) -> EventBlock + Send>;
+type EventCallback<E> = Box<dyn Fn(E) -> EventBlock + Send + Sync>;
 
 /// An optional input event handler.
 pub struct HandlerFunction<E> {
@@ -50,7 +50,7 @@ impl<E> HandlerFunction<E> {
     ///
     pub fn register_handler<F>(&mut self, handler: F)
     where
-        F: FnMut(E) -> EventBlock + Send + 'static,
+        F: Fn(E) -> EventBlock + Send + Sync + 'static,
     {
         self.handler = Some(Box::new(handler));
     }
@@ -89,8 +89,8 @@ impl<E> HandlerFunction<E> {
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
-    pub fn emit(&mut self, event: E) -> EventBlock {
-        (self.handler.as_mut().unwrap())(event)
+    pub fn emit(&self, event: E) -> EventBlock {
+        (self.handler.as_ref().unwrap())(event)
     }
 }
 
@@ -116,10 +116,10 @@ impl<E> Default for HandlerFunction<E> {
 /// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
-    pub keyboard: Mutex<HandlerFunction<KeyboardEvent>>,
-    pub mouse_button: Mutex<HandlerFunction<MouseEvent>>,
-    pub mouse_wheel: Mutex<HandlerFunction<i32>>,
-    pub mouse_cursor: Mutex<HandlerFunction<(i32, i32)>>,
+    pub keyboard: RwLock<HandlerFunction<KeyboardEvent>>,
+    pub mouse_button: RwLock<HandlerFunction<MouseEvent>>,
+    pub mouse_wheel: RwLock<HandlerFunction<i32>>,
+    pub mouse_cursor: RwLock<HandlerFunction<(i32, i32)>>,
 }
 
 impl InputHandler
@@ -154,10 +154,10 @@ where
     /// INPUT_HANDLER.handle_input();
     /// ```
     pub fn handle_input(&self) {
-        let registered_keyboard_handler = self.keyboard.lock().unwrap().is_handler_registered();
-        let registered_mouse_handler = self.mouse_button.lock().unwrap().is_handler_registered()
-            || self.mouse_wheel.lock().unwrap().is_handler_registered()
-            || self.mouse_cursor.lock().unwrap().is_handler_registered();
+        let registered_keyboard_handler = self.keyboard.read().unwrap().is_handler_registered();
+        let registered_mouse_handler = self.mouse_button.read().unwrap().is_handler_registered()
+            || self.mouse_wheel.read().unwrap().is_handler_registered()
+            || self.mouse_cursor.read().unwrap().is_handler_registered();
 
         if registered_keyboard_handler {
             <Self as InstallKeyboardHook>::install();
