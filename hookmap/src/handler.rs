@@ -2,14 +2,21 @@ use crate::{
     event::EventInfo,
     modifier::{ModifierChecker, ModifierSet},
 };
-use derive_new::new;
 use hookmap_core::{ButtonAction, EventBlock, Key, Mouse};
 use std::{cell::RefCell, collections::HashMap, fmt::Debug, hash::Hash, rc::Rc, sync::Arc};
 
-#[derive(new)]
 pub(crate) struct HandlerFunction<I: Send + Debug + 'static> {
     callback: Box<dyn FnMut(EventInfo<I>) + Send>,
     modifier: Arc<ModifierSet>,
+}
+
+impl<I: Send + Debug + 'static> HandlerFunction<I> {
+    pub(crate) fn new(
+        callback: Box<dyn FnMut(EventInfo<I>) + Send>,
+        modifier: Arc<ModifierSet>,
+    ) -> Self {
+        Self { callback, modifier }
+    }
 }
 
 impl<I: Send + Debug + 'static> HandlerFunction<I> {
@@ -23,10 +30,11 @@ impl<I: Send + Debug + 'static> HandlerFunction<I> {
 pub(crate) struct HandlerVec<I: Copy + Send + Debug + 'static>(Vec<HandlerFunction<I>>);
 
 impl<I: Copy + Send + Debug + 'static> HandlerVec<I> {
-    pub(crate) fn push<F>(&mut self, handler: F, modifier: Arc<ModifierSet>)
-    where
-        F: FnMut(EventInfo<I>) + Send + 'static,
-    {
+    pub(crate) fn push(
+        &mut self,
+        handler: Box<dyn FnMut(EventInfo<I>) + Send>,
+        modifier: Arc<ModifierSet>,
+    ) {
         let handler_function = HandlerFunction::new(Box::new(handler), modifier);
         self.0.push(handler_function);
     }

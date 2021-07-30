@@ -45,7 +45,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .borrow_mut()
             .on_press
             .get(self.button)
-            .push(callback, Arc::clone(&self.modifier));
+            .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -77,7 +77,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .borrow_mut()
             .on_press_or_release
             .get(self.button)
-            .push(callback, Arc::clone(&self.modifier));
+            .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 
     /// Registers a handler called when the specified button is released.
@@ -100,7 +100,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .borrow_mut()
             .on_release
             .get(self.button)
-            .push(callback, Arc::clone(&self.modifier));
+            .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 
     /// When the specific button is pressed, the key passed in the argument will be pressed.
@@ -182,7 +182,7 @@ impl MouseCursorRegister {
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .push(callback, Arc::clone(&self.modifier));
+            .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 }
 
@@ -222,6 +222,6 @@ impl MouseWheelRegister {
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .push(callback, Arc::clone(&self.modifier));
+            .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 }
