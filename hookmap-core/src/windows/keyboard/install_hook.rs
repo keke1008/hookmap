@@ -28,6 +28,10 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
+
+    // On Windows, global hooks hanve a timeout.
+    // Therefore, to avoid it, create a new thread.
+    // When not blocking events, this emulates the default behavior.
     thread::spawn(move || {
         let target = VkCode(event_info.vkCode).into();
         let action = match event_info.flags >> 7 {

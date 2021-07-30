@@ -32,6 +32,10 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.is_none() {
         return call_next_hook(code, w_param, l_param);
     }
+
+    // On Windows, global hooks hanve a timeout.
+    // Therefore, to avoid it, create a new thread.
+    // When not blocking events, this emulates the default behavior.
     thread::spawn(move || match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
             let event = MouseEvent::new(target, action);

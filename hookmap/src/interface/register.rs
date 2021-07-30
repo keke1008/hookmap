@@ -25,7 +25,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
         }
     }
 
-    /// Registers a handler called when the specified key is pressed.
+    /// Registers a handler called when the specified button is pressed.
     ///
     /// # Example
     ///
@@ -48,7 +48,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .push(callback, Arc::clone(&self.modifier));
     }
 
-    /// Registers a handler called when the specified key is pressed or released.
+    /// Registers a handler called when the specified button is pressed or released.
     ///
     /// # Arguments
     ///
@@ -80,7 +80,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .push(callback, Arc::clone(&self.modifier));
     }
 
-    /// Registers a handler called when the specified key is released.
+    /// Registers a handler called when the specified button is released.
     ///
     /// # Example
     ///
@@ -103,6 +103,17 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .push(callback, Arc::clone(&self.modifier));
     }
 
+    /// When the specific button is pressed, the key passed in the argument will be pressed.
+    /// The same applies when the button is released.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_key(Key::H).as_key(Key::LeftArrow);
+    /// ```
+    ///
     pub fn as_key(&self, key: Key) {
         self.on_press(move |mut e| {
             key.press();
@@ -114,6 +125,17 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
         });
     }
 
+    /// When the specific button is pressed, the mouse button passed in the argument will be pressed.
+    /// The same applies when the button is released.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Key, Mouse, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_key(Key::A).as_mouse(Mouse::LButton);
+    /// ```
+    ///
     pub fn as_mouse(&self, mouse: Mouse) {
         self.on_press(move |mut e| {
             mouse.press();

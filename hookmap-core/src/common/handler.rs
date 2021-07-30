@@ -20,7 +20,7 @@ pub struct HandlerFunction<E> {
 }
 
 impl<E> HandlerFunction<E> {
-    /// Creates a new `HandlerFunction<T, A>` with `None`.
+    /// Creates a new `HandlerFunction<E>` with `None`.
     ///
     /// # Examples
     ///
