@@ -49,7 +49,7 @@ impl HookInstaller {
     }
 
     fn keyboard_handler(self: Arc<Self>) -> impl Fn(KeyboardEvent) -> EventBlock {
-        let res = move |event: KeyboardEvent| {
+        move |event: KeyboardEvent| {
             EVENT_SENDER.lock().unwrap().keyboard.send_event(event);
             let handler = &mut self.handler.lock().unwrap().keyboard;
             let alone_modifiers = &mut self.alone_modifier.lock().unwrap().keyboard_alone_modifiers;
@@ -59,8 +59,7 @@ impl HookInstaller {
             } else {
                 Self::determine_event_block(event_blocks)
             }
-        };
-        res
+        }
     }
 
     fn mouse_button_handler(self: Arc<Self>) -> impl Fn(MouseEvent) -> EventBlock {
