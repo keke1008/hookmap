@@ -11,7 +11,7 @@ categories = ["api-bindings"]
 readme = "README.md"
 
 [dependencies]
-hookmap-core = { "path" = "../hookmap-core" }
+hookmap-core = "0.1.0"
 once_cell = "1.8.0"
 
 [features]
