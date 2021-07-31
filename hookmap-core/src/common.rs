@@ -27,9 +27,6 @@ pub trait EmulateButtonInput {
 
     /// Returns `true` if a button is pressed.
     fn is_pressed(&self) -> bool;
-
-    /// Return `true` if a button is toggled on.
-    fn is_toggled(&self) -> bool;
 }
 
 /// A button input action.

@@ -1,4 +1,4 @@
-use super::{call_next_hook, set_button_state, DW_EXTRA_INFO};
+use super::{call_next_hook, DW_EXTRA_INFO};
 
 mod conversion;
 mod emulate_input;

@@ -4,11 +4,24 @@ use crate::common::{
     EmulateButtonInput,
 };
 use crate::windows::mouse::MouseParameter;
-use std::mem::{self, MaybeUninit};
+use once_cell::sync::Lazy;
+use std::{
+    collections::HashMap,
+    mem::{self, MaybeUninit},
+    sync::Mutex,
+};
 use winapi::{
     ctypes::c_int,
     um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
 };
+
+#[derive(Debug, PartialEq, Eq)]
+enum ButtonState {
+    Pressed,
+    Released,
+}
+
+static MOUSE_STATE: Lazy<Mutex<HashMap<Mouse, ButtonState>>> = Lazy::new(Default::default);
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     let mouse_input = MOUSEINPUT {
@@ -50,10 +63,21 @@ impl EmulateButtonInput for Mouse {
         let vk_code = self.into_vk_code();
         unsafe { winuser::GetKeyState(vk_code as i32) & (1 << 15) != 0 }
     }
+}
 
-    fn is_toggled(&self) -> bool {
-        let vk_code = self.into_vk_code();
-        unsafe { winuser::GetKeyState(vk_code as i32) & 1 != 0 }
+impl Mouse {
+    pub(super) fn assume_pressed(&self) {
+        MOUSE_STATE
+            .lock()
+            .unwrap()
+            .insert(*self, ButtonState::Pressed);
+    }
+
+    pub(super) fn assume_released(&self) {
+        MOUSE_STATE
+            .lock()
+            .unwrap()
+            .insert(*self, ButtonState::Released);
     }
 }
 

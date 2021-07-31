@@ -1,11 +1,11 @@
-use super::{call_next_hook, set_button_state, MouseEventInfo, DW_EXTRA_INFO};
+use super::{call_next_hook, MouseEventInfo, DW_EXTRA_INFO};
 use crate::{
     common::{
         event::EventBlock,
         handler::{InputHandler, INPUT_HANDLER},
         mouse::{InstallMouseHook, MouseEvent},
     },
-    EmulateButtonInput,
+    ButtonAction, EmulateButtonInput,
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -41,8 +41,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             let event = MouseEvent::new(target, action);
             let event_block = INPUT_HANDLER.mouse_button.read().unwrap().emit(event);
             match event_block {
-                EventBlock::Block => set_button_state(target.into_vk_code(), action),
                 EventBlock::Unblock => target.input(action),
+                EventBlock::Block => match action {
+                    ButtonAction::Press => target.assume_pressed(),
+                    ButtonAction::Release => target.assume_released(),
+                },
             }
         }
         MouseEventInfo::Wheel(speed) => {

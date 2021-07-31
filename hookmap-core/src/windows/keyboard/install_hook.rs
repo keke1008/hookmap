@@ -1,4 +1,4 @@
-use super::{call_next_hook, set_button_state, VkCode, DW_EXTRA_INFO};
+use super::{call_next_hook, VkCode, DW_EXTRA_INFO};
 use crate::{
     common::{
         event::EventBlock,
@@ -21,6 +21,7 @@ use winapi::{
     },
     um::winuser::{self, KBDLLHOOKSTRUCT, WH_KEYBOARD_LL},
 };
+
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
@@ -40,8 +41,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         };
         let event = KeyboardEvent::new(target, action);
         match INPUT_HANDLER.keyboard.read().unwrap().emit(event) {
-            EventBlock::Block => set_button_state(event_info.vkCode, action),
             EventBlock::Unblock => target.input(action),
+            EventBlock::Block => match action {
+                ButtonAction::Press => target.assume_pressed(),
+                ButtonAction::Release => target.assume_released(),
+            },
         }
     });
     1
