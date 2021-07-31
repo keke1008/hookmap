@@ -97,6 +97,7 @@ pub(crate) struct ButtonHandler<T: Eq + Hash> {
     pub(crate) on_press_or_release: HandlerMap<T, ButtonAction>,
     pub(crate) on_press: HandlerMap<T, ()>,
     pub(crate) on_release: HandlerMap<T, ()>,
+    pub(crate) on_release_alone: HandlerMap<T, ()>,
 }
 
 impl<T: Eq + Hash> Debug for ButtonHandler<T> {
@@ -111,6 +112,7 @@ impl<T: Eq + Hash> Default for ButtonHandler<T> {
             on_press: Default::default(),
             on_release: Default::default(),
             on_press_or_release: Default::default(),
+            on_release_alone: Default::default(),
         }
     }
 }

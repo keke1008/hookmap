@@ -1,5 +1,9 @@
 use hookmap_core::{EmulateButtonInput, EventBlock, Key, Mouse};
-use std::collections::{HashMap, HashSet};
+use std::{
+    collections::{HashMap, HashSet},
+    fmt::Debug,
+    hash::Hash,
+};
 
 #[derive(Debug, Default)]
 pub struct ModifierSet {
@@ -61,8 +65,33 @@ impl ModifierChecker {
     }
 }
 
-#[derive(Debug, Default)]
-pub(crate) struct ModifierEventBlock {
-    pub(crate) keyboard: HashMap<Key, EventBlock>,
-    pub(crate) mouse: HashMap<Mouse, EventBlock>,
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub(crate) struct ModifierButton<B: Eq + Hash + Debug> {
+    pub(crate) button: B,
+    pub(crate) event_block: EventBlock,
+}
+
+impl<B: Eq + Hash + Debug> ModifierButton<B> {
+    fn new(button: B, event_block: EventBlock) -> Self {
+        Self {
+            button,
+            event_block,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
+pub(crate) struct ModifierButtonSet {
+    pub(crate) keyboard: HashSet<ModifierButton<Key>>,
+    pub(crate) mouse: HashSet<ModifierButton<Mouse>>,
+}
+
+impl ModifierButtonSet {
+    pub(crate) fn add_keyboard(&mut self, key: Key, event_block: EventBlock) {
+        self.keyboard.insert(ModifierButton::new(key, event_block));
+    }
+
+    pub(crate) fn add_mouse(&mut self, mouse: Mouse, event_block: EventBlock) {
+        self.mouse.insert(ModifierButton::new(mouse, event_block));
+    }
 }

@@ -103,7 +103,35 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
             .push(Box::new(callback), Arc::clone(&self.modifier));
     }
 
-    /// When the specific button is pressed, the key passed in the argument will be pressed.
+    /// Register a handler to be called when a specified button is released and
+    /// not other buttons(except modifier buttons) are pressed while that button is pressed.
+    ///
+    /// The specified button must be registered as a modifier.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// let _mod_space = hook.modifier_key(Key::Space, EventBlock::Block);
+    /// hook.bind_key(Key::Space)
+    ///     .on_release_alone(|_| Key::Space.click());
+    ///
+    /// ```
+    ///
+    pub fn on_release_alone<F>(&self, callback: F)
+    where
+        F: FnMut(EventInfo<()>) + Send + 'static,
+    {
+        self.handler
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .on_release_alone
+            .get(self.button)
+            .push(Box::new(callback), Arc::clone(&self.modifier));
+    }
+    /// When the specified button is pressed, the key passed in the argument will be pressed.
     /// The same applies when the button is released.
     ///
     /// # Example

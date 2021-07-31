@@ -1,7 +1,7 @@
 use crate::ButtonAction;
 
 /// Indicates whether to pass the generated event to the next program or not .
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum EventBlock {
     /// Do not pass the generated event to the next program.
     Block,

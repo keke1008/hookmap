@@ -1,7 +1,7 @@
 use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
 use crate::{
     handler::Handler,
-    modifier::{ModifierEventBlock, ModifierSet},
+    modifier::{ModifierButtonSet, ModifierSet},
 };
 use hookmap_core::{EventBlock, Key, Mouse};
 use std::{
@@ -14,20 +14,20 @@ use std::{
 #[derive(Debug)]
 pub struct Modifier {
     handler: Weak<Handler>,
-    modifier: Arc<ModifierSet>,
-    modifier_event_block: Weak<RefCell<ModifierEventBlock>>,
+    modifier_set: Arc<ModifierSet>,
+    modifiers_list: Weak<RefCell<ModifierButtonSet>>,
 }
 
 impl Modifier {
     pub(crate) fn new(
         handler: Weak<Handler>,
         modifier: Arc<ModifierSet>,
-        modifier_event_block: Weak<RefCell<ModifierEventBlock>>,
+        modifier_button: Weak<RefCell<ModifierButtonSet>>,
     ) -> Self {
         Self {
             handler,
-            modifier,
-            modifier_event_block,
+            modifier_set: modifier,
+            modifiers_list: modifier_button,
         }
     }
 }
@@ -36,7 +36,7 @@ impl SelectHandleTarget for Modifier {
     fn bind_key(&self, key: Key) -> ButtonRegister<Key> {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().keyboard),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
             key,
         )
     }
@@ -44,7 +44,7 @@ impl SelectHandleTarget for Modifier {
     fn bind_mouse(&self, mouse: Mouse) -> ButtonRegister<Mouse> {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().mouse_button),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
             mouse,
         )
     }
@@ -52,42 +52,40 @@ impl SelectHandleTarget for Modifier {
     fn bind_mouse_wheel(&self) -> MouseWheelRegister {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().mouse_wheel),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
         )
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorRegister {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().mouse_cursor),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
         )
     }
 
     fn modifier_key(&self, key: Key, event_block: EventBlock) -> Self {
-        self.modifier_event_block
+        self.modifiers_list
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .keyboard
-            .insert(key, event_block);
+            .add_keyboard(key, event_block);
         Self {
             handler: Weak::clone(&self.handler),
-            modifier: Arc::new(self.modifier.added_key(key)),
-            modifier_event_block: Weak::clone(&self.modifier_event_block),
+            modifier_set: Arc::new(self.modifier_set.added_key(key)),
+            modifiers_list: Weak::clone(&self.modifiers_list),
         }
     }
 
     fn modifier_mouse_button(&self, mouse: Mouse, event_block: EventBlock) -> Self {
-        self.modifier_event_block
+        self.modifiers_list
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .mouse
-            .insert(mouse, event_block);
+            .add_mouse(mouse, event_block);
         Self {
             handler: Weak::clone(&self.handler),
-            modifier: Arc::new(self.modifier.added_mouse_button(mouse)),
-            modifier_event_block: Weak::clone(&self.modifier_event_block),
+            modifier_set: Arc::new(self.modifier_set.added_mouse_button(mouse)),
+            modifiers_list: Weak::clone(&self.modifiers_list),
         }
     }
 }

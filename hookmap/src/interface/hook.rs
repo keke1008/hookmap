@@ -1,7 +1,7 @@
 use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
 use crate::{
     handler::Handler,
-    modifier::{ModifierEventBlock, ModifierSet},
+    modifier::{ModifierButtonSet, ModifierSet},
     runtime::HookInstaller,
     Modifier,
 };
@@ -12,8 +12,8 @@ use std::{cell::RefCell, rc::Rc, sync::Arc};
 #[derive(Debug, Default)]
 pub struct Hook {
     pub(crate) handler: Rc<Handler>,
-    modifier: Arc<ModifierSet>,
-    pub(crate) modifier_event_block: Rc<RefCell<ModifierEventBlock>>,
+    modifier_set: Arc<ModifierSet>,
+    pub(crate) modifiers_list: Rc<RefCell<ModifierButtonSet>>,
 }
 
 impl Hook {
@@ -43,7 +43,7 @@ impl SelectHandleTarget for Hook {
     fn bind_key(&self, key: Key) -> ButtonRegister<Key> {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.keyboard),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
             key,
         )
     }
@@ -51,7 +51,7 @@ impl SelectHandleTarget for Hook {
     fn bind_mouse(&self, mouse: Mouse) -> ButtonRegister<Mouse> {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.mouse_button),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
             mouse,
         )
     }
@@ -59,38 +59,36 @@ impl SelectHandleTarget for Hook {
     fn bind_mouse_wheel(&self) -> MouseWheelRegister {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.mouse_wheel),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
         )
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorRegister {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.mouse_cursor),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.modifier_set),
         )
     }
 
     fn modifier_key(&self, key: Key, event_block: EventBlock) -> Modifier {
-        self.modifier_event_block
+        self.modifiers_list
             .borrow_mut()
-            .keyboard
-            .insert(key, event_block);
+            .add_keyboard(key, event_block);
         Modifier::new(
             Rc::downgrade(&self.handler),
-            Arc::new(self.modifier.added_key(key)),
-            Rc::downgrade(&self.modifier_event_block),
+            Arc::new(self.modifier_set.added_key(key)),
+            Rc::downgrade(&self.modifiers_list),
         )
     }
 
     fn modifier_mouse_button(&self, mouse: Mouse, event_block: EventBlock) -> Modifier {
-        self.modifier_event_block
+        self.modifiers_list
             .borrow_mut()
-            .mouse
-            .insert(mouse, event_block);
+            .add_mouse(mouse, event_block);
         Modifier::new(
             Rc::downgrade(&self.handler),
-            Arc::new(self.modifier.added_mouse_button(mouse)),
-            Rc::downgrade(&self.modifier_event_block),
+            Arc::new(self.modifier_set.added_mouse_button(mouse)),
+            Rc::downgrade(&self.modifiers_list),
         )
     }
 }
