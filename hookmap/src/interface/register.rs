@@ -111,7 +111,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::*;
     /// let hook = Hook::new();
     /// let _mod_space = hook.modifier_key(Key::Space, EventBlock::Block);
     /// hook.bind_key(Key::Space)
