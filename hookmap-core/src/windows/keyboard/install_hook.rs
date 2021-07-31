@@ -1,18 +1,12 @@
 use super::{call_next_hook, VkCode, DW_EXTRA_INFO};
-use crate::{
-    common::{
-        event::EventBlock,
-        handler::{InputHandler, INPUT_HANDLER},
-        keyboard::{InstallKeyboardHook, KeyboardEvent},
-        ButtonAction,
-    },
-    EmulateButtonInput,
+use crate::common::{
+    event::EventBlock,
+    handler::{InputHandler, INPUT_HANDLER},
+    keyboard::{InstallKeyboardHook, KeyboardEvent},
+    ButtonAction,
 };
 use once_cell::sync::Lazy;
-use std::{
-    sync::atomic::{AtomicPtr, Ordering},
-    thread,
-};
+use std::sync::atomic::{AtomicPtr, Ordering};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -30,24 +24,19 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         return call_next_hook(code, w_param, l_param);
     }
 
-    // On Windows, global hooks hanve a timeout.
-    // Therefore, to avoid it, create a new thread.
-    // When not blocking events, this emulates the default behavior.
-    thread::spawn(move || {
-        let target = VkCode(event_info.vkCode).into();
-        let action = match event_info.flags >> 7 {
-            0 => ButtonAction::Press,
-            _ => ButtonAction::Release,
-        };
-        let event = KeyboardEvent::new(target, action);
-        match INPUT_HANDLER.keyboard.read().unwrap().emit(event) {
-            EventBlock::Unblock => target.input(action),
-            EventBlock::Block => match action {
-                ButtonAction::Press => target.assume_pressed(),
-                ButtonAction::Release => target.assume_released(),
-            },
-        }
-    });
+    let target = VkCode(event_info.vkCode).into();
+    let action = match event_info.flags >> 7 {
+        0 => ButtonAction::Press,
+        _ => ButtonAction::Release,
+    };
+    let event = KeyboardEvent::new(target, action);
+    match INPUT_HANDLER.keyboard.read().unwrap().emit(event) {
+        EventBlock::Unblock => return call_next_hook(code, w_param, l_param),
+        EventBlock::Block => match action {
+            ButtonAction::Press => target.assume_pressed(),
+            ButtonAction::Release => target.assume_released(),
+        },
+    }
     1
 }
 
