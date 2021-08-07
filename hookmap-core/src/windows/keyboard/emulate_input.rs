@@ -8,53 +8,29 @@ use winapi::{
     um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP},
 };
 
-#[derive(Debug, PartialEq, Eq)]
-enum ButtonState {
-    Pressed,
-    Released,
-}
+static KEYBOARD_STATE: Lazy<Mutex<HashMap<Key, bool>>> = Lazy::new(Mutex::default);
 
-static KEYBOARD_STATE: Lazy<Mutex<HashMap<Key, ButtonState>>> = Lazy::new(Mutex::default);
-
-impl EmulateButtonInput for Key {
     fn press(&self) {
         send_key_input(self, 0);
-        KEYBOARD_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Pressed);
+        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
     }
     fn release(&self) {
         send_key_input(self, KEYEVENTF_KEYUP);
-        KEYBOARD_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Released);
+        KEYBOARD_STATE.lock().unwrap().insert(*self, false);
     }
 
     fn is_pressed(&self) -> bool {
-        KEYBOARD_STATE
-            .lock()
-            .unwrap()
-            .get(self)
-            .unwrap_or(&ButtonState::Released)
-            == &ButtonState::Pressed
+        *KEYBOARD_STATE.lock().unwrap().entry(*self).or_default()
     }
 }
 
 impl Key {
     pub(super) fn assume_pressed(&self) {
-        KEYBOARD_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Pressed);
+        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
     }
 
     pub(super) fn assume_released(&self) {
-        KEYBOARD_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Released);
+        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
     }
 }
 

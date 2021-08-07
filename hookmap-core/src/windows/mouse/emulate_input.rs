@@ -15,13 +15,7 @@ use winapi::{
     um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
 };
 
-#[derive(Debug, PartialEq, Eq)]
-enum ButtonState {
-    Pressed,
-    Released,
-}
-
-static MOUSE_STATE: Lazy<Mutex<HashMap<Mouse, ButtonState>>> = Lazy::new(Default::default);
+static MOUSE_STATE: Lazy<Mutex<HashMap<Mouse, bool>>> = Lazy::new(Default::default);
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     let mouse_input = MOUSEINPUT {
@@ -67,17 +61,11 @@ impl EmulateButtonInput for Mouse {
 
 impl Mouse {
     pub(super) fn assume_pressed(&self) {
-        MOUSE_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Pressed);
+        MOUSE_STATE.lock().unwrap().insert(*self, true);
     }
 
     pub(super) fn assume_released(&self) {
-        MOUSE_STATE
-            .lock()
-            .unwrap()
-            .insert(*self, ButtonState::Released);
+        MOUSE_STATE.lock().unwrap().insert(*self, false);
     }
 }
 
