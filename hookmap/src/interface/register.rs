@@ -3,7 +3,7 @@ use crate::{
     handler::{ButtonHandler, HandlerVec},
     modifier::ModifierSet,
 };
-use hookmap_core::{ButtonAction, EmulateButtonInput, Key, Mouse};
+use hookmap_core::{ButtonAction, ButtonInput, Key, Mouse};
 use std::{cell::RefCell, hash::Hash, rc::Weak, sync::Arc};
 
 pub struct ButtonRegister<B: Eq + Hash + Copy> {

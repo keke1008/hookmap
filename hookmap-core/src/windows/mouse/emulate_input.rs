@@ -1,7 +1,7 @@
 use super::DW_EXTRA_INFO;
 use crate::common::{
+    button::{ButtonInput, ButtonState},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
-    EmulateButtonInput,
 };
 use crate::windows::mouse::MouseParameter;
 use once_cell::sync::Lazy;
@@ -36,7 +36,7 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     }
 }
 
-impl EmulateButtonInput for Mouse {
+impl ButtonInput for Mouse {
     fn press(&self) {
         let MouseParameter {
             mouse_data,
@@ -52,7 +52,9 @@ impl EmulateButtonInput for Mouse {
         } = self.into_release();
         send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
     }
+}
 
+impl ButtonState for Mouse {
     fn is_pressed(&self) -> bool {
         let vk_code = self.into_vk_code();
         unsafe { winuser::GetKeyState(vk_code as i32) & (1 << 15) != 0 }

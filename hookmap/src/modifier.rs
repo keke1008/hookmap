@@ -1,4 +1,4 @@
-use hookmap_core::{EmulateButtonInput, EventBlock, Key, Mouse};
+use hookmap_core::{ButtonState, EventBlock, Key, Mouse};
 use std::{
     collections::{HashMap, HashSet},
     fmt::Debug,

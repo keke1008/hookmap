@@ -35,7 +35,8 @@ mod runtime;
 
 pub use event::EventInfo;
 pub use hookmap_core::{
-    ButtonAction, EmulateButtonInput, EmulateMouseCursor, EmulateMouseWheel, EventBlock, Key, Mouse,
+    ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, EventBlock, Key,
+    Mouse,
 };
 pub use interface::{Hook, Modifier, SelectHandleTarget};
 pub use runtime::interruption::Interruption;

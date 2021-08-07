@@ -27,9 +27,9 @@ mod macros;
 mod windows;
 
 pub use common::{
+    button::{ButtonAction, ButtonInput, ButtonState},
     event::{ButtonEvent, EventBlock},
     handler::{HandlerFunction, InputHandler, INPUT_HANDLER},
     keyboard::{Key, KeyboardEvent},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse, MouseEvent},
-    ButtonAction, EmulateButtonInput,
 };

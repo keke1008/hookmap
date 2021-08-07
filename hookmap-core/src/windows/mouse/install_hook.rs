@@ -1,9 +1,9 @@
 use super::{call_next_hook, MouseEventInfo, DW_EXTRA_INFO};
 use crate::common::{
+    button::ButtonAction,
     event::EventBlock,
     handler::{InputHandler, INPUT_HANDLER},
     mouse::{InstallMouseHook, MouseEvent},
-    ButtonAction,
 };
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicPtr, Ordering};

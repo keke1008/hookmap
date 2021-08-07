@@ -1,5 +1,8 @@
 use super::DW_EXTRA_INFO;
-use crate::common::{keyboard::Key, EmulateButtonInput};
+use crate::common::{
+    button::{ButtonInput, ButtonState},
+    keyboard::Key,
+};
 use crate::windows::keyboard::VkCode;
 use once_cell::sync::Lazy;
 use std::{collections::HashMap, mem, sync::Mutex};
@@ -10,6 +13,7 @@ use winapi::{
 
 static KEYBOARD_STATE: Lazy<Mutex<HashMap<Key, bool>>> = Lazy::new(Mutex::default);
 
+impl ButtonInput for Key {
     fn press(&self) {
         send_key_input(self, 0);
         KEYBOARD_STATE.lock().unwrap().insert(*self, true);
@@ -18,7 +22,9 @@ static KEYBOARD_STATE: Lazy<Mutex<HashMap<Key, bool>>> = Lazy::new(Mutex::defaul
         send_key_input(self, KEYEVENTF_KEYUP);
         KEYBOARD_STATE.lock().unwrap().insert(*self, false);
     }
+}
 
+impl ButtonState for Key {
     fn is_pressed(&self) -> bool {
         *KEYBOARD_STATE.lock().unwrap().entry(*self).or_default()
     }

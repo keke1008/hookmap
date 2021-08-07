@@ -1,5 +1,5 @@
 use crate::{
-    common::{mouse::Mouse, ButtonAction},
+    common::{button::ButtonAction, mouse::Mouse},
     EmulateMouseCursor,
 };
 use winapi::{
