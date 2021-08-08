@@ -1,12 +1,18 @@
 use super::{call_next_hook, VkCode, DW_EXTRA_INFO};
-use crate::common::{
-    button::ButtonAction,
-    event::EventBlock,
-    handler::{InputHandler, INPUT_HANDLER},
-    keyboard::{InstallKeyboardHook, KeyboardEvent},
+use crate::{
+    common::{
+        button::ButtonAction,
+        event::EventBlock,
+        handler::{InputHandler, INPUT_HANDLER},
+        keyboard::{InstallKeyboardHook, KeyboardEvent},
+    },
+    BUTTON_EVENT_BLOCK,
 };
 use once_cell::sync::Lazy;
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::{
+    sync::atomic::{AtomicPtr, Ordering},
+    thread,
+};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -30,7 +36,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         _ => ButtonAction::Release,
     };
     let event = KeyboardEvent::new(target, action);
-    match INPUT_HANDLER.keyboard.read().unwrap().emit(event) {
+    thread::spawn(move || INPUT_HANDLER.keyboard.read().unwrap().emit(event));
+    match BUTTON_EVENT_BLOCK.keyboard.get_or_default(target) {
         EventBlock::Unblock => return call_next_hook(code, w_param, l_param),
         EventBlock::Block => match action {
             ButtonAction::Press => target.assume_pressed(),

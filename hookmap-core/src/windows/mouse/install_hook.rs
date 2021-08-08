@@ -1,12 +1,18 @@
 use super::{call_next_hook, MouseEventInfo, DW_EXTRA_INFO};
-use crate::common::{
-    button::ButtonAction,
-    event::EventBlock,
-    handler::{InputHandler, INPUT_HANDLER},
-    mouse::{InstallMouseHook, MouseEvent},
+use crate::{
+    common::{
+        button::ButtonAction,
+        event::EventBlock,
+        handler::{InputHandler, INPUT_HANDLER},
+        mouse::{InstallMouseHook, MouseEvent},
+    },
+    BUTTON_EVENT_BLOCK,
 };
 use once_cell::sync::Lazy;
-use std::sync::atomic::{AtomicPtr, Ordering};
+use std::{
+    sync::atomic::{AtomicPtr, Ordering},
+    thread,
+};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -31,8 +37,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
             let event = MouseEvent::new(target, action);
-            let event_block = INPUT_HANDLER.mouse_button.read().unwrap().emit(event);
-            match event_block {
+            thread::spawn(move || INPUT_HANDLER.mouse_button.read().unwrap().emit(event));
+            match BUTTON_EVENT_BLOCK.mouse.get_or_default(target) {
                 EventBlock::Unblock => call_next_hook(code, w_param, l_param),
                 EventBlock::Block => {
                     match action {
@@ -44,11 +50,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             }
         }
         MouseEventInfo::Wheel(speed) => {
-            INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed);
+            thread::spawn(move || INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed));
             call_next_hook(code, w_param, l_param)
         }
         MouseEventInfo::Cursor(pos) => {
-            INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos);
+            thread::spawn(move || INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos));
             call_next_hook(code, w_param, l_param)
         }
     }

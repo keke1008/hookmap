@@ -1,5 +1,7 @@
-use super::{event::EventBlock, keyboard::InstallKeyboardHook, mouse::InstallMouseHook};
-use crate::{KeyboardEvent, MouseEvent};
+use super::{
+    keyboard::{InstallKeyboardHook, KeyboardEvent},
+    mouse::{InstallMouseHook, MouseEvent},
+};
 use once_cell::sync::Lazy;
 use std::{fmt::Debug, sync::RwLock};
 
@@ -12,7 +14,7 @@ pub trait HandleInput {
     fn handle_input();
 }
 
-type EventCallback<E> = Box<dyn Fn(E) -> EventBlock + Send + Sync>;
+type EventCallback<E> = Box<dyn Fn(E) + Send + Sync>;
 
 /// An optional input event handler.
 pub struct HandlerFunction<E> {
@@ -50,7 +52,7 @@ impl<E> HandlerFunction<E> {
     ///
     pub fn register_handler<F>(&mut self, handler: F)
     where
-        F: Fn(E) -> EventBlock + Send + Sync + 'static,
+        F: Fn(E) + Send + Sync + 'static,
     {
         self.handler = Some(Box::new(handler));
     }
@@ -89,7 +91,7 @@ impl<E> HandlerFunction<E> {
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
-    pub fn emit(&self, event: E) -> EventBlock {
+    pub fn emit(&self, event: E) {
         (self.handler.as_ref().unwrap())(event)
     }
 }
