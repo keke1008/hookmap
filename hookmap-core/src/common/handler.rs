@@ -1,12 +1,9 @@
 use super::event::ButtonEvent;
-use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
     sync::{Arc, Mutex},
     thread,
 };
-
-pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::default);
 
 type EventCallback<E> = Arc<dyn Fn(E) + Send + Sync>;
 

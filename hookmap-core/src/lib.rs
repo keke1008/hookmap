@@ -28,7 +28,8 @@ mod windows;
 
 pub use common::{
     button::{Button, ButtonAction, ButtonInput, ButtonKind, ButtonState},
-    event::{ButtonEvent, ButtonEventBlockMap, EventBlock, BUTTON_EVENT_BLOCK},
-    handler::{HandlerFunction, InputHandler, INPUT_HANDLER},
+    event::{ButtonEvent, ButtonEventBlockMap, EventBlock},
+    handler::{HandlerFunction, InputHandler},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
+    BUTTON_EVENT_BLOCK, INPUT_HANDLER,
 };

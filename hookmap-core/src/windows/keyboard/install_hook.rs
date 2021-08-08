@@ -1,8 +1,8 @@
 use super::{call_next_hook, conversion::VkCode, DW_EXTRA_INFO};
 use crate::common::{
     button::ButtonAction,
-    event::{ButtonEvent, EventBlock, BUTTON_EVENT_BLOCK},
-    handler::INPUT_HANDLER,
+    event::{ButtonEvent, EventBlock},
+    BUTTON_EVENT_BLOCK, INPUT_HANDLER,
 };
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicPtr, Ordering};

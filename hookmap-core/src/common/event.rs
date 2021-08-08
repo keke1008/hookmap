@@ -1,5 +1,4 @@
 use super::button::{Button, ButtonAction};
-use once_cell::sync::Lazy;
 use std::{collections::HashMap, hash::Hash, sync::Mutex};
 
 /// Indicates whether to pass the generated event to the next program or not .
@@ -36,8 +35,6 @@ impl Default for ButtonEventBlockMap {
         Self(Default::default())
     }
 }
-
-pub static BUTTON_EVENT_BLOCK: Lazy<ButtonEventBlockMap> = Lazy::new(Default::default);
 
 /// Information about the generated event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
