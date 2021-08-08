@@ -21,8 +21,8 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{HandlerFunction, KeyboardEvent};
-    /// let handler = HandlerFunction::<KeyboardEvent>::new();
+    /// use hookmap_core::{HandlerFunction, ButtonEvent};
+    /// let handler = HandlerFunction::<ButtonEvent>::new();
     /// ```
     ///
     pub fn new() -> Self {
@@ -34,13 +34,12 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{EventBlock, HandlerFunction, KeyboardEvent};
+    /// use hookmap_core::{EventBlock, HandlerFunction, ButtonEvent};
     ///
-    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
+    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// handler.register_handler(|e| {
     ///     println!("Event target: {:?}", e.target);
     ///     println!("Event action: {:?}", e.action);
-    ///     EventBlock::Unblock
     /// });
     /// ```
     ///
@@ -56,13 +55,12 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{EventBlock, HandlerFunction, KeyboardEvent};
+    /// use hookmap_core::{EventBlock, HandlerFunction, ButtonEvent};
     ///
-    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
+    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// assert!(!handler.is_handler_registered());
     ///
-    /// handler.register_handler(|_| EventBlock::Unblock);
-    /// assert!(handler.is_handler_registered());
+    /// handler.register_handler(|_| {});
     /// ```
     ///
     pub fn is_handler_registered(&self) -> bool {
@@ -73,12 +71,11 @@ impl<E> HandlerFunction<E> {
     ///
     /// # Examples
     /// ```
-    /// use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, HandlerFunction, Key, KeyboardEvent};
+    /// use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, HandlerFunction, Button};
     ///
-    /// let mut handler = HandlerFunction::<KeyboardEvent>::new();
-    /// handler.register_handler(|_| EventBlock::Block);
-    /// let event_block = handler.emit(ButtonEvent::new(Key::A, ButtonAction::Press));
-    /// assert_eq!(event_block, EventBlock::Block);
+    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
+    /// handler.register_handler(|_| {});
+    /// handler.emit(ButtonEvent::new(Button::A, ButtonAction::Press));
     /// ```
     ///
     pub fn emit(&self, event: E)
