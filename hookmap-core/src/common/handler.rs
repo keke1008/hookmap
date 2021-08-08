@@ -2,7 +2,7 @@ use super::event::ButtonEvent;
 use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
-    sync::{Arc, RwLock},
+    sync::{Arc, Mutex},
     thread,
 };
 
@@ -12,7 +12,7 @@ type EventCallback<E> = Arc<dyn Fn(E) + Send + Sync>;
 
 /// An optional input event handler.
 pub struct HandlerFunction<E> {
-    handler: Option<EventCallback<E>>,
+    handler: Mutex<Option<EventCallback<E>>>,
 }
 
 impl<E> HandlerFunction<E> {
@@ -43,11 +43,11 @@ impl<E> HandlerFunction<E> {
     /// });
     /// ```
     ///
-    pub fn register_handler<F>(&mut self, handler: F)
+    pub fn register_handler<F>(&self, handler: F)
     where
         F: Fn(E) + Send + Sync + 'static,
     {
-        self.handler = Some(Arc::new(handler));
+        self.handler.lock().unwrap().insert(Arc::new(handler));
     }
 
     /// Returns `true` if the `HandlerFunction` registers a callback function.
@@ -64,7 +64,7 @@ impl<E> HandlerFunction<E> {
     /// ```
     ///
     pub fn is_handler_registered(&self) -> bool {
-        self.handler.is_some()
+        self.handler.lock().unwrap().is_some()
     }
 
     /// Calls the handler in another thread if the handler is registered.
@@ -82,7 +82,7 @@ impl<E> HandlerFunction<E> {
     where
         E: Send + 'static,
     {
-        if let Some(handler) = self.handler.as_ref() {
+        if let Some(handler) = self.handler.lock().unwrap().as_ref() {
             let handler = Arc::clone(handler);
             thread::spawn(move || (handler)(event));
         }
@@ -102,7 +102,9 @@ impl<E> std::fmt::Debug for HandlerFunction<E> {
 
 impl<E> Default for HandlerFunction<E> {
     fn default() -> Self {
-        Self { handler: None }
+        Self {
+            handler: Default::default(),
+        }
     }
 }
 
@@ -119,9 +121,9 @@ pub trait HookInstaller {
 /// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
-    pub button: RwLock<HandlerFunction<ButtonEvent>>,
-    pub mouse_wheel: RwLock<HandlerFunction<i32>>,
-    pub mouse_cursor: RwLock<HandlerFunction<(i32, i32)>>,
+    pub button: HandlerFunction<ButtonEvent>,
+    pub mouse_wheel: HandlerFunction<i32>,
+    pub mouse_cursor: HandlerFunction<(i32, i32)>,
 }
 
 impl InputHandler

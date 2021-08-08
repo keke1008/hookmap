@@ -30,7 +30,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
             let event = ButtonEvent::new(target, action);
-            INPUT_HANDLER.button.read().unwrap().emit(event);
+            INPUT_HANDLER.button.emit(event);
             match BUTTON_EVENT_BLOCK.get_or_default(target) {
                 EventBlock::Unblock => call_next_hook(code, w_param, l_param),
                 EventBlock::Block => {
@@ -43,11 +43,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             }
         }
         MouseEventInfo::Wheel(speed) => {
-            INPUT_HANDLER.mouse_wheel.read().unwrap().emit(speed);
+            INPUT_HANDLER.mouse_wheel.emit(speed);
             call_next_hook(code, w_param, l_param)
         }
         MouseEventInfo::Cursor(pos) => {
-            INPUT_HANDLER.mouse_cursor.read().unwrap().emit(pos);
+            INPUT_HANDLER.mouse_cursor.emit(pos);
             call_next_hook(code, w_param, l_param)
         }
     }

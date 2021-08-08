@@ -29,7 +29,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         _ => ButtonAction::Release,
     };
     let event = ButtonEvent::new(target, action);
-    INPUT_HANDLER.button.read().unwrap().emit(event);
+    INPUT_HANDLER.button.emit(event);
     match BUTTON_EVENT_BLOCK.get_or_default(target) {
         EventBlock::Unblock => return call_next_hook(code, w_param, l_param),
         EventBlock::Block => match action {
