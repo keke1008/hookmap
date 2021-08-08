@@ -1,48 +1,23 @@
-use super::DW_EXTRA_INFO;
-use crate::common::{
-    button::{ButtonInput, ButtonState},
-    keyboard::Key,
-};
-use crate::windows::keyboard::VkCode;
-use once_cell::sync::Lazy;
-use std::{collections::HashMap, mem, sync::Mutex};
+use super::{conversion::VkCode, DW_EXTRA_INFO};
+use crate::common::button::Button;
+use std::mem;
 use winapi::{
     ctypes::c_int,
     um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP},
 };
 
-static KEYBOARD_STATE: Lazy<Mutex<HashMap<Key, bool>>> = Lazy::new(Mutex::default);
-
-impl ButtonInput for Key {
-    fn press(&self) {
-        send_key_input(self, 0);
-        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
-    }
-    fn release(&self) {
-        send_key_input(self, KEYEVENTF_KEYUP);
-        KEYBOARD_STATE.lock().unwrap().insert(*self, false);
-    }
+pub(crate) fn press(key: &Button) {
+    send_key_input(key, 0);
 }
 
-impl ButtonState for Key {
-    fn is_pressed(&self) -> bool {
-        *KEYBOARD_STATE.lock().unwrap().entry(*self).or_default()
-    }
+pub(crate) fn release(key: &Button) {
+    send_key_input(key, KEYEVENTF_KEYUP);
 }
 
-impl Key {
-    pub(super) fn assume_pressed(&self) {
-        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
-    }
-
-    pub(super) fn assume_released(&self) {
-        KEYBOARD_STATE.lock().unwrap().insert(*self, true);
-    }
-}
-
-fn send_key_input(key: &Key, flags: u32) {
+fn send_key_input(key: &Button, flags: u32) {
+    let vk_code = VkCode::from(*key).0;
     let keybd_input = KEYBDINPUT {
-        wVk: <Key as Into<VkCode>>::into(*key).0 as u16,
+        wVk: vk_code as u16,
         wScan: 0,
         dwFlags: flags,
         time: 0,

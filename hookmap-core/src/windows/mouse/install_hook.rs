@@ -1,12 +1,8 @@
 use super::{call_next_hook, MouseEventInfo, DW_EXTRA_INFO};
-use crate::{
-    common::{
-        button::ButtonAction,
-        event::EventBlock,
-        handler::{InputHandler, INPUT_HANDLER},
-        mouse::{InstallMouseHook, MouseEvent},
-    },
-    BUTTON_EVENT_BLOCK,
+use crate::common::{
+    button::ButtonAction,
+    event::{ButtonEvent, EventBlock, BUTTON_EVENT_BLOCK},
+    handler::INPUT_HANDLER,
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -36,9 +32,9 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
 
     match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
-            let event = MouseEvent::new(target, action);
-            thread::spawn(move || INPUT_HANDLER.mouse_button.read().unwrap().emit(event));
-            match BUTTON_EVENT_BLOCK.mouse.get_or_default(target) {
+            let event = ButtonEvent::new(target, action);
+            thread::spawn(move || INPUT_HANDLER.button.read().unwrap().emit(event));
+            match BUTTON_EVENT_BLOCK.get_or_default(target) {
                 EventBlock::Unblock => call_next_hook(code, w_param, l_param),
                 EventBlock::Block => {
                     match action {
@@ -60,10 +56,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-impl InstallMouseHook for InputHandler {
-    fn install() {
-        let handler =
-            unsafe { winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
-        HHOOK_HANDLER.store(handler, Ordering::SeqCst);
-    }
+pub(in crate::windows) fn install_hook() {
+    let handler =
+        unsafe { winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
+    HHOOK_HANDLER.store(handler, Ordering::SeqCst);
 }

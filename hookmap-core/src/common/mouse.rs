@@ -1,21 +1,4 @@
-use super::event::ButtonEvent;
-
-/// Installs a mouse hook in the way of each platform.
-pub trait InstallMouseHook {
-    /// Installs a mouse hook.
-    fn install();
-}
-
-pub type MouseEvent = ButtonEvent<Mouse>;
-
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
-pub enum Mouse {
-    LButton,
-    RButton,
-    MButton,
-    SideButton1,
-    SideButton2,
-}
+pub struct Mouse;
 
 /// Emulates the mouse wheel input.
 pub trait EmulateMouseWheel {

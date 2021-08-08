@@ -1,18 +1,8 @@
-use super::{
-    keyboard::{InstallKeyboardHook, KeyboardEvent},
-    mouse::{InstallMouseHook, MouseEvent},
-};
+use super::event::ButtonEvent;
 use once_cell::sync::Lazy;
 use std::{fmt::Debug, sync::RwLock};
 
-pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::new);
-
-/// Installs a hook in the way of each platform.
-/// This needs to implement for `InputHandler`.
-pub trait HandleInput {
-    /// Installs a hook and blocks a thread.
-    fn handle_input();
-}
+pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::default);
 
 type EventCallback<E> = Box<dyn Fn(E) + Send + Sync>;
 
@@ -92,7 +82,9 @@ impl<E> HandlerFunction<E> {
     /// ```
     ///
     pub fn emit(&self, event: E) {
-        (self.handler.as_ref().unwrap())(event)
+        if let Some(handler) = self.handler.as_ref() {
+            (handler)(event);
+        }
     }
 }
 
@@ -113,36 +105,28 @@ impl<E> Default for HandlerFunction<E> {
     }
 }
 
+pub trait HookInstaller {
+    /// Installs hooks in the way of each platform.
+    fn install();
+
+    /// Installs hooks and blocks a thread.
+    fn handle_input();
+}
+
 /// A keyboard and mouse Event Handler.
 ///
 /// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
-    pub keyboard: RwLock<HandlerFunction<KeyboardEvent>>,
-    pub mouse_button: RwLock<HandlerFunction<MouseEvent>>,
+    pub button: RwLock<HandlerFunction<ButtonEvent>>,
     pub mouse_wheel: RwLock<HandlerFunction<i32>>,
     pub mouse_cursor: RwLock<HandlerFunction<(i32, i32)>>,
 }
 
 impl InputHandler
 where
-    Self: InstallKeyboardHook + InstallMouseHook + HandleInput,
+    Self: HookInstaller,
 {
-    /// Creates a new `InputHandler`.
-    ///
-    /// Instead of calling this function, use `hookmap_core::INPUT_HANDLER`.
-    ///
-    /// # Examples
-    ///
-    /// ```ignore
-    /// use hookmap_core::InputHandler;
-    /// let handler = InputHandler::new();
-    /// ```
-    ///
-    fn new() -> Self {
-        Self::default()
-    }
-
     /// Handles keyboard and mouse event and blocks a thread.
     ///
     /// # Panics
@@ -156,19 +140,7 @@ where
     /// INPUT_HANDLER.handle_input();
     /// ```
     pub fn handle_input(&self) {
-        let registered_keyboard_handler = self.keyboard.read().unwrap().is_handler_registered();
-        let registered_mouse_handler = self.mouse_button.read().unwrap().is_handler_registered()
-            || self.mouse_wheel.read().unwrap().is_handler_registered()
-            || self.mouse_cursor.read().unwrap().is_handler_registered();
-
-        if registered_keyboard_handler {
-            <Self as InstallKeyboardHook>::install();
-        }
-        if registered_mouse_handler {
-            <Self as InstallMouseHook>::install();
-        }
-        if registered_keyboard_handler || registered_mouse_handler {
-            <Self as HandleInput>::handle_input();
-        }
+        <Self as HookInstaller>::install();
+        <Self as HookInstaller>::handle_input();
     }
 }

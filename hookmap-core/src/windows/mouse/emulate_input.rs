@@ -1,21 +1,14 @@
 use super::DW_EXTRA_INFO;
 use crate::common::{
-    button::{ButtonInput, ButtonState},
+    button::Button,
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
 };
 use crate::windows::mouse::MouseParameter;
-use once_cell::sync::Lazy;
-use std::{
-    collections::HashMap,
-    mem::{self, MaybeUninit},
-    sync::Mutex,
-};
+use std::mem::{self, MaybeUninit};
 use winapi::{
     ctypes::c_int,
     um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
 };
-
-static MOUSE_STATE: Lazy<Mutex<HashMap<Mouse, bool>>> = Lazy::new(Default::default);
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     let mouse_input = MOUSEINPUT {
@@ -36,39 +29,20 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     }
 }
 
-impl ButtonInput for Mouse {
-    fn press(&self) {
-        let MouseParameter {
-            mouse_data,
-            dw_flags,
-        } = self.into_press();
-        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
-    }
-
-    fn release(&self) {
-        let MouseParameter {
-            mouse_data,
-            dw_flags,
-        } = self.into_release();
-        send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
-    }
+pub(in crate::windows) fn press(this: &Button) {
+    let MouseParameter {
+        mouse_data,
+        dw_flags,
+    } = this.into_press();
+    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
 }
 
-impl ButtonState for Mouse {
-    fn is_pressed(&self) -> bool {
-        let vk_code = self.into_vk_code();
-        unsafe { winuser::GetKeyState(vk_code as i32) & (1 << 15) != 0 }
-    }
-}
-
-impl Mouse {
-    pub(super) fn assume_pressed(&self) {
-        MOUSE_STATE.lock().unwrap().insert(*self, true);
-    }
-
-    pub(super) fn assume_released(&self) {
-        MOUSE_STATE.lock().unwrap().insert(*self, false);
-    }
+pub(in crate::windows) fn release(this: &Button) {
+    let MouseParameter {
+        mouse_data,
+        dw_flags,
+    } = this.into_release();
+    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
 }
 
 impl EmulateMouseWheel for Mouse {

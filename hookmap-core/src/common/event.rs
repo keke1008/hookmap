@@ -1,6 +1,5 @@
+use super::button::{Button, ButtonAction};
 use once_cell::sync::Lazy;
-
-use crate::{ButtonAction, Key, Mouse};
 use std::{collections::HashMap, hash::Hash, sync::Mutex};
 
 /// Indicates whether to pass the generated event to the next program or not .
@@ -20,45 +19,39 @@ impl Default for &EventBlock {
 }
 
 #[derive(Debug)]
-pub struct EventBlockMap<K: Hash + Eq>(Mutex<HashMap<K, EventBlock>>);
+pub struct ButtonEventBlockMap(Mutex<HashMap<Button, EventBlock>>);
 
-impl<K: Hash + Eq> EventBlockMap<K> {
-    pub fn get_or_default(&self, k: K) -> EventBlock {
+impl ButtonEventBlockMap {
+    pub fn get_or_default(&self, k: Button) -> EventBlock {
         *self.0.lock().unwrap().get(&k).unwrap_or_default()
     }
 
-    pub fn insert(&mut self, k: K, v: EventBlock) -> Option<EventBlock> {
+    pub fn insert(&mut self, k: Button, v: EventBlock) -> Option<EventBlock> {
         self.0.lock().unwrap().insert(k, v)
     }
 }
 
-impl<K: Hash + Eq> Default for EventBlockMap<K> {
+impl Default for ButtonEventBlockMap {
     fn default() -> Self {
         Self(Default::default())
     }
 }
 
-#[derive(Debug, Default)]
-pub struct ButtonEventBlock {
-    pub keyboard: EventBlockMap<Key>,
-    pub mouse: EventBlockMap<Mouse>,
-}
-
-pub static BUTTON_EVENT_BLOCK: Lazy<ButtonEventBlock> = Lazy::new(Default::default);
+pub static BUTTON_EVENT_BLOCK: Lazy<ButtonEventBlockMap> = Lazy::new(Default::default);
 
 /// Information about the generated event.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct ButtonEvent<T> {
+pub struct ButtonEvent {
     /// Target of the generated event.
-    pub target: T,
+    pub target: Button,
 
     /// Action of the generated event.
     pub action: ButtonAction,
 }
 
-impl<T> ButtonEvent<T> {
+impl ButtonEvent {
     /// Creates a new `ButtonEvent<T, A>`.
-    pub fn new(target: T, action: ButtonAction) -> Self {
+    pub fn new(target: Button, action: ButtonAction) -> Self {
         Self { target, action }
     }
 }

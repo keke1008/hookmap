@@ -1,12 +1,8 @@
-use super::{call_next_hook, VkCode, DW_EXTRA_INFO};
-use crate::{
-    common::{
-        button::ButtonAction,
-        event::EventBlock,
-        handler::{InputHandler, INPUT_HANDLER},
-        keyboard::{InstallKeyboardHook, KeyboardEvent},
-    },
-    BUTTON_EVENT_BLOCK,
+use super::{call_next_hook, conversion::VkCode, DW_EXTRA_INFO};
+use crate::common::{
+    button::ButtonAction,
+    event::{ButtonEvent, EventBlock, BUTTON_EVENT_BLOCK},
+    handler::INPUT_HANDLER,
 };
 use once_cell::sync::Lazy;
 use std::{
@@ -35,9 +31,9 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         0 => ButtonAction::Press,
         _ => ButtonAction::Release,
     };
-    let event = KeyboardEvent::new(target, action);
-    thread::spawn(move || INPUT_HANDLER.keyboard.read().unwrap().emit(event));
-    match BUTTON_EVENT_BLOCK.keyboard.get_or_default(target) {
+    let event = ButtonEvent::new(target, action);
+    thread::spawn(move || INPUT_HANDLER.button.read().unwrap().emit(event));
+    match BUTTON_EVENT_BLOCK.get_or_default(target) {
         EventBlock::Unblock => return call_next_hook(code, w_param, l_param),
         EventBlock::Block => match action {
             ButtonAction::Press => target.assume_pressed(),
@@ -47,11 +43,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     1
 }
 
-impl InstallKeyboardHook for InputHandler {
-    fn install() {
-        let handler = unsafe {
-            winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0)
-        };
-        HHOOK_HANDLER.store(handler, Ordering::SeqCst);
-    }
+pub(crate) fn install_hook() {
+    let handler =
+        unsafe { winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
+    HHOOK_HANDLER.store(handler, Ordering::SeqCst);
 }
