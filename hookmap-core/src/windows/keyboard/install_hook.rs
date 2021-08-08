@@ -5,10 +5,7 @@ use crate::common::{
     handler::INPUT_HANDLER,
 };
 use once_cell::sync::Lazy;
-use std::{
-    sync::atomic::{AtomicPtr, Ordering},
-    thread,
-};
+use std::sync::atomic::{AtomicPtr, Ordering};
 use winapi::{
     ctypes::c_int,
     shared::{
@@ -32,7 +29,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         _ => ButtonAction::Release,
     };
     let event = ButtonEvent::new(target, action);
-    thread::spawn(move || INPUT_HANDLER.button.read().unwrap().emit(event));
+    INPUT_HANDLER.button.read().unwrap().emit(event);
     match BUTTON_EVENT_BLOCK.get_or_default(target) {
         EventBlock::Unblock => return call_next_hook(code, w_param, l_param),
         EventBlock::Block => match action {

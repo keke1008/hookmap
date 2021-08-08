@@ -1,10 +1,14 @@
 use super::event::ButtonEvent;
 use once_cell::sync::Lazy;
-use std::{fmt::Debug, sync::RwLock};
+use std::{
+    fmt::Debug,
+    sync::{Arc, RwLock},
+    thread,
+};
 
 pub static INPUT_HANDLER: Lazy<InputHandler> = Lazy::new(InputHandler::default);
 
-type EventCallback<E> = Box<dyn Fn(E) + Send + Sync>;
+type EventCallback<E> = Arc<dyn Fn(E) + Send + Sync>;
 
 /// An optional input event handler.
 pub struct HandlerFunction<E> {
@@ -44,7 +48,7 @@ impl<E> HandlerFunction<E> {
     where
         F: Fn(E) + Send + Sync + 'static,
     {
-        self.handler = Some(Box::new(handler));
+        self.handler = Some(Arc::new(handler));
     }
 
     /// Returns `true` if the `HandlerFunction` registers a callback function.
@@ -65,11 +69,7 @@ impl<E> HandlerFunction<E> {
         self.handler.is_some()
     }
 
-    /// Calls a registered handler and returns value returned by the handler.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the handler has not yet been registered.
+    /// Calls the handler in another thread if the handler is registered.
     ///
     /// # Examples
     /// ```
@@ -81,9 +81,13 @@ impl<E> HandlerFunction<E> {
     /// assert_eq!(event_block, EventBlock::Block);
     /// ```
     ///
-    pub fn emit(&self, event: E) {
+    pub fn emit(&self, event: E)
+    where
+        E: Send + 'static,
+    {
         if let Some(handler) = self.handler.as_ref() {
-            (handler)(event);
+            let handler = Arc::clone(handler);
+            thread::spawn(move || (handler)(event));
         }
     }
 }
