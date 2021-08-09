@@ -1,4 +1,3 @@
-// mod handler;
 mod keyboard;
 mod mouse;
 
@@ -38,6 +37,7 @@ impl ButtonState for Button {
 
 impl ButtonInput for Button {
     fn press(&self) {
+        self.assume_pressed();
         match self.kind() {
             ButtonKind::Key => keyboard::press(self),
             ButtonKind::Mouse => mouse::press(self),
@@ -45,6 +45,7 @@ impl ButtonInput for Button {
     }
 
     fn release(&self) {
+        self.assume_pressed();
         match self.kind() {
             ButtonKind::Key => keyboard::release(self),
             ButtonKind::Mouse => mouse::release(self),

@@ -31,15 +31,13 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         MouseEventInfo::Button(target, action) => {
             let event = ButtonEvent::new(target, action);
             INPUT_HANDLER.button.emit(event);
+            match action {
+                ButtonAction::Press => target.assume_pressed(),
+                ButtonAction::Release => target.assume_released(),
+            }
             match BUTTON_EVENT_BLOCK.get_or_default(target) {
                 EventBlock::Unblock => call_next_hook(code, w_param, l_param),
-                EventBlock::Block => {
-                    match action {
-                        ButtonAction::Press => target.assume_pressed(),
-                        ButtonAction::Release => target.assume_released(),
-                    }
-                    1
-                }
+                EventBlock::Block => 1,
             }
         }
         MouseEventInfo::Wheel(speed) => {

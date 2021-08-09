@@ -1,6 +1,7 @@
-use crate::{bihashmap, common::button::Button};
+use crate::{bihashmap, common::button::Button, ButtonAction};
 use bimap::BiHashMap;
 use once_cell::sync::Lazy;
+use winapi::um::winuser::KBDLLHOOKSTRUCT;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct VkCode(pub(super) u32);
@@ -21,6 +22,13 @@ impl From<VkCode> for Button {
             Some(&button) => button,
             None => Button::OtherKey(code.0),
         }
+    }
+}
+
+pub(super) fn into_action(event_info: KBDLLHOOKSTRUCT) -> ButtonAction {
+    match event_info.flags >> 7 {
+        0 => ButtonAction::Press,
+        _ => ButtonAction::Release,
     }
 }
 
