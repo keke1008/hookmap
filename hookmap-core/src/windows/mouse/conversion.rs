@@ -1,6 +1,6 @@
-use crate::{
-    common::{button::ButtonAction, mouse::Mouse},
-    Button, EmulateMouseCursor,
+use crate::common::{
+    button::{Button, ButtonAction},
+    mouse::{EmulateMouseCursor, Mouse},
 };
 use winapi::{
     shared::minwindef::{HIWORD, WPARAM},
