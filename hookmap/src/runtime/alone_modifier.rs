@@ -7,7 +7,7 @@ pub(crate) struct AloneModifierMap(HashMap<Button, bool>);
 
 impl AloneModifierMap {
     /// Called when a button is pressed.
-    pub(crate) fn press_event(&mut self, button: Button) {
+    pub(crate) fn emit_press_event(&mut self, button: Button) {
         match self.0.get_mut(&button) {
             Some(is_alone) => *is_alone = true,
             None => self.0.values_mut().for_each(|is_alone| *is_alone = false),

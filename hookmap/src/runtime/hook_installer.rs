@@ -40,7 +40,7 @@ impl HookInstaller {
             match event.action {
                 ButtonAction::Press => {
                     handler.on_press.call_available(event.target, ());
-                    alone_modifiers.press_event(event.target);
+                    alone_modifiers.emit_press_event(event.target);
                 }
                 ButtonAction::Release => {
                     handler.on_release.call_available(event.target, ());
