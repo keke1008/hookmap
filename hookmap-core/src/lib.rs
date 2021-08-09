@@ -19,6 +19,10 @@
 //! [`InstallKeyboardHook`]: crate::common::keyboard::InstallKeyboardHook
 //! [`InstallMouseHook`]: crate::common::mouse::InstallMouseHook
 //! [`HandleInput`]: crate::common::handler::HandleInput
+//!
+//! ## Feature flags
+//!
+//! * `block-input-event`: Set the default `EventBlock` value to `EventBlock::Block`.
 
 pub mod common;
 mod macros;
@@ -28,7 +32,7 @@ mod windows;
 
 pub use common::{
     button::{Button, ButtonAction, ButtonInput, ButtonKind, ButtonState},
-    event::{ButtonEvent, ButtonEventBlockMap, EventBlock},
+    event::{ButtonEvent, ButtonEventBlockMap},
     handler::{HandlerFunction, InputHandler},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
     BUTTON_EVENT_BLOCK, INPUT_HANDLER,

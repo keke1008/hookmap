@@ -1,5 +1,4 @@
-use crate::EventBlock;
-use super::BUTTON_EVENT_BLOCK;
+use super::{event::EventBlock, BUTTON_EVENT_BLOCK};
 
 pub trait InstallButtonHook {
     fn install() {}

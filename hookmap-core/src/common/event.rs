@@ -13,7 +13,11 @@ pub enum EventBlock {
 
 impl Default for &EventBlock {
     fn default() -> Self {
-        &EventBlock::Unblock
+        if cfg!(feature = "block-input-event") {
+            &EventBlock::Block
+        } else {
+            &EventBlock::Unblock
+        }
     }
 }
 
