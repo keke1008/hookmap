@@ -5,6 +5,9 @@ use std::sync::{
 };
 
 fn emulate_alt_tab(hook: &impl SelectHandleTarget, alt: Button, tab: Button) {
+    alt.block_input();
+    tab.block_input();
+
     let is_working = Arc::new(AtomicBool::new(false));
 
     {

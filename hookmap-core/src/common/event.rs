@@ -25,7 +25,7 @@ impl ButtonEventBlockMap {
         *self.0.lock().unwrap().get(&k).unwrap_or_default()
     }
 
-    pub fn insert(&mut self, k: Button, v: EventBlock) -> Option<EventBlock> {
+    pub fn insert(&self, k: Button, v: EventBlock) -> Option<EventBlock> {
         self.0.lock().unwrap().insert(k, v)
     }
 }
