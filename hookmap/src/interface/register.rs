@@ -1,22 +1,21 @@
 use crate::{
-    event::EventInfo,
     handler::{ButtonHandler, HandlerVec},
-    modifier::ModifierSet,
+    modifier::ModifierButtonSet,
 };
-use hookmap_core::{ButtonAction, ButtonInput, Key, Mouse};
-use std::{cell::RefCell, hash::Hash, rc::Weak, sync::Arc};
+use hookmap_core::{Button, ButtonAction, ButtonInput};
+use std::{cell::RefCell, rc::Weak, sync::Arc};
 
-pub struct ButtonRegister<B: Eq + Hash + Copy> {
-    handler: Weak<RefCell<ButtonHandler<B>>>,
-    modifier: Arc<ModifierSet>,
-    button: B,
+pub struct ButtonRegister {
+    handler: Weak<RefCell<ButtonHandler>>,
+    modifier: Arc<ModifierButtonSet>,
+    button: Button,
 }
 
-impl<B: Eq + Hash + Copy> ButtonRegister<B> {
+impl ButtonRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<ButtonHandler<B>>>,
-        modifier: Arc<ModifierSet>,
-        button: B,
+        handler: Weak<RefCell<ButtonHandler>>,
+        modifier: Arc<ModifierButtonSet>,
+        button: Button,
     ) -> Self {
         Self {
             handler,
@@ -37,7 +36,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     ///
     pub fn on_press<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<()>) + Send + 'static,
+        F: FnMut(()) + Send + 'static,
     {
         self.handler
             .upgrade()
@@ -69,7 +68,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     ///
     pub fn on_press_or_release<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<ButtonAction>) + Send + 'static,
+        F: FnMut(ButtonAction) + Send + 'static,
     {
         self.handler
             .upgrade()
@@ -92,7 +91,7 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     ///
     pub fn on_release<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<()>) + Send + 'static,
+        F: FnMut(()) + Send + 'static,
     {
         self.handler
             .upgrade()
@@ -113,15 +112,15 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let _mod_space = hook.modifier_key(Key::Space, EventBlock::Block);
-    /// hook.bind_key(Key::Space)
-    ///     .on_release_alone(|_| Key::Space.click());
+    /// let _mod_space = hook.modifier_key(Button::Space, EventBlock::Block);
+    /// hook.bind(Button::Space)
+    ///     .on_release_alone(|_| BUtton::Space.click());
     ///
     /// ```
     ///
     pub fn on_release_alone<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<()>) + Send + 'static,
+        F: FnMut(()) + Send + 'static,
     {
         self.handler
             .upgrade()
@@ -137,42 +136,14 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::H).as_key(Key::LeftArrow);
+    /// hook.bind_key(Button::H).as(BUtton::LeftArrow);
     /// ```
     ///
-    pub fn as_key(&self, key: Key) {
-        self.on_press(move |mut e| {
-            key.press();
-            e.block_event();
-        });
-        self.on_release(move |mut e| {
-            key.release();
-            e.block_event();
-        });
-    }
-
-    /// When the specified button is pressed, the mouse button passed in the argument will be pressed.
-    /// The same applies when the button is released.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Key, Mouse, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).as_mouse(Mouse::LButton);
-    /// ```
-    ///
-    pub fn as_mouse(&self, mouse: Mouse) {
-        self.on_press(move |mut e| {
-            mouse.press();
-            e.block_event();
-        });
-        self.on_release(move |mut e| {
-            mouse.press();
-            e.block_event();
-        });
+    pub fn like(&self, button: Button) {
+        self.on_press(move |_| button.press());
+        self.on_release(move |_| button.release());
     }
 }
 
@@ -180,13 +151,13 @@ impl<B: Eq + Hash + Copy> ButtonRegister<B> {
 #[derive(Debug)]
 pub struct MouseCursorRegister {
     handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
-    modifier: Arc<ModifierSet>,
+    modifier: Arc<ModifierButtonSet>,
 }
 
 impl MouseCursorRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
-        modifier: Arc<ModifierSet>,
+        modifier: Arc<ModifierButtonSet>,
     ) -> Self {
         Self { handler, modifier }
     }
@@ -204,7 +175,7 @@ impl MouseCursorRegister {
     /// ```
     pub fn on_move<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<(i32, i32)>) + Send + 'static,
+        F: FnMut((i32, i32)) + Send + 'static,
     {
         self.handler
             .upgrade()
@@ -218,11 +189,14 @@ impl MouseCursorRegister {
 #[derive(Debug)]
 pub struct MouseWheelRegister {
     handler: Weak<RefCell<HandlerVec<i32>>>,
-    modifier: Arc<ModifierSet>,
+    modifier: Arc<ModifierButtonSet>,
 }
 
 impl MouseWheelRegister {
-    pub(crate) fn new(handler: Weak<RefCell<HandlerVec<i32>>>, modifier: Arc<ModifierSet>) -> Self {
+    pub(crate) fn new(
+        handler: Weak<RefCell<HandlerVec<i32>>>,
+        modifier: Arc<ModifierButtonSet>,
+    ) -> Self {
         Self { handler, modifier }
     }
 
@@ -244,7 +218,7 @@ impl MouseWheelRegister {
     ///
     pub fn on_rotate<F>(&self, callback: F)
     where
-        F: FnMut(EventInfo<i32>) + Send + 'static,
+        F: FnMut(i32) + Send + 'static,
     {
         self.handler
             .upgrade()

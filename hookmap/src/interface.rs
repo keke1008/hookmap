@@ -6,34 +6,21 @@ pub use hook::Hook;
 pub use modifier::Modifier;
 pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 
-use hookmap_core::{EventBlock, Key, Mouse};
+use hookmap_core::Button;
 
 pub trait SelectHandleTarget {
-    /// Returns a [`ButtonRegister`] for registering a hook to the key.
+    /// Returns a [`ButtonRegister`] for registering a hook to the button.
     ///
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A)
+    /// hook.bind(Button::A)
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind_key(&self, key: Key) -> ButtonRegister<Key>;
-
-    /// Returns a [`ButtonRegister`] for registering a hook to the mouse button.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Mouse, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse(Mouse::RButton)
-    ///     .on_press(|_| println!("The right mouse button has been pressed"));
-    /// ```
-    ///
-    fn bind_mouse(&self, mouse: Mouse) -> ButtonRegister<Mouse>;
+    fn bind(&self, button: Button) -> ButtonRegister;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
     ///
@@ -75,21 +62,5 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
-    fn modifier_key(&self, key: Key, event_block: EventBlock) -> Modifier;
-
-    /// Returns a new instance of [`Modifier`].
-    /// The hooks assigned through this instance will be active only when the given mouse button is pressed.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Key, Mouse, EventBlock, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// let modifier_left = hook.modifier_mouse_button(Mouse::LButton, EventBlock::Unblock);
-    /// modifier_left
-    ///     .bind_key(Key::A)
-    ///     .on_press(|_| println!("The A key has been pressed while the left mouse button is pressed"));
-    /// ```
-    ///
-    fn modifier_mouse_button(&self, mouse: Mouse, event_block: EventBlock) -> Modifier;
+    fn modifier(&self, button: Button) -> Modifier;
 }

@@ -26,17 +26,15 @@
 //! * `block-input-event`: Set the default `EventBlock` value to `EventBlock::Block`.
 //!
 
-pub mod event;
 pub mod interface;
 
 mod handler;
 mod modifier;
 mod runtime;
 
-pub use event::EventInfo;
 pub use hookmap_core::{
-    ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, EventBlock, Key,
-    Mouse,
+    Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
+    EventBlock,
 };
 pub use interface::{Hook, Modifier, SelectHandleTarget};
-pub use runtime::interruption::Interruption;
+pub use runtime::interruption;

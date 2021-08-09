@@ -4,34 +4,33 @@ use std::sync::{
     Arc,
 };
 
-fn emulate_alt_tab(hook: &Hook, alt: Key, tab: Key) {
+fn emulate_alt_tab(hook: &impl SelectHandleTarget, alt: Button, tab: Button) {
     let is_working = Arc::new(AtomicBool::new(false));
 
     {
         let is_working = Arc::clone(&is_working);
-        hook.bind_key(alt).on_release(move |_| {
-            Key::Alt.release();
+        hook.bind(alt).on_release(move |_| {
+            Button::Alt.release();
             is_working.store(false, Ordering::SeqCst);
         });
     }
 
-    let mod_a = hook.modifier_key(alt, EventBlock::Block);
+    let mod_a = hook.modifier(alt);
 
-    mod_a.bind_key(tab).on_press(move |mut event| {
+    mod_a.bind(tab).on_press(move |_| {
         if !is_working.load(Ordering::SeqCst) {
-            Key::Alt.press();
+            Button::Alt.press();
             is_working.store(true, Ordering::SeqCst);
         }
-        event.block_event();
     });
-    mod_a.bind_key(tab).as_key(Key::Tab);
+    mod_a.bind(tab).like(Button::Tab);
 }
 
 // Emulate Alt-tab with a-t
 fn main() {
     let hook = Hook::new();
 
-    emulate_alt_tab(&hook, Key::A, Key::T);
+    emulate_alt_tab(&hook, Button::A, Button::T);
 
     hook.handle_input();
 }
