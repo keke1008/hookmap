@@ -6,25 +6,13 @@
 //!
 //! Handlers are called in the order in which they are registered.
 //!
-//! ## EventBlock
+//! ## Block input event
 //!
-//! [`EventBlock`] can be used in the following cases,
-//! and the higier it is, the higher the priority.
-//!
-//! * The argument of [`modifier_key`] or [`modifier_mouse_button`]
-//! * The closue argument passed to [`ButtonRegister::on_*`]
-//!     ( call [`block_event`], or [`unblock_event`] to change [`EventBlock`])
-//!
-//! [`modifier_key`]: crate::SelectHandleTarget::modifier_key
-//! [`modifier_mouse_button`]: crate::SelectHandleTarget::modifier_mouse_button
-//! [`ButtonRegister::on_*`]: crate::interface::ButtonRegister
-//! [`block_event`]: crate::EventInfo::block_event
-//! [`unblock_event`]: crate::EventInfo::unblock_event
+//! If you want to block the button event, call [`Button::block_input`]. otherwise, call [`Button::unblock_input`].
 //!
 //! ## Feature flags
 //!
-//! * `block-input-event`: Set the default `EventBlock` value to `EventBlock::Block`.
-//!
+//! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod interface;
 

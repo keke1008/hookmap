@@ -54,11 +54,11 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, EventBlock, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// let modifier_space = hook.modifier_key(Key::Space, EventBlock::Unblock);
+    /// let modifier_space = hook.modifier(Button::Space);
     /// modifier_space
-    ///     .bind_key(Key::A)
+    ///     .bind(Button::A)
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///

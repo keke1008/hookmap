@@ -9,29 +9,23 @@ Input emulation and global hooks for keyboard and mouse.
 ## Eample
 
 ```rust
-use hookmap_core::{ButtonAction, EventBlock, Key, INPUT_HANDLER};
+use hookmap_core::{Button, ButtonAction, INPUT_HANDLER};
 
 fn main() {
-    INPUT_HANDLER
-        .keyboard
-        .lock()
-        .unwrap()
-        .register_handler(|e| {
-            match e.target {
-                Key::RightArrow => println!("Left"),
-                Key::UpArrow => println!("Up"),
-                Key::LeftArrow => println!("Left"),
-                Key::DownArrow => println!("Down"),
-                _ => println!("Other"),
-            };
+    INPUT_HANDLER.button.register_handler(|e| {
+        match e.target {
+            Button::RightArrow => println!("Left"),
+            Button::UpArrow => println!("Up"),
+            Button::LeftArrow => println!("Left"),
+            Button::DownArrow => println!("Down"),
+            _ => println!("Other"),
+        };
 
-            match e.action {
-                ButtonAction::Press => println!("Pressed"),
-                ButtonAction::Release => println!("Released"),
-            }
-
-            EventBlock::Unblock
-        });
+        match e.action {
+            ButtonAction::Press => println!("Pressed"),
+            ButtonAction::Release => println!("Released"),
+        }
+    });
 
     INPUT_HANDLER.handle_input();
 }

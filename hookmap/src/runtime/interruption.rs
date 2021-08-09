@@ -2,11 +2,11 @@
 //!
 //! # Examples
 //!
-//! ```
+//! ```no_run
 //! use hookmap::*;
 //! let hook = Hook::new();
-//! hook.bind_key(Key::A).on_press(|_| {
-//!     let event interruption::button_event();
+//! hook.bind(Button::A).on_press(|_| {
+//!     let event = interruption::button_event();
 //!     println!("button: {:?}", event.target);
 //!     println!("action: {:?}", event.action);
 //! });
@@ -57,9 +57,9 @@ pub(super) struct EventSender {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
-/// let event = interruption::button_event;
+/// let event = interruption::button_event();
 /// println!("button: {:?}", event.target);
 /// println!("action: {:?}", event.action);
 /// ```
@@ -74,7 +74,7 @@ pub fn button_event() -> ButtonEvent {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let event = interruption::keyboard_event();
 /// println!("key:    {:?}", event.target);
@@ -95,7 +95,7 @@ pub fn keyboard_event() -> ButtonEvent {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let event = interruption::mouse_button_event();
 /// println!("button: {:?}", event.target);
@@ -115,7 +115,7 @@ pub fn mouse_button_event() -> ButtonEvent {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let position = interruption::mouse_cursor_event();
 /// println!("x: {}, y: {}", position.0, position.0);
@@ -131,7 +131,7 @@ pub fn mouse_cursor_event() -> (i32, i32) {
 ///
 /// # Examples
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let speed = interruption::mouse_wheel_event();
 /// println!("speed: {}", speed);

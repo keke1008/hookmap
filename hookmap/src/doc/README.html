@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <title>hookmap</title>
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+    <h1 class="title">hookmap</h1>
+    <nav id="TOC"><ul>
+<li><a href="#supported-os">0.1 Supported OS</a><ul></ul></li>
+<li><a href="#example">0.2 Example</a><ul></ul></li></ul></nav><p>Register hotkeys and simulate keyboard and mosue input.</p>
+<h2 id="supported-os" class="section-header"><a href="#supported-os">0.1 Supported OS</a></h2>
+<ul>
+<li>Windows 10</li>
+</ul>
+<h2 id="example" class="section-header"><a href="#example">0.2 Example</a></h2>
+<div class="example-wrap"><pre class="rust rust-example-rendered">
+<span class="kw">use</span> <span class="ident">hookmap</span>::<span class="kw-2">*</span>;
+
+<span class="kw">fn</span> <span class="ident">main</span>() {
+    <span class="kw">let</span> <span class="ident">hook</span> <span class="op">=</span> <span class="ident">Hook::new</span>();
+
+    <span class="ident">hook</span>.<span class="ident">bind_key</span>(<span class="ident">Key::A</span>)
+        .<span class="ident">on_press</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">println!</span>(<span class="string">&quot;The A key was pressed&quot;</span>));
+
+    <span class="kw">let</span> <span class="ident">mod_shift</span> <span class="op">=</span> <span class="ident">hook</span>.<span class="ident">modifier_key</span>(<span class="ident">Key::Shift</span>, <span class="ident">EventBlock::Unblock</span>);
+    <span class="ident">mod_shift</span>
+        .<span class="ident">bind_key</span>(<span class="ident">Key::A</span>)
+        .<span class="ident">on_release</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">println!</span>(<span class="string">&quot;The A key was released while the Shift key was pressed&quot;</span>));
+
+    <span class="kw">let</span> <span class="ident">mod_shift_ctrl</span> <span class="op">=</span> <span class="ident">mod_shift</span>.<span class="ident">modifier_key</span>(<span class="ident">Key::Ctrl</span>, <span class="ident">EventBlock::Unblock</span>);
+    <span class="ident">mod_shift_ctrl</span>
+        .<span class="ident">bind_mouse</span>(<span class="ident">Mouse::LButton</span>)
+        .<span class="ident">on_press</span>(<span class="op">|</span><span class="kw">_</span><span class="op">|</span> <span class="macro">println!</span>(<span class="string">&quot;The left mouse button was pressed while the Shift key and the Control key were pressed&quot;</span>));
+
+    <span class="ident">hook</span>.<span class="ident">handle_input</span>();
+}</pre></div>
+
+    
+</body>
+</html>

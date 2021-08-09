@@ -22,9 +22,9 @@ impl Hook {
     /// # Example
     ///
     /// ```no_run
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// hook.handle_input(); // Blocking the current thread.
     /// ```
     ///

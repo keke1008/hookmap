@@ -31,7 +31,7 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{EventBlock, HandlerFunction, ButtonEvent};
+    /// use hookmap_core::{HandlerFunction, ButtonEvent};
     ///
     /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// handler.register_handler(|e| {
@@ -52,7 +52,7 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{EventBlock, HandlerFunction, ButtonEvent};
+    /// use hookmap_core::{HandlerFunction, ButtonEvent};
     ///
     /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// assert!(!handler.is_handler_registered());
@@ -68,7 +68,7 @@ impl<E> HandlerFunction<E> {
     ///
     /// # Examples
     /// ```
-    /// use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, HandlerFunction, Button};
+    /// use hookmap_core::{ButtonAction, ButtonEvent, HandlerFunction, Button};
     ///
     /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// handler.register_handler(|_| {});
@@ -114,8 +114,6 @@ pub trait HookInstaller {
 }
 
 /// A keyboard and mouse Event Handler.
-///
-/// FFI requires static variables, so instead of creating a new instance, use [`INPUT_HANDLER`].
 #[derive(Debug, Default)]
 pub struct InputHandler {
     pub button: HandlerFunction<ButtonEvent>,

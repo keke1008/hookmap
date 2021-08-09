@@ -29,9 +29,9 @@ impl ButtonRegister {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
     pub fn on_press<F>(&self, callback: F)
@@ -56,10 +56,10 @@ impl ButtonRegister {
     ///
     /// # Example
     /// ```
-    /// use hookmap::{ButtonAction, Hook, Key, SelectHandleTarget};
+    /// use hookmap::{ButtonAction, Button, Hook, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_press_or_release(|event| {
-    ///     match event.info {
+    /// hook.bind(Button::A).on_press_or_release(|event| {
+    ///     match event {
     ///         ButtonAction::Press => println!("The A key is pressed"),
     ///         ButtonAction::Release => println!("The A key is released"),
     ///     };
@@ -84,9 +84,9 @@ impl ButtonRegister {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Key, SelectHandleTarget};
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Key::A).on_release(|_| println!("The A key is released"));
+    /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
     pub fn on_release<F>(&self, callback: F)
@@ -112,9 +112,9 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let _mod_space = hook.modifier_key(Button::Space, EventBlock::Block);
+    /// let _mod_space = hook.modifier(Button::Space);
     /// hook.bind(Button::Space)
-    ///     .on_release_alone(|_| BUtton::Space.click());
+    ///     .on_release_alone(|_| Button::Space.click());
     ///
     /// ```
     ///
@@ -138,7 +138,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind_key(Button::H).as(BUtton::LeftArrow);
+    /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
     pub fn like(&self, button: Button) {
@@ -170,7 +170,7 @@ impl MouseCursorRegister {
     /// use hookmap::{Hook, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_mouse_cursor().on_move(|event| {
-    ///     println!("Current mouse cursor position(x, y): ({}, {})", event.info.0, event.info.1);
+    ///     println!("Current mouse cursor position(x, y): {:?}", event);
     /// });
     /// ```
     pub fn on_move<F>(&self, callback: F)
@@ -212,7 +212,7 @@ impl MouseWheelRegister {
     /// use hookmap::{Hook, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind_mouse_wheel().on_rotate(|event| {
-    ///     println!("Mouse wheel rotation speed: {}", event.info);
+    ///     println!("Mouse wheel rotation speed: {}", event);
     /// });
     /// ```
     ///

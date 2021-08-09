@@ -8,17 +8,13 @@
 //!
 //! In order to support another OS, these traits need to be implemented.
 //!
-//! * [`EmulateButtonInput`] for [`Key`]
-//! * [`EmulateButtonInput`] for [`Mouse`]
+//! * [`ButtonInput`] for [`Button`]
+//! * [`ButtonState`] for [`Button`]
 //! * [`EmulateMouseCursor`] for [`Mouse`]
 //! * [`EmulateMouseWheel`] for [`Mouse`]
-//! * [`InstallKeyboardHook`] for [`InputHandler`]
-//! * [`InstallMouseHook`] for [`InputHandler`]
-//! * [`HandleInput`] for [`InputHandler`]
+//! * [`HookInstaller`] for [`InputHandler`]
 //!
-//! [`InstallKeyboardHook`]: crate::common::keyboard::InstallKeyboardHook
-//! [`InstallMouseHook`]: crate::common::mouse::InstallMouseHook
-//! [`HandleInput`]: crate::common::handler::HandleInput
+//! [`HookInstaller`]: crate::common::handler::HookInstaller
 //!
 //! ## Feature flags
 //!
