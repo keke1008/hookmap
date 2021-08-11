@@ -14,13 +14,13 @@ pub struct EventHandler<E: Send + Copy + 'static> {
 }
 
 impl<E: Send + Copy + 'static> EventHandler<E> {
-    /// Creates a new `HandlerFunction<E>` with `None`.
+    /// Creates a new `EventHandler<E>` with `None`.
     ///
     /// # Examples
     ///
     /// ```
-    /// use hookmap_core::{HandlerFunction, ButtonEvent};
-    /// let handler = HandlerFunction::<ButtonEvent>::new();
+    /// use hookmap_core::{EventHandler, ButtonEvent};
+    /// let handler = EventHandler::<ButtonEvent>::new();
     /// ```
     ///
     pub fn new() -> Self {
@@ -28,19 +28,6 @@ impl<E: Send + Copy + 'static> EventHandler<E> {
     }
 
     /// Registers a callback function.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap_core::{HandlerFunction, ButtonEvent};
-    ///
-    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
-    /// handler.register_handler(|e| {
-    ///     println!("Event target: {:?}", e.target);
-    ///     println!("Event action: {:?}", e.action);
-    /// });
-    /// ```
-    ///
     pub fn register_handler<F>(&self, generator: F)
     where
         F: FnMut(E) -> Box<dyn EventCallback> + Send + 'static,
@@ -48,34 +35,7 @@ impl<E: Send + Copy + 'static> EventHandler<E> {
         self.generator.lock().unwrap().insert(Box::new(generator));
     }
 
-    /// Returns `true` if the `HandlerFunction` registers a callback function.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap_core::{HandlerFunction, ButtonEvent};
-    ///
-    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
-    /// assert!(!handler.is_handler_registered());
-    ///
-    /// handler.register_handler(|_| {});
-    /// ```
-    ///
-    pub fn is_handler_registered(&self) -> bool {
-        self.generator.lock().unwrap().is_some()
-    }
-
     /// Calls the handler in another thread if the handler is registered.
-    ///
-    /// # Examples
-    /// ```
-    /// use hookmap_core::{ButtonAction, ButtonEvent, HandlerFunction, Button};
-    //
-    /// let mut handler = HandlerFunction::<ButtonEvent>::new();
-    /// handler.register_handler(|_| {});
-    /// handler.emit(ButtonEvent::new(Button::A, ButtonAction::Press));
-    /// ```
-    ///
     pub fn emit(&self, event: E) -> EventBlock {
         if let Some(ref mut generator) = *self.generator.lock().unwrap() {
             let mut event_callback = (generator)(event);

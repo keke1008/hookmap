@@ -6,10 +6,6 @@
 //!
 //! Handlers are called in the order in which they are registered.
 //!
-//! ## Block input event
-//!
-//! If you want to block the button event, call [`Button::block_input`]. otherwise, call [`Button::unblock_input`].
-//!
 //! ## Feature flags
 //!
 //! * `block-input-event`: Set button events to be blocked by default.
