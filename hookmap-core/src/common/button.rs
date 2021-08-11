@@ -1,7 +1,3 @@
-pub trait InstallButtonHook {
-    fn install() {}
-}
-
 pub trait ButtonInput {
     /// Emulates a button press operation.
     fn press(&self);
