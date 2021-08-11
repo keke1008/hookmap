@@ -36,7 +36,7 @@ impl ButtonRegister {
     /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
-    pub fn on_press<F>(&self, callback: F)
+    pub fn on_press<F>(self, callback: F) -> Self
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
@@ -49,6 +49,7 @@ impl ButtonRegister {
             .on_press
             .get_mut(self.button)
             .push(callback, modifier, self.event_block);
+        self
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -63,14 +64,14 @@ impl ButtonRegister {
     /// use hookmap::{ButtonAction, Button, Hook, SelectHandleTarget};
     /// let hook = Hook::new();
     /// hook.bind(Button::A).on_press_or_release(|event| {
-    ///     match event {
+    ///     match event.action {
     ///         ButtonAction::Press => println!("The A key is pressed"),
     ///         ButtonAction::Release => println!("The A key is released"),
     ///     };
     /// });
     /// ```
     ///
-    pub fn on_press_or_release<F>(&self, callback: F)
+    pub fn on_press_or_release<F>(self, callback: F) -> Self
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
@@ -83,6 +84,7 @@ impl ButtonRegister {
             .on_press_or_release
             .get_mut(self.button)
             .push(callback, modifier, self.event_block);
+        self
     }
 
     /// Registers a handler called when the specified button is released.
@@ -126,7 +128,7 @@ impl ButtonRegister {
     ///
     /// ```
     ///
-    pub fn on_release_alone<F>(&self, callback: F)
+    pub fn on_release_alone<F>(self, callback: F) -> Self
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
@@ -139,6 +141,7 @@ impl ButtonRegister {
             .on_release_alone
             .get_mut(self.button)
             .push(callback, modifier, self.event_block);
+        self
     }
 
     /// When the specified button is pressed, the key passed in the argument will be pressed.
@@ -152,24 +155,58 @@ impl ButtonRegister {
     /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like(&self, button: Button) {
-        self.on_press(move |_| button.press());
-        self.on_release(move |_| button.release());
+    pub fn like(self, button: Button) {
+        self.block()
+            .on_press(move |_| button.press())
+            .on_release(move |_| button.release());
     }
 
+    /// Blocks the button event when the hook to be registered is enabled.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind(Button::A)
+    ///     .block()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
     pub fn block(mut self) -> Self {
         self.event_block = EventBlock::Block;
         self
     }
 
+    /// Unblocks the button event when the hook to be registered is enabled.
+    ///
+    /// If any other enabled hook blocks the event, this function will be ignored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind(Button::A)
+    ///     .unblock()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    ///
     pub fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
     }
 
-    pub fn disable(&mut self) {
-        self.event_block = EventBlock::Block;
-        self.on_press_or_release(|_| {});
+    /// Disables the button and blocks the event.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind(Button::A).disable();
+    /// ```
+    pub fn disable(self) -> Self {
+        self.block().on_press_or_release(|_| {})
     }
 }
 
