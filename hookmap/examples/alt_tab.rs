@@ -5,14 +5,12 @@ use std::sync::{
 };
 
 fn emulate_alt_tab(hook: &impl SelectHandleTarget, alt: Button, tab: Button) {
-    alt.block_input();
-    tab.block_input();
-
     let is_working = Arc::new(AtomicBool::new(false));
 
     {
+        hook.bind(alt).disable();
         let is_working = Arc::clone(&is_working);
-        hook.bind(alt).on_release(move |_| {
+        hook.bind(alt).block().on_release(move |_| {
             Button::Alt.release();
             is_working.store(false, Ordering::SeqCst);
         });
@@ -20,7 +18,7 @@ fn emulate_alt_tab(hook: &impl SelectHandleTarget, alt: Button, tab: Button) {
 
     let mod_a = hook.modifier(alt);
 
-    mod_a.bind(tab).on_press(move |_| {
+    mod_a.bind(tab).block().on_press(move |_| {
         if !is_working.load(Ordering::SeqCst) {
             Button::Alt.press();
             is_working.store(true, Ordering::SeqCst);

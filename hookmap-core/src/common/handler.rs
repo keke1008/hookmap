@@ -1,18 +1,19 @@
-use super::event::ButtonEvent;
-use std::{
-    fmt::Debug,
-    sync::{Arc, Mutex},
-    thread,
-};
+use super::event::{ButtonEvent, EventBlock};
+use std::{fmt::Debug, sync::Mutex, thread};
 
-type EventCallback<E> = Arc<dyn Fn(E) + Send + Sync>;
-
-/// An optional input event handler.
-pub struct HandlerFunction<E> {
-    handler: Mutex<Option<EventCallback<E>>>,
+pub trait EventCallback: Send + Sync {
+    fn call(&mut self);
+    fn get_event_block(&self) -> EventBlock;
 }
 
-impl<E> HandlerFunction<E> {
+pub type EventCallbackGenerator<E> = Box<dyn Send + FnMut(E) -> Box<dyn EventCallback>>;
+
+/// An optional input event handler.
+pub struct EventHandler<E: Send + Copy + 'static> {
+    generator: Mutex<Option<EventCallbackGenerator<E>>>,
+}
+
+impl<E: Send + Copy + 'static> EventHandler<E> {
     /// Creates a new `HandlerFunction<E>` with `None`.
     ///
     /// # Examples
@@ -40,11 +41,11 @@ impl<E> HandlerFunction<E> {
     /// });
     /// ```
     ///
-    pub fn register_handler<F>(&self, handler: F)
+    pub fn register_handler<F>(&self, generator: F)
     where
-        F: Fn(E) + Send + Sync + 'static,
+        F: FnMut(E) -> Box<dyn EventCallback> + Send + 'static,
     {
-        self.handler.lock().unwrap().insert(Arc::new(handler));
+        self.generator.lock().unwrap().insert(Box::new(generator));
     }
 
     /// Returns `true` if the `HandlerFunction` registers a callback function.
@@ -61,7 +62,7 @@ impl<E> HandlerFunction<E> {
     /// ```
     ///
     pub fn is_handler_registered(&self) -> bool {
-        self.handler.lock().unwrap().is_some()
+        self.generator.lock().unwrap().is_some()
     }
 
     /// Calls the handler in another thread if the handler is registered.
@@ -69,24 +70,25 @@ impl<E> HandlerFunction<E> {
     /// # Examples
     /// ```
     /// use hookmap_core::{ButtonAction, ButtonEvent, HandlerFunction, Button};
-    ///
+    //
     /// let mut handler = HandlerFunction::<ButtonEvent>::new();
     /// handler.register_handler(|_| {});
     /// handler.emit(ButtonEvent::new(Button::A, ButtonAction::Press));
     /// ```
     ///
-    pub fn emit(&self, event: E)
-    where
-        E: Send + 'static,
-    {
-        if let Some(handler) = self.handler.lock().unwrap().as_ref() {
-            let handler = Arc::clone(handler);
-            thread::spawn(move || (handler)(event));
+    pub fn emit(&self, event: E) -> EventBlock {
+        if let Some(ref mut generator) = *self.generator.lock().unwrap() {
+            let mut event_callback = (generator)(event);
+            let event_block = event_callback.get_event_block();
+            thread::spawn(move || event_callback.call());
+            event_block
+        } else {
+            EventBlock::Unblock
         }
     }
 }
 
-impl<E> std::fmt::Debug for HandlerFunction<E> {
+impl<E: Send + Copy + 'static> std::fmt::Debug for EventHandler<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         write!(
             f,
@@ -97,10 +99,10 @@ impl<E> std::fmt::Debug for HandlerFunction<E> {
     }
 }
 
-impl<E> Default for HandlerFunction<E> {
+impl<E: Send + Copy + 'static> Default for EventHandler<E> {
     fn default() -> Self {
         Self {
-            handler: Default::default(),
+            generator: Default::default(),
         }
     }
 }
@@ -116,9 +118,9 @@ pub trait HookInstaller {
 /// A keyboard and mouse Event Handler.
 #[derive(Debug, Default)]
 pub struct InputHandler {
-    pub button: HandlerFunction<ButtonEvent>,
-    pub mouse_wheel: HandlerFunction<i32>,
-    pub mouse_cursor: HandlerFunction<(i32, i32)>,
+    pub button: EventHandler<ButtonEvent>,
+    pub mouse_wheel: EventHandler<i32>,
+    pub mouse_cursor: EventHandler<(i32, i32)>,
 }
 
 impl InputHandler

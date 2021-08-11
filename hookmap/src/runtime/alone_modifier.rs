@@ -2,7 +2,7 @@ use crate::modifier::ModifierButtonSet;
 use hookmap_core::Button;
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub(crate) struct AloneModifierMap(HashMap<Button, bool>);
 
 impl AloneModifierMap {

@@ -1,5 +1,3 @@
-use super::{event::EventBlock, BUTTON_EVENT_BLOCK};
-
 pub trait InstallButtonHook {
     fn install() {}
 }
@@ -179,13 +177,5 @@ impl Button {
             | Button::SideButton2 => ButtonKind::Mouse,
             _ => ButtonKind::Key,
         }
-    }
-
-    pub fn block_input(&self) {
-        BUTTON_EVENT_BLOCK.insert(*self, EventBlock::Block);
-    }
-
-    pub fn unblock_input(&self) {
-        BUTTON_EVENT_BLOCK.insert(*self, EventBlock::Unblock);
     }
 }

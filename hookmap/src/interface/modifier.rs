@@ -1,5 +1,5 @@
 use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
-use crate::{handler::Handler, modifier::ModifierButtonSet};
+use crate::{handler::EventCallback, modifier::ModifierButtonSet};
 use hookmap_core::Button;
 use std::{
     cell::RefCell,
@@ -10,14 +10,14 @@ use std::{
 /// A struct taht handler generated input events.
 #[derive(Debug)]
 pub struct Modifier {
-    handler: Weak<Handler>,
+    handler: Weak<EventCallback>,
     modifier_set: Arc<ModifierButtonSet>,
     modifiers_list: Weak<RefCell<ModifierButtonSet>>,
 }
 
 impl Modifier {
     pub(crate) fn new(
-        handler: Weak<Handler>,
+        handler: Weak<EventCallback>,
         modifier: Arc<ModifierButtonSet>,
         modifier_button: Weak<RefCell<ModifierButtonSet>>,
     ) -> Self {

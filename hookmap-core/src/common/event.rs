@@ -21,6 +21,12 @@ impl Default for &EventBlock {
     }
 }
 
+impl Default for EventBlock {
+    fn default() -> Self {
+        *<&EventBlock>::default()
+    }
+}
+
 #[derive(Debug)]
 pub struct ButtonEventBlockMap(Mutex<HashMap<Button, EventBlock>>);
 

@@ -1,12 +1,14 @@
 use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
-use crate::{handler::Handler, modifier::ModifierButtonSet, runtime::HookInstaller, Modifier};
+use crate::{
+    handler::EventCallback, modifier::ModifierButtonSet, runtime::HookInstaller, Modifier,
+};
 use hookmap_core::Button;
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 /// A struct that handles generated input events.
 #[derive(Debug, Default)]
 pub struct Hook {
-    pub(crate) handler: Rc<Handler>,
+    pub(crate) handler: Rc<EventCallback>,
     modifier_set: Arc<ModifierButtonSet>,
     pub(crate) modifiers_list: Rc<RefCell<ModifierButtonSet>>,
 }

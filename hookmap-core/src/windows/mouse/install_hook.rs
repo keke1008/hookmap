@@ -2,7 +2,7 @@ use super::{call_next_hook, MouseEventInfo, DW_EXTRA_INFO};
 use crate::common::{
     button::ButtonAction,
     event::{ButtonEvent, EventBlock},
-    BUTTON_EVENT_BLOCK, INPUT_HANDLER,
+    INPUT_HANDLER,
 };
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicPtr, Ordering};
@@ -30,12 +30,12 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     match event_info.unwrap() {
         MouseEventInfo::Button(target, action) => {
             let event = ButtonEvent::new(target, action);
-            INPUT_HANDLER.button.emit(event);
+            let event_block = INPUT_HANDLER.button.emit(event);
             match action {
                 ButtonAction::Press => target.assume_pressed(),
                 ButtonAction::Release => target.assume_released(),
             }
-            match BUTTON_EVENT_BLOCK.get_or_default(target) {
+            match event_block {
                 EventBlock::Unblock => call_next_hook(code, w_param, l_param),
                 EventBlock::Block => 1,
             }

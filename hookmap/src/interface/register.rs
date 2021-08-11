@@ -1,19 +1,20 @@
 use crate::{
-    handler::{ButtonHandler, HandlerVec},
+    handler::{ButtonEventCallback, MouseEventCallBack},
     modifier::ModifierButtonSet,
 };
-use hookmap_core::{Button, ButtonAction, ButtonInput};
+use hookmap_core::{Button, ButtonEvent, ButtonInput, EventBlock};
 use std::{cell::RefCell, rc::Weak, sync::Arc};
 
 pub struct ButtonRegister {
-    handler: Weak<RefCell<ButtonHandler>>,
+    handler: Weak<RefCell<ButtonEventCallback>>,
     modifier: Arc<ModifierButtonSet>,
     button: Button,
+    event_block: EventBlock,
 }
 
 impl ButtonRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<ButtonHandler>>,
+        handler: Weak<RefCell<ButtonEventCallback>>,
         modifier: Arc<ModifierButtonSet>,
         button: Button,
     ) -> Self {
@@ -21,6 +22,7 @@ impl ButtonRegister {
             handler,
             modifier,
             button,
+            event_block: EventBlock::default(),
         }
     }
 
@@ -36,15 +38,17 @@ impl ButtonRegister {
     ///
     pub fn on_press<F>(&self, callback: F)
     where
-        F: FnMut(()) + Send + 'static,
+        F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
+        let callback = Box::new(callback);
+        let modifier = Arc::clone(&self.modifier);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
             .on_press
-            .get(self.button)
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+            .get_mut(self.button)
+            .push(callback, modifier, self.event_block);
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -68,15 +72,17 @@ impl ButtonRegister {
     ///
     pub fn on_press_or_release<F>(&self, callback: F)
     where
-        F: FnMut(ButtonAction) + Send + 'static,
+        F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
+        let callback = Box::new(callback);
+        let modifier = Arc::clone(&self.modifier);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
             .on_press_or_release
-            .get(self.button)
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+            .get_mut(self.button)
+            .push(callback, modifier, self.event_block);
     }
 
     /// Registers a handler called when the specified button is released.
@@ -91,15 +97,17 @@ impl ButtonRegister {
     ///
     pub fn on_release<F>(&self, callback: F)
     where
-        F: FnMut(()) + Send + 'static,
+        F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
+        let callback = Box::new(callback);
+        let modifier = Arc::clone(&self.modifier);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
             .on_release
-            .get(self.button)
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+            .get_mut(self.button)
+            .push(callback, modifier, self.event_block);
     }
 
     /// Register a handler to be called when a specified button is released and
@@ -120,16 +128,19 @@ impl ButtonRegister {
     ///
     pub fn on_release_alone<F>(&self, callback: F)
     where
-        F: FnMut(()) + Send + 'static,
+        F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
+        let callback = Box::new(callback);
+        let modifier = Arc::clone(&self.modifier);
         self.handler
             .upgrade()
             .unwrap()
             .borrow_mut()
             .on_release_alone
-            .get(self.button)
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+            .get_mut(self.button)
+            .push(callback, modifier, self.event_block);
     }
+
     /// When the specified button is pressed, the key passed in the argument will be pressed.
     /// The same applies when the button is released.
     ///
@@ -145,18 +156,33 @@ impl ButtonRegister {
         self.on_press(move |_| button.press());
         self.on_release(move |_| button.release());
     }
+
+    pub fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    pub fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
+    }
+
+    pub fn disable(&mut self) {
+        self.event_block = EventBlock::Block;
+        self.on_press_or_release(|_| {});
+    }
 }
 
 /// A struct for registering a handler for the mouse cursor.
 #[derive(Debug)]
 pub struct MouseCursorRegister {
-    handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
+    handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
     modifier: Arc<ModifierButtonSet>,
 }
 
 impl MouseCursorRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<HandlerVec<(i32, i32)>>>,
+        handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
         modifier: Arc<ModifierButtonSet>,
     ) -> Self {
         Self { handler, modifier }
@@ -175,26 +201,26 @@ impl MouseCursorRegister {
     /// ```
     pub fn on_move<F>(&self, callback: F)
     where
-        F: FnMut((i32, i32)) + Send + 'static,
+        F: Fn((i32, i32)) + Send + Sync + 'static,
     {
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+        self.handler.upgrade().unwrap().borrow_mut().push(
+            Box::new(callback),
+            Arc::clone(&self.modifier),
+            Default::default(),
+        );
     }
 }
 
 /// A struct for registering a handler for the mouse wheel.
 #[derive(Debug)]
 pub struct MouseWheelRegister {
-    handler: Weak<RefCell<HandlerVec<i32>>>,
+    handler: Weak<RefCell<MouseEventCallBack<i32>>>,
     modifier: Arc<ModifierButtonSet>,
 }
 
 impl MouseWheelRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<HandlerVec<i32>>>,
+        handler: Weak<RefCell<MouseEventCallBack<i32>>>,
         modifier: Arc<ModifierButtonSet>,
     ) -> Self {
         Self { handler, modifier }
@@ -218,12 +244,12 @@ impl MouseWheelRegister {
     ///
     pub fn on_rotate<F>(&self, callback: F)
     where
-        F: FnMut(i32) + Send + 'static,
+        F: Fn(i32) + Send + Sync + 'static,
     {
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .push(Box::new(callback), Arc::clone(&self.modifier));
+        self.handler.upgrade().unwrap().borrow_mut().push(
+            Box::new(callback),
+            Arc::clone(&self.modifier),
+            Default::default(),
+        );
     }
 }
