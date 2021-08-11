@@ -28,6 +28,10 @@ impl ButtonRegister {
 
     /// Registers a handler called when the specified button is pressed.
     ///
+    /// # Arguments
+    ///
+    /// * `callback` - A function that takes [`ButtonEvent`].
+    ///
     /// # Example
     ///
     /// ```
@@ -56,8 +60,7 @@ impl ButtonRegister {
     ///
     /// # Arguments
     ///
-    /// * `callback` - A function that takes `EventInfo` containing whether the specified key
-    /// is pressed or released as an argument.
+    /// * `callback` - A function that takes [`ButtonEvent`].
     ///
     /// # Example
     /// ```
@@ -89,6 +92,10 @@ impl ButtonRegister {
 
     /// Registers a handler called when the specified button is released.
     ///
+    /// # Arguments
+    ///
+    /// * `callback` - A function that takes [`ButtonEvent`].
+    ///
     /// # Example
     ///
     /// ```
@@ -116,6 +123,10 @@ impl ButtonRegister {
     /// not other buttons(except modifier buttons) are pressed while that button is pressed.
     ///
     /// The specified button must be registered as a modifier.
+    ///
+    /// # Arguments
+    ///
+    /// * `callback` - A function that takes [`ButtonEvent`].
     ///
     /// # Example
     ///
@@ -267,7 +278,7 @@ impl MouseWheelRegister {
     ///
     /// # Arguments
     ///
-    /// * `callback` - A function that takes `EventInfo` containing a rotation speed of the mouse
+    /// * `callback` - A function that takes  a rotation speed of the mouse
     /// wheel as an argument.
     ///
     /// # Example

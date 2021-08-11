@@ -2,13 +2,13 @@ use crate::modifier::{ModifierButtonSet, ModifierChecker};
 use hookmap_core::common::event::EventBlock;
 use std::{fmt::Debug, sync::Arc};
 
-pub(crate) struct SatisfiedHandler<'a, I: Copy + Debug + PartialEq + Send + 'static> {
-    handler: Vec<&'a HandlerFunction<I>>,
-    event: I,
+pub(crate) struct SatisfiedHandler<'a, E: Copy + Debug + PartialEq + Send + 'static> {
+    handler: Vec<&'a HandlerFunction<E>>,
+    event: E,
 }
 
-impl<'a, I: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, I> {
-    pub(super) fn new(handler: Vec<&'a HandlerFunction<I>>, event: I) -> Self {
+impl<'a, E: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, E> {
+    pub(super) fn new(handler: Vec<&'a HandlerFunction<E>>, event: E) -> Self {
         Self { handler, event }
     }
 
@@ -31,15 +31,15 @@ impl<'a, I: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, I> {
     }
 }
 
-pub(crate) struct HandlerFunction<I: Send + Debug + 'static> {
-    pub(crate) callback: Box<dyn Fn(I) + Send + Sync>,
+pub(crate) struct HandlerFunction<E: Send + Debug + 'static> {
+    pub(crate) callback: Box<dyn Fn(E) + Send + Sync>,
     pub(crate) modifier: Arc<ModifierButtonSet>,
     pub(crate) event_block: EventBlock,
 }
 
-impl<I: Send + Debug + 'static> HandlerFunction<I> {
+impl<E: Send + Debug + 'static> HandlerFunction<E> {
     pub(crate) fn new(
-        callback: Box<dyn Fn(I) + Send + Sync>,
+        callback: Box<dyn Fn(E) + Send + Sync>,
         modifier: Arc<ModifierButtonSet>,
         event_block: EventBlock,
     ) -> Self {
@@ -51,19 +51,19 @@ impl<I: Send + Debug + 'static> HandlerFunction<I> {
     }
 }
 
-impl<I: Send + Debug + 'static> Debug for HandlerFunction<I> {
+impl<E: Send + Debug + 'static> Debug for HandlerFunction<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "HandlerFunction")
     }
 }
 
 #[derive(Debug)]
-pub(crate) struct HandlerVec<I: Copy + Send + Debug + 'static>(Vec<HandlerFunction<I>>);
+pub(crate) struct HandlerVec<E: Copy + Send + Debug + 'static>(Vec<HandlerFunction<E>>);
 
-impl<I: Copy + Send + Debug + 'static> HandlerVec<I> {
+impl<E: Copy + Send + Debug + 'static> HandlerVec<E> {
     pub(crate) fn push(
         &mut self,
-        handler: Box<dyn Fn(I) + Send + Sync>,
+        handler: Box<dyn Fn(E) + Send + Sync>,
         modifier: Arc<ModifierButtonSet>,
         event_block: EventBlock,
     ) {
@@ -71,7 +71,7 @@ impl<I: Copy + Send + Debug + 'static> HandlerVec<I> {
         self.0.push(handler_function);
     }
 
-    pub(crate) fn get_satisfied(&self) -> Vec<&HandlerFunction<I>> {
+    pub(crate) fn get_satisfied(&self) -> Vec<&HandlerFunction<E>> {
         let mut modifier_checker = ModifierChecker::new();
         self.0
             .iter()
@@ -80,7 +80,7 @@ impl<I: Copy + Send + Debug + 'static> HandlerVec<I> {
     }
 }
 
-impl<I: Copy + Send + Debug> Default for HandlerVec<I> {
+impl<E: Copy + Send + Debug> Default for HandlerVec<E> {
     fn default() -> Self {
         Self(Vec::default())
     }

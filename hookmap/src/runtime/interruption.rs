@@ -29,13 +29,13 @@ pub(super) static EVENT_SENDER: Lazy<Mutex<EventSender>> = Lazy::new(Mutex::defa
 #[derive(Debug)]
 pub(super) struct EventSenderVec<I: Debug>(Vec<Sender<I>>);
 
-impl<I: Debug + Copy> EventSenderVec<I> {
-    pub(super) fn send_event(&mut self, info: I) {
+impl<E: Debug + Copy> EventSenderVec<E> {
+    pub(super) fn send_event(&mut self, event: E) {
         let sender = mem::take(&mut self.0);
-        sender.iter().for_each(|tx| tx.send(info).unwrap());
+        sender.iter().for_each(|tx| tx.send(event).unwrap());
     }
 
-    fn push(&mut self, tx: Sender<I>) {
+    fn push(&mut self, tx: Sender<E>) {
         self.0.push(tx);
     }
 }
