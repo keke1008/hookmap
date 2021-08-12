@@ -12,6 +12,7 @@
 
 pub mod interface;
 
+mod button;
 mod handler;
 mod modifier;
 mod runtime;
