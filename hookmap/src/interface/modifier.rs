@@ -1,5 +1,5 @@
 use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
-use crate::{handler::EventCallback, modifier::ModifierButtonSet};
+use crate::{button::DownCastableButtonState, handler::EventCallback, modifier::ModifierButtonSet};
 use hookmap_core::Button;
 use std::{
     cell::RefCell,
@@ -30,7 +30,7 @@ impl Modifier {
 }
 
 impl SelectHandleTarget for Modifier {
-    fn bind(&self, button: Button) -> ButtonRegister {
+    fn bind(&self, button: impl DownCastableButtonState) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().button),
             Arc::clone(&self.modifier_set),

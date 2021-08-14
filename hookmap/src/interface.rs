@@ -8,6 +8,8 @@ pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 
 use hookmap_core::Button;
 
+use crate::button::DownCastableButtonState;
+
 pub trait SelectHandleTarget {
     /// Returns a [`ButtonRegister`] for registering a hook to the button.
     ///
@@ -20,7 +22,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind(&self, button: Button) -> ButtonRegister;
+    fn bind(&self, button: impl DownCastableButtonState) -> ButtonRegister;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
     ///

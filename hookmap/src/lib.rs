@@ -17,6 +17,7 @@ mod handler;
 mod modifier;
 mod runtime;
 
+pub use button::{All, Any, ButtonSet};
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
 };

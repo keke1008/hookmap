@@ -1,7 +1,7 @@
 mod button;
 mod common;
 mod mouse;
-pub(crate) use button::ButtonEventCallback;
+pub(crate) use button::{ButtonCallbackMap, ButtonEventCallback};
 pub(crate) use common::{HandlerVec, SatisfiedHandler};
 pub(crate) use mouse::MouseEventCallBack;
 
