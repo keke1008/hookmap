@@ -3,11 +3,8 @@ use crate::{
     button::DownCastableButtonState,
     cond::{Cond, Conditions},
     handler::EventCallback,
-    modifier::ModifierButtonSet,
 };
-
 use std::{
-    cell::RefCell,
     rc::{Rc, Weak},
     sync::Arc,
 };
@@ -16,19 +13,13 @@ use std::{
 pub struct ConditionalHook {
     handler: Weak<EventCallback>,
     conditions: Arc<Conditions>,
-    modifier_list: Weak<RefCell<ModifierButtonSet>>,
 }
 
 impl ConditionalHook {
-    pub(crate) fn new(
-        handler: Weak<EventCallback>,
-        conditions: Arc<Conditions>,
-        modifiers_list: Weak<RefCell<ModifierButtonSet>>,
-    ) -> Self {
+    pub(crate) fn new(handler: Weak<EventCallback>, conditions: Arc<Conditions>) -> Self {
         Self {
             handler,
             conditions,
-            modifier_list: modifiers_list,
         }
     }
 }
@@ -59,10 +50,6 @@ impl SelectHandleTarget for ConditionalHook {
     fn cond(&self, cond: Cond) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond);
-        ConditionalHook::new(
-            Weak::clone(&self.handler),
-            Arc::new(conditions),
-            Weak::clone(&self.modifier_list),
-        )
+        ConditionalHook::new(Weak::clone(&self.handler), Arc::new(conditions))
     }
 }

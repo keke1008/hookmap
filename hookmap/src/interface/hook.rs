@@ -5,17 +5,15 @@ use crate::{
     button::DownCastableButtonState,
     cond::{Cond, Conditions},
     handler::EventCallback,
-    modifier::ModifierButtonSet,
     runtime::HookInstaller,
 };
-use std::{cell::RefCell, rc::Rc, sync::Arc};
+use std::{rc::Rc, sync::Arc};
 
 /// A struct that handles generated input events.
 #[derive(Debug, Default)]
 pub struct Hook {
     pub(crate) handler: Rc<EventCallback>,
     conditions: Arc<Conditions>,
-    pub(crate) modifiers_list: Rc<RefCell<ModifierButtonSet>>,
 }
 
 impl Hook {
@@ -67,11 +65,6 @@ impl SelectHandleTarget for Hook {
     fn cond(&self, cond: Cond) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond);
-
-        ConditionalHook::new(
-            Rc::downgrade(&self.handler),
-            Arc::new(conditions),
-            Rc::downgrade(&self.modifiers_list),
-        )
+        ConditionalHook::new(Rc::downgrade(&self.handler), Arc::new(conditions))
     }
 }

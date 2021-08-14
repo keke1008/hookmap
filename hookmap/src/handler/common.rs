@@ -12,11 +12,6 @@ impl<'a, E: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, E> {
         Self { handler, event }
     }
 
-    pub(crate) fn extend(&mut self, other: Self) {
-        assert_eq!(self.event, other.event);
-        self.handler.extend(other.handler);
-    }
-
     pub(crate) fn get_event_blocks(&self) -> Vec<EventBlock> {
         self.handler
             .iter()

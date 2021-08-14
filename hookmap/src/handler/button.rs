@@ -23,5 +23,4 @@ impl ButtonCallbackMap {
 pub(crate) struct ButtonEventCallback {
     pub(crate) on_press: ButtonCallbackMap,
     pub(crate) on_release: ButtonCallbackMap,
-    pub(crate) on_release_alone: ButtonCallbackMap,
 }

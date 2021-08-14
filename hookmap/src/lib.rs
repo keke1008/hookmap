@@ -15,7 +15,6 @@ pub mod interface;
 
 mod button;
 mod handler;
-mod modifier;
 mod runtime;
 
 pub use button::{All, Any, ButtonSet};

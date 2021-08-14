@@ -100,35 +100,6 @@ impl ButtonRegister {
         self
     }
 
-    /// Register a handler to be called when a specified button is released and
-    /// not other buttons(except modifier buttons) are pressed while that button is pressed.
-    ///
-    /// The specified button must be registered as a modifier.
-    ///
-    /// # Arguments
-    ///
-    /// * `callback` - A function that takes [`ButtonEvent`].
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// let _mod_space = hook.modifier(Button::Space);
-    /// hook.bind(Button::Space)
-    ///     .on_release_alone(|_| Button::Space.click());
-    ///
-    /// ```
-    ///
-    pub fn on_release_alone<F>(self, callback: F) -> Self
-    where
-        F: Fn(ButtonEvent) + Send + Sync + 'static,
-    {
-        self.inner
-            .on_release_alone(Arc::new(callback), self.event_block);
-        self
-    }
-
     /// When the specified button is pressed, the key passed in the argument will be pressed.
     /// The same applies when the button is released.
     ///
@@ -247,12 +218,6 @@ impl ButtonRegisterInner {
     }
 
     fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
-        let callback_map = self.upgrade_handler();
-        let mut callback_map = &mut callback_map.borrow_mut().on_release;
-        self.bind(&mut callback_map, callback, event_block);
-    }
-
-    fn on_release_alone(&self, callback: ButtonCallback, event_block: EventBlock) {
         let callback_map = self.upgrade_handler();
         let mut callback_map = &mut callback_map.borrow_mut().on_release;
         self.bind(&mut callback_map, callback, event_block);
