@@ -1,4 +1,4 @@
-use crate::modifier::{ModifierButtonSet, ModifierChecker};
+use crate::cond::Conditions;
 use hookmap_core::common::event::EventBlock;
 use std::{fmt::Debug, sync::Arc};
 
@@ -33,19 +33,19 @@ impl<'a, E: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, E> {
 
 pub(crate) struct HandlerFunction<E: Send + Debug + 'static> {
     pub(crate) callback: Arc<dyn Fn(E) + Send + Sync>,
-    pub(crate) modifier: Arc<ModifierButtonSet>,
+    pub(crate) conditions: Arc<Conditions>,
     pub(crate) event_block: EventBlock,
 }
 
 impl<E: Send + Debug + 'static> HandlerFunction<E> {
     pub(crate) fn new(
         callback: Arc<dyn Fn(E) + Send + Sync>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) -> Self {
         Self {
             callback,
-            modifier,
+            conditions,
             event_block,
         }
     }
@@ -64,18 +64,17 @@ impl<E: Copy + Send + Debug + 'static> HandlerVec<E> {
     pub(crate) fn push(
         &mut self,
         handler: Arc<dyn Fn(E) + Send + Sync>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {
-        let handler_function = HandlerFunction::new(handler, modifier, event_block);
+        let handler_function = HandlerFunction::new(handler, conditions, event_block);
         self.0.push(handler_function);
     }
 
     pub(crate) fn get_satisfied(&self) -> Vec<&HandlerFunction<E>> {
-        let mut modifier_checker = ModifierChecker::new();
         self.0
             .iter()
-            .filter(move |handler| modifier_checker.check(&handler.modifier))
+            .filter(move |handler| handler.conditions.is_satisfied())
             .collect()
     }
 }

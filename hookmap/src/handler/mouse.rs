@@ -1,5 +1,5 @@
 use super::{HandlerVec, SatisfiedHandler};
-use crate::modifier::ModifierButtonSet;
+use crate::cond::Conditions;
 use hookmap_core::EventBlock;
 use std::fmt::Debug;
 use std::sync::Arc;
@@ -11,10 +11,10 @@ impl<E: Copy + Debug + PartialEq + Send + 'static> MouseEventCallBack<E> {
     pub(crate) fn push(
         &mut self,
         callback: Arc<dyn Fn(E) + Send + Sync>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {
-        self.0.push(callback, modifier, event_block);
+        self.0.push(callback, conditions, event_block);
     }
 
     pub(crate) fn get_satisfied(&self, event: E) -> SatisfiedHandler<E> {
