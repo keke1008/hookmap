@@ -88,22 +88,19 @@ impl HookInstaller {
         INPUT_HANDLER.button.register_handler(move |event| {
             let event_handler = RUNTIME_EVENT_HANDLER.get().unwrap();
             let mut alone_modifier = ALONE_MODIFIER.lock().unwrap();
-            let mut handlers = event_handler
-                .button
-                .on_press_or_release
-                .get_satisfied(event);
-            match event.action {
+            let handlers = match event.action {
                 ButtonAction::Press => {
                     alone_modifier.emit_press_event(event.target);
-                    handlers.extend(event_handler.button.on_press.get_satisfied(event));
+                    event_handler.button.on_press.get_satisfied(event)
                 }
                 ButtonAction::Release => {
-                    handlers.extend(event_handler.button.on_release.get_satisfied(event));
+                    let mut handlers = event_handler.button.on_release.get_satisfied(event);
                     if alone_modifier.is_alone(event.target) {
                         handlers.extend(event_handler.button.on_release_alone.get_satisfied(event));
                     }
+                    handlers
                 }
-            }
+            };
             Box::new(EventHandler::new(handlers, event))
         });
         INPUT_HANDLER.mouse_cursor.register_handler(move |event| {

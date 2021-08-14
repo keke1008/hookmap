@@ -70,8 +70,9 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        self.inner
-            .on_press_or_release(Arc::new(callback), self.event_block);
+        let callback: ButtonCallback = Arc::new(callback);
+        self.inner.on_press(Arc::clone(&callback), self.event_block);
+        self.inner.on_release(callback, self.event_block);
         self
     }
 
@@ -218,15 +219,6 @@ impl ButtonRegisterInner {
         self.upgrade_handler()
             .borrow_mut()
             .on_press
-            .get_mut(self.button)
-            .push(callback, modifier, event_block);
-    }
-
-    fn on_press_or_release(&self, callback: ButtonCallback, event_block: EventBlock) {
-        let modifier = Arc::clone(&self.modifier);
-        self.upgrade_handler()
-            .borrow_mut()
-            .on_press_or_release
             .get_mut(self.button)
             .push(callback, modifier, event_block);
     }
