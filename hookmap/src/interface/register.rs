@@ -3,12 +3,14 @@ use crate::{
     modifier::ModifierButtonSet,
 };
 use hookmap_core::{Button, ButtonEvent, ButtonInput, EventBlock};
-use std::{cell::RefCell, rc::Weak, sync::Arc};
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+    sync::Arc,
+};
 
 pub struct ButtonRegister {
-    handler: Weak<RefCell<ButtonEventCallback>>,
-    modifier: Arc<ModifierButtonSet>,
-    button: Button,
+    inner: ButtonRegisterInner,
     event_block: EventBlock,
 }
 
@@ -19,9 +21,7 @@ impl ButtonRegister {
         button: Button,
     ) -> Self {
         Self {
-            handler,
-            modifier,
-            button,
+            inner: ButtonRegisterInner::new(handler, modifier, button),
             event_block: EventBlock::default(),
         }
     }
@@ -44,15 +44,7 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback = Box::new(callback);
-        let modifier = Arc::clone(&self.modifier);
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .on_press
-            .get_mut(self.button)
-            .push(callback, modifier, self.event_block);
+        self.inner.on_press(Box::new(callback), self.event_block);
         self
     }
 
@@ -78,15 +70,8 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback = Box::new(callback);
-        let modifier = Arc::clone(&self.modifier);
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .on_press_or_release
-            .get_mut(self.button)
-            .push(callback, modifier, self.event_block);
+        self.inner
+            .on_press_or_release(Box::new(callback), self.event_block);
         self
     }
 
@@ -104,19 +89,12 @@ impl ButtonRegister {
     /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
-    pub fn on_release<F>(&self, callback: F)
+    pub fn on_release<F>(self, callback: F) -> Self
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback = Box::new(callback);
-        let modifier = Arc::clone(&self.modifier);
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .on_release
-            .get_mut(self.button)
-            .push(callback, modifier, self.event_block);
+        self.inner.on_release(Box::new(callback), self.event_block);
+        self
     }
 
     /// Register a handler to be called when a specified button is released and
@@ -143,15 +121,8 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback = Box::new(callback);
-        let modifier = Arc::clone(&self.modifier);
-        self.handler
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .on_release_alone
-            .get_mut(self.button)
-            .push(callback, modifier, self.event_block);
+        self.inner
+            .on_release_alone(Box::new(callback), self.event_block);
         self
     }
 
@@ -218,6 +189,68 @@ impl ButtonRegister {
     /// ```
     pub fn disable(self) -> Self {
         self.block().on_press_or_release(|_| {})
+    }
+}
+
+pub struct ButtonRegisterInner {
+    handler: Weak<RefCell<ButtonEventCallback>>,
+    modifier: Arc<ModifierButtonSet>,
+    button: Button,
+}
+
+type ButtonCallback = Box<dyn Fn(ButtonEvent) + Send + Sync>;
+
+impl ButtonRegisterInner {
+    fn new(
+        handler: Weak<RefCell<ButtonEventCallback>>,
+        modifier: Arc<ModifierButtonSet>,
+        button: Button,
+    ) -> Self {
+        Self {
+            handler,
+            modifier,
+            button,
+        }
+    }
+
+    fn on_press(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let modifier = Arc::clone(&self.modifier);
+        self.upgrade_handler()
+            .borrow_mut()
+            .on_press
+            .get_mut(self.button)
+            .push(callback, modifier, event_block);
+    }
+
+    fn on_press_or_release(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let modifier = Arc::clone(&self.modifier);
+        self.upgrade_handler()
+            .borrow_mut()
+            .on_press_or_release
+            .get_mut(self.button)
+            .push(callback, modifier, event_block);
+    }
+
+    fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let modifier = Arc::clone(&self.modifier);
+        self.upgrade_handler()
+            .borrow_mut()
+            .on_release
+            .get_mut(self.button)
+            .push(callback, modifier, event_block);
+    }
+
+    fn on_release_alone(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let modifier = Arc::clone(&self.modifier);
+        self.upgrade_handler()
+            .borrow_mut()
+            .on_release_alone
+            .get_mut(self.button)
+            .push(callback, modifier, event_block);
+    }
+
+    fn upgrade_handler(&self) -> Rc<RefCell<ButtonEventCallback>> {
+        self.handler.upgrade().unwrap()
     }
 }
 
