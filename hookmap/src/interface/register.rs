@@ -44,7 +44,7 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        self.inner.on_press(Box::new(callback), self.event_block);
+        self.inner.on_press(Arc::new(callback), self.event_block);
         self
     }
 
@@ -71,7 +71,7 @@ impl ButtonRegister {
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
         self.inner
-            .on_press_or_release(Box::new(callback), self.event_block);
+            .on_press_or_release(Arc::new(callback), self.event_block);
         self
     }
 
@@ -93,7 +93,7 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        self.inner.on_release(Box::new(callback), self.event_block);
+        self.inner.on_release(Arc::new(callback), self.event_block);
         self
     }
 
@@ -122,7 +122,7 @@ impl ButtonRegister {
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
         self.inner
-            .on_release_alone(Box::new(callback), self.event_block);
+            .on_release_alone(Arc::new(callback), self.event_block);
         self
     }
 
@@ -198,7 +198,7 @@ pub struct ButtonRegisterInner {
     button: Button,
 }
 
-type ButtonCallback = Box<dyn Fn(ButtonEvent) + Send + Sync>;
+type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 
 impl ButtonRegisterInner {
     fn new(
@@ -285,7 +285,7 @@ impl MouseCursorRegister {
         F: Fn((i32, i32)) + Send + Sync + 'static,
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
-            Box::new(callback),
+            Arc::new(callback),
             Arc::clone(&self.modifier),
             Default::default(),
         );
@@ -328,7 +328,7 @@ impl MouseWheelRegister {
         F: Fn(i32) + Send + Sync + 'static,
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
-            Box::new(callback),
+            Arc::new(callback),
             Arc::clone(&self.modifier),
             Default::default(),
         );

@@ -10,7 +10,7 @@ pub(crate) struct MouseEventCallBack<E: Copy + Debug + PartialEq + Send + 'stati
 impl<E: Copy + Debug + PartialEq + Send + 'static> MouseEventCallBack<E> {
     pub(crate) fn push(
         &mut self,
-        callback: Box<dyn Fn(E) + Send + Sync>,
+        callback: Arc<dyn Fn(E) + Send + Sync>,
         modifier: Arc<ModifierButtonSet>,
         event_block: EventBlock,
     ) {

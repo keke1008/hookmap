@@ -32,14 +32,14 @@ impl<'a, E: Copy + Debug + PartialEq + Send + 'static> SatisfiedHandler<'a, E> {
 }
 
 pub(crate) struct HandlerFunction<E: Send + Debug + 'static> {
-    pub(crate) callback: Box<dyn Fn(E) + Send + Sync>,
+    pub(crate) callback: Arc<dyn Fn(E) + Send + Sync>,
     pub(crate) modifier: Arc<ModifierButtonSet>,
     pub(crate) event_block: EventBlock,
 }
 
 impl<E: Send + Debug + 'static> HandlerFunction<E> {
     pub(crate) fn new(
-        callback: Box<dyn Fn(E) + Send + Sync>,
+        callback: Arc<dyn Fn(E) + Send + Sync>,
         modifier: Arc<ModifierButtonSet>,
         event_block: EventBlock,
     ) -> Self {
@@ -63,11 +63,11 @@ pub(crate) struct HandlerVec<E: Copy + Send + Debug + 'static>(Vec<HandlerFuncti
 impl<E: Copy + Send + Debug + 'static> HandlerVec<E> {
     pub(crate) fn push(
         &mut self,
-        handler: Box<dyn Fn(E) + Send + Sync>,
+        handler: Arc<dyn Fn(E) + Send + Sync>,
         modifier: Arc<ModifierButtonSet>,
         event_block: EventBlock,
     ) {
-        let handler_function = HandlerFunction::new(Box::new(handler), modifier, event_block);
+        let handler_function = HandlerFunction::new(handler, modifier, event_block);
         self.0.push(handler_function);
     }
 
