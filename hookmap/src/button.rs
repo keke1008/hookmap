@@ -1,6 +1,6 @@
 use downcast_rs::{impl_downcast, Downcast};
 use hookmap_core::{Button, ButtonInput, ButtonState};
-use std::{collections::HashSet, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, sync::Arc};
 
 #[derive(Debug, Default, Clone)]
 pub struct ButtonSet(Arc<HashSet<Button>>);
@@ -60,7 +60,7 @@ impl ButtonInput for All {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub enum ButtonWithState {
     Button(Button),
     Any(Any),
@@ -73,6 +73,16 @@ impl ButtonWithState {
             ButtonWithState::Button(button) => Iter::Once(Some(&button)),
             ButtonWithState::Any(any) => Iter::Set(any.0.iter()),
             ButtonWithState::All(all) => Iter::Set(all.0.iter()),
+        }
+    }
+}
+
+impl Debug for ButtonWithState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ButtonWithState::Button(button) => f.write_fmt(format_args!("{:?}", button)),
+            ButtonWithState::Any(any) => f.write_fmt(format_args!("{:?}", any)),
+            ButtonWithState::All(all) => f.write_fmt(format_args!("{:?}", all)),
         }
     }
 }

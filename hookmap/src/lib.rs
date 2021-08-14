@@ -10,6 +10,7 @@
 //!
 //! * `block-input-event`: Set button events to be blocked by default.
 
+pub mod cond;
 pub mod interface;
 
 mod button;
@@ -18,6 +19,7 @@ mod modifier;
 mod runtime;
 
 pub use button::{All, Any, ButtonSet};
+pub use cond::Cond;
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
 };
