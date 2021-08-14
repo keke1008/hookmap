@@ -1,16 +1,20 @@
-use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
-use crate::{
-    button::DownCastableButtonState, handler::EventCallback, modifier::ModifierButtonSet,
-    runtime::HookInstaller, Modifier,
+use super::{
+    ButtonRegister, ConditionalHook, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget,
 };
-use hookmap_core::Button;
+use crate::{
+    button::DownCastableButtonState,
+    cond::{Cond, Conditions},
+    handler::EventCallback,
+    modifier::ModifierButtonSet,
+    runtime::HookInstaller,
+};
 use std::{cell::RefCell, rc::Rc, sync::Arc};
 
 /// A struct that handles generated input events.
 #[derive(Debug, Default)]
 pub struct Hook {
     pub(crate) handler: Rc<EventCallback>,
-    modifier_set: Arc<ModifierButtonSet>,
+    conditions: Arc<Conditions>,
     pub(crate) modifiers_list: Rc<RefCell<ModifierButtonSet>>,
 }
 
@@ -41,7 +45,7 @@ impl SelectHandleTarget for Hook {
     fn bind(&self, button: impl DownCastableButtonState) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.button),
-            Arc::clone(&self.modifier_set),
+            Arc::clone(&self.conditions),
             button,
         )
     }
@@ -49,24 +53,24 @@ impl SelectHandleTarget for Hook {
     fn bind_mouse_wheel(&self) -> MouseWheelRegister {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.mouse_wheel),
-            Arc::clone(&self.modifier_set),
+            Arc::clone(&self.conditions),
         )
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorRegister {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.mouse_cursor),
-            Arc::clone(&self.modifier_set),
+            Arc::clone(&self.conditions),
         )
     }
 
-    fn modifier(&self, button: Button) -> Modifier {
-        self.modifiers_list.borrow_mut().add(button);
-        let mut modifier_set = (*self.modifier_set).clone();
-        modifier_set.add(button);
-        Modifier::new(
+    fn cond(&self, cond: Cond) -> ConditionalHook {
+        let mut conditions = (*self.conditions).clone();
+        conditions.add(cond);
+
+        ConditionalHook::new(
             Rc::downgrade(&self.handler),
-            Arc::new(modifier_set),
+            Arc::new(conditions),
             Rc::downgrade(&self.modifiers_list),
         )
     }

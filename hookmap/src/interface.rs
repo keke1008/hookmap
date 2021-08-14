@@ -1,14 +1,12 @@
+mod conditional_hook;
 mod hook;
-mod modifier;
 mod register;
 
+pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
-pub use modifier::Modifier;
 pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 
-use hookmap_core::Button;
-
-use crate::button::DownCastableButtonState;
+use crate::{button::DownCastableButtonState, cond::Cond};
 
 pub trait SelectHandleTarget {
     /// Returns a [`ButtonRegister`] for registering a hook to the button.
@@ -50,8 +48,8 @@ pub trait SelectHandleTarget {
     ///
     fn bind_mouse_cursor(&self) -> MouseCursorRegister;
 
-    /// Returns a new instance of [`Modifier`].
-    /// The hooks assigned through this instance will be active only when the given key is pressed.
+    /// Returns a new instance of [`ConditionalHook`].
+    /// The hooks assigned through this instance will be activated only when the given conditions are met.
     ///
     /// # Example
     ///
@@ -64,5 +62,5 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
-    fn modifier(&self, button: Button) -> Modifier;
+    fn cond(&self, cond: Cond) -> ConditionalHook;
 }

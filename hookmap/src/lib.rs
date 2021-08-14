@@ -23,5 +23,5 @@ pub use cond::Cond;
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
 };
-pub use interface::{Hook, Modifier, SelectHandleTarget};
+pub use interface::{ConditionalHook, Hook, SelectHandleTarget};
 pub use runtime::interruption;

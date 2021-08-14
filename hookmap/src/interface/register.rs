@@ -1,7 +1,7 @@
 use crate::{
     button::{ButtonWithState, DownCastableButtonState},
+    cond::Conditions,
     handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
-    modifier::ModifierButtonSet,
 };
 use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
 use std::{
@@ -18,12 +18,12 @@ pub struct ButtonRegister {
 impl ButtonRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<ButtonEventCallback>>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
         button: impl DownCastableButtonState,
     ) -> Self {
         let button = Box::new(button).into_button_with_state();
         Self {
-            inner: ButtonRegisterInner::new(handler, modifier, button),
+            inner: ButtonRegisterInner::new(handler, conditions, button),
             event_block: EventBlock::default(),
         }
     }
@@ -197,7 +197,7 @@ impl ButtonRegister {
 
 pub struct ButtonRegisterInner {
     handler: Weak<RefCell<ButtonEventCallback>>,
-    modifier: Arc<ModifierButtonSet>,
+    conditions: Arc<Conditions>,
     button: ButtonWithState,
 }
 
@@ -209,7 +209,7 @@ impl ButtonRegisterInner {
         self.button.iter_buttons().for_each(move |&button| {
             map.get_mut(button).push(
                 Arc::clone(&callback),
-                Arc::clone(&self.modifier),
+                Arc::clone(&self.conditions),
                 event_block,
             )
         });
@@ -230,12 +230,12 @@ impl ButtonRegisterInner {
 
     fn new(
         handler: Weak<RefCell<ButtonEventCallback>>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
         button: ButtonWithState,
     ) -> Self {
         Self {
             handler,
-            modifier,
+            conditions,
             button,
         }
     }
@@ -267,15 +267,18 @@ impl ButtonRegisterInner {
 #[derive(Debug)]
 pub struct MouseCursorRegister {
     handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
-    modifier: Arc<ModifierButtonSet>,
+    conditions: Arc<Conditions>,
 }
 
 impl MouseCursorRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
     ) -> Self {
-        Self { handler, modifier }
+        Self {
+            handler,
+            conditions,
+        }
     }
 
     /// Registers a handler called when the mouse cursor is moved.
@@ -295,7 +298,7 @@ impl MouseCursorRegister {
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.conditions),
             Default::default(),
         );
     }
@@ -305,15 +308,18 @@ impl MouseCursorRegister {
 #[derive(Debug)]
 pub struct MouseWheelRegister {
     handler: Weak<RefCell<MouseEventCallBack<i32>>>,
-    modifier: Arc<ModifierButtonSet>,
+    conditions: Arc<Conditions>,
 }
 
 impl MouseWheelRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<MouseEventCallBack<i32>>>,
-        modifier: Arc<ModifierButtonSet>,
+        conditions: Arc<Conditions>,
     ) -> Self {
-        Self { handler, modifier }
+        Self {
+            handler,
+            conditions,
+        }
     }
 
     /// Registers a handler called when the mouse wheel is rotated.
@@ -338,7 +344,7 @@ impl MouseWheelRegister {
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),
-            Arc::clone(&self.modifier),
+            Arc::clone(&self.conditions),
             Default::default(),
         );
     }
