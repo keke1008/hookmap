@@ -21,4 +21,4 @@ pub use interface::{
     DownCastableButtonState as EmulateButtonState, Hook, MouseCursorRegister, MouseWheelRegister,
     SelectHandleTarget,
 };
-pub use runtime::interruption::Interruption;
+pub use runtime::interruption::{EventReceiver, Interruption};

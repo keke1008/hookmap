@@ -34,18 +34,12 @@ impl<'a> EventCallback for EventHandler<'a, ButtonEvent> {
     fn get_event_block(&self) -> EventBlock {
         match self.get_event_block() {
             EventBlock::Block => EventBlock::Block,
-            EventBlock::Unblock => INTERRUPTION_EVENT
-                .lock()
-                .unwrap()
-                .get_event_block(self.event),
+            EventBlock::Unblock => INTERRUPTION_EVENT.get_event_block(self.event),
         }
     }
 
     fn call(&mut self) {
-        INTERRUPTION_EVENT
-            .lock()
-            .unwrap()
-            .send_button_event(self.event);
+        INTERRUPTION_EVENT.send_button_event(self.event);
         self.handlers.call();
     }
 }
@@ -57,9 +51,9 @@ impl<'a> EventCallback for EventHandler<'a, i32> {
 
     fn call(&mut self) {
         INTERRUPTION_EVENT
+            .mouse_wheel
             .lock()
             .unwrap()
-            .mouse_wheel
             .send_event(self.event);
         self.handlers.call();
     }
@@ -72,9 +66,9 @@ impl<'a> EventCallback for EventHandler<'a, (i32, i32)> {
 
     fn call(&mut self) {
         INTERRUPTION_EVENT
+            .mouse_cursor
             .lock()
             .unwrap()
-            .mouse_cursor
             .send_event(self.event);
         self.handlers.call();
     }

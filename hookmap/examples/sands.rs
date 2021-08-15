@@ -27,10 +27,11 @@ where
     }
 
     thread::spawn(move || loop {
-        let event = Interruption::unblock().keyboard_event();
-        if event.action == ButtonAction::Press && !ignore.contains(&event.target) {
-            is_alone.store(false, Ordering::SeqCst);
-        }
+        Interruption::unblock()
+            .keyboard()
+            .iter()
+            .filter(|e| e.action == ButtonAction::Press && !ignore.contains(&e.target))
+            .for_each(|_| is_alone.store(false, Ordering::SeqCst));
     });
 }
 

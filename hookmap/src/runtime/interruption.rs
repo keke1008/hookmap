@@ -24,7 +24,7 @@ use std::{
     },
 };
 
-pub(super) static INTERRUPTION_EVENT: Lazy<Mutex<EventSender>> = Lazy::new(Mutex::default);
+pub(super) static INTERRUPTION_EVENT: Lazy<EventSender> = Lazy::new(EventSender::default);
 
 #[derive(Debug)]
 pub(super) struct EventSenderVec<I: Debug> {
@@ -70,24 +70,24 @@ impl<I: Debug> Default for EventSenderVec<I> {
 
 #[derive(Debug, Default)]
 pub(super) struct EventSender {
-    pub(super) keyboard: EventSenderVec<ButtonEvent>,
-    pub(super) mouse_button: EventSenderVec<ButtonEvent>,
-    pub(super) mouse_cursor: EventSenderVec<(i32, i32)>,
-    pub(super) mouse_wheel: EventSenderVec<i32>,
+    pub(super) keyboard: Mutex<EventSenderVec<ButtonEvent>>,
+    pub(super) mouse_button: Mutex<EventSenderVec<ButtonEvent>>,
+    pub(super) mouse_cursor: Mutex<EventSenderVec<(i32, i32)>>,
+    pub(super) mouse_wheel: Mutex<EventSenderVec<i32>>,
 }
 
 impl EventSender {
     pub(super) fn get_event_block(&self, event: ButtonEvent) -> EventBlock {
         match event.target.kind() {
-            ButtonKind::Key => self.keyboard.get_event_block(),
-            ButtonKind::Mouse => self.mouse_button.get_event_block(),
+            ButtonKind::Key => self.keyboard.lock().unwrap().get_event_block(),
+            ButtonKind::Mouse => self.mouse_button.lock().unwrap().get_event_block(),
         }
     }
 
-    pub(super) fn send_button_event(&mut self, event: ButtonEvent) {
+    pub(super) fn send_button_event(&self, event: ButtonEvent) {
         match event.target.kind() {
-            ButtonKind::Key => self.keyboard.send_event(event),
-            ButtonKind::Mouse => self.mouse_button.send_event(event),
+            ButtonKind::Key => self.keyboard.lock().unwrap().send_event(event),
+            ButtonKind::Mouse => self.mouse_button.lock().unwrap().send_event(event),
         }
     }
 }
@@ -116,10 +116,8 @@ impl Interruption {
     /// println!("action: {:?}", event.action);
     /// ```
     ///
-    pub fn keyboard_event(&self) -> ButtonEvent {
-        let (tx, rx) = mpsc::channel();
-        INTERRUPTION_EVENT.lock().unwrap().keyboard.push(tx, self.0);
-        rx.recv().unwrap()
+    pub fn keyboard(&self) -> EventReceiver<ButtonEvent> {
+        EventReceiver::new(&INTERRUPTION_EVENT.keyboard, self.0)
     }
 
     /// Waits for the mouse button event.
@@ -134,14 +132,8 @@ impl Interruption {
     /// println!("action: {:?}", event.action);
     /// ```
     ///
-    pub fn mouse_button_event(&self) -> ButtonEvent {
-        let (tx, rx) = mpsc::channel();
-        INTERRUPTION_EVENT
-            .lock()
-            .unwrap()
-            .mouse_button
-            .push(tx, self.0);
-        rx.recv().unwrap()
+    pub fn mouse_button(&self) -> EventReceiver<ButtonEvent> {
+        EventReceiver::new(&INTERRUPTION_EVENT.mouse_button, self.0)
     }
 
     /// Waits for the mouse cursor movement event.
@@ -154,14 +146,8 @@ impl Interruption {
     /// println!("x: {}, y: {}", position.0, position.0);
     /// ```
     ///
-    pub fn mouse_cursor_event(&self) -> (i32, i32) {
-        let (tx, rx) = mpsc::channel();
-        INTERRUPTION_EVENT
-            .lock()
-            .unwrap()
-            .mouse_cursor
-            .push(tx, self.0);
-        rx.recv().unwrap()
+    pub fn mouse_cursor(&self) -> EventReceiver<(i32, i32)> {
+        EventReceiver::new(&INTERRUPTION_EVENT.mouse_cursor, self.0)
     }
 
     /// Waits for the mouse wheel rotation event.
@@ -174,13 +160,41 @@ impl Interruption {
     /// println!("speed: {}", speed);
     /// ```
     ///
-    pub fn mouse_wheel_event(&self) -> i32 {
+    pub fn mouse_wheel(&self) -> EventReceiver<i32> {
+        EventReceiver::new(&INTERRUPTION_EVENT.mouse_wheel, self.0)
+    }
+}
+
+pub struct EventReceiver<'a, E: Debug + Copy>(&'a Mutex<EventSenderVec<E>>, EventBlock);
+
+impl<'a, E: Debug + Copy> EventReceiver<'a, E> {
+    fn new(event_sender_vec: &'a Mutex<EventSenderVec<E>>, event_block: EventBlock) -> Self {
+        Self(event_sender_vec, event_block)
+    }
+
+    pub fn recv(&self) -> E {
+        self.iter().next().unwrap()
+    }
+
+    pub fn iter(&self) -> impl Iterator<Item = E> + 'a {
+        Iter::new(self.0, self.1)
+    }
+}
+
+struct Iter<'a, E: Debug + Copy>(&'a Mutex<EventSenderVec<E>>, EventBlock);
+
+impl<'a, E: Debug + Copy> Iter<'a, E> {
+    fn new(event_sender_vec: &'a Mutex<EventSenderVec<E>>, event_block: EventBlock) -> Self {
+        Self(event_sender_vec, event_block)
+    }
+}
+
+impl<E: Debug + Copy> Iterator for Iter<'_, E> {
+    type Item = E;
+
+    fn next(&mut self) -> Option<Self::Item> {
         let (tx, rx) = mpsc::channel();
-        INTERRUPTION_EVENT
-            .lock()
-            .unwrap()
-            .mouse_wheel
-            .push(tx, self.0);
-        rx.recv().unwrap()
+        self.0.lock().unwrap().push(tx, self.1);
+        Some(rx.recv().unwrap())
     }
 }
