@@ -1,6 +1,7 @@
 use super::{
     button::{ButtonWithState, DownCastableButtonState},
     cond::Conditions,
+    SetEventBlock,
 };
 use crate::handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack};
 use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
@@ -119,41 +120,6 @@ impl ButtonRegister {
             .on_release(move |_| button.release());
     }
 
-    /// Blocks the button event when the hook to be registered is enabled.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A)
-    ///     .block()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    pub fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
-    }
-
-    /// Unblocks the button event when the hook to be registered is enabled.
-    ///
-    /// If any other enabled hook blocks the event, this function will be ignored.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A)
-    ///     .unblock()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    ///
-    pub fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
-    }
-
     /// Disables the button and blocks the event.
     ///
     /// # Example
@@ -165,6 +131,18 @@ impl ButtonRegister {
     /// ```
     pub fn disable(self) -> Self {
         self.block().on_press_or_release(|_| {})
+    }
+}
+
+impl SetEventBlock for ButtonRegister {
+    fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 }
 
@@ -251,43 +229,11 @@ impl MouseCursorRegister {
         }
     }
 
-    /// Blocks the mouse cursor event when the hook to be registered is enabled.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor()
-    ///     .block()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    pub fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
-    }
-
-    /// Unblocks the mouse cursor event when the hook to be registered is enabled.
-    ///
-    /// If any other enabled hook blocks the event, this function will be ignored.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor()
-    ///     .unblock()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    ///
-    pub fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
-    }
-
     /// Registers a handler called when the mouse cursor is moved.
     ///
+    /// # Arguments
+    ///
+    /// * `callback` - A function that takes a absolute postion of the mouse cursor as an argument.
     ///
     /// # Example
     /// ```
@@ -309,6 +255,17 @@ impl MouseCursorRegister {
     }
 }
 
+impl SetEventBlock for MouseCursorRegister {
+    fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
+    }
+}
 /// A struct for registering handlers for the mouse wheel.
 #[derive(Debug)]
 pub struct MouseWheelRegister {
@@ -334,7 +291,7 @@ impl MouseWheelRegister {
     ///
     /// # Arguments
     ///
-    /// * `callback` - A function that takes  a rotation speed of the mouse
+    /// * `callback` - A function that takes a rotation speed of the mouse
     /// wheel as an argument.
     ///
     /// # Example
@@ -356,38 +313,15 @@ impl MouseWheelRegister {
             self.event_block,
         );
     }
+}
 
-    /// Blocks the mouse cursor event when the hook to be registered is enabled.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor()
-    ///     .block()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    pub fn block(mut self) -> Self {
+impl SetEventBlock for MouseWheelRegister {
+    fn block(mut self) -> Self {
         self.event_block = EventBlock::Block;
         self
     }
 
-    /// Unblocks the mouse cursor event when the hook to be registered is enabled.
-    ///
-    /// If any other enabled hook blocks the event, this function will be ignored.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor()
-    ///     .unblock()
-    ///     .on_press(|e| println!("{:?}", e));
-    /// ```
-    ///
-    pub fn unblock(mut self) -> Self {
+    fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
     }

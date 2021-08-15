@@ -3,7 +3,7 @@ use super::{
     cond::{Cond, Conditions},
     conditional_hook::ConditionalHook,
     register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
-    SelectHandleTarget,
+    SelectHandleTarget, SetEventBlock,
 };
 use crate::{handler::EventCallback, runtime::HookInstaller};
 use hookmap_core::EventBlock;
@@ -24,6 +24,7 @@ use std::{rc::Rc, sync::Arc};
 pub struct Hook {
     pub(crate) handler: Rc<EventCallback>,
     conditions: Arc<Conditions>,
+    event_block: EventBlock,
 }
 
 impl Hook {
@@ -55,7 +56,7 @@ impl SelectHandleTarget for Hook {
             Rc::downgrade(&self.handler.button),
             Arc::clone(&self.conditions),
             button,
-            EventBlock::default(),
+            self.event_block,
         )
     }
 
@@ -63,7 +64,7 @@ impl SelectHandleTarget for Hook {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.mouse_wheel),
             Arc::clone(&self.conditions),
-            EventBlock::default(),
+            self.event_block,
         )
     }
 
@@ -71,7 +72,7 @@ impl SelectHandleTarget for Hook {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.mouse_cursor),
             Arc::clone(&self.conditions),
-            EventBlock::default(),
+            self.event_block,
         )
     }
 
@@ -79,5 +80,17 @@ impl SelectHandleTarget for Hook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond);
         ConditionalHook::new(Rc::downgrade(&self.handler), Arc::new(conditions))
+    }
+}
+
+impl SetEventBlock for Hook {
+    fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 }

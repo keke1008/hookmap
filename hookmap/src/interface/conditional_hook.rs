@@ -1,6 +1,8 @@
 use super::{
-    ButtonRegister, Cond, Conditions, DownCastableButtonState, MouseCursorRegister,
-    MouseWheelRegister, SelectHandleTarget,
+    button::DownCastableButtonState,
+    cond::{Cond, Conditions},
+    register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
+    SelectHandleTarget, SetEventBlock,
 };
 use crate::handler::EventCallback;
 use hookmap_core::EventBlock;
@@ -36,18 +38,6 @@ impl ConditionalHook {
             event_block: EventBlock::default(),
         }
     }
-
-    /// Blocks input event.
-    pub fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
-    }
-
-    /// Unblocks input event.
-    pub fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
-    }
 }
 
 impl SelectHandleTarget for ConditionalHook {
@@ -80,5 +70,17 @@ impl SelectHandleTarget for ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond);
         ConditionalHook::new(Weak::clone(&self.handler), Arc::new(conditions))
+    }
+}
+
+impl SetEventBlock for ConditionalHook {
+    fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 }

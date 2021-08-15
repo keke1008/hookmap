@@ -70,3 +70,36 @@ pub trait SelectHandleTarget {
     ///
     fn cond(&self, cond: Cond) -> ConditionalHook;
 }
+
+/// Set whether the hook blocks events.
+pub trait SetEventBlock {
+    /// Blocks the input event when the hook to be registered is enable.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// hook.bind(Button::A)
+    ///     .block()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    ///
+    fn block(self) -> Self;
+
+    /// Do not block the input event when the hook to be registered is enable.
+    ///
+    /// If any other enabled hook blocks the event, this function will be ignored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// hook.bind(Button::A)
+    ///     .unblock()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    ///
+    fn unblock(self) -> Self;
+}

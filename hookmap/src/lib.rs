@@ -19,6 +19,6 @@ pub use hookmap_core::{
 pub use interface::{
     All, Any, ButtonRegister, ButtonSet, Cond, ConditionalHook,
     DownCastableButtonState as EmulateButtonState, Hook, MouseCursorRegister, MouseWheelRegister,
-    SelectHandleTarget,
+    SelectHandleTarget, SetEventBlock,
 };
 pub use runtime::interruption::{EventReceiver, Interruption};
