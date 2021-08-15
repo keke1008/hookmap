@@ -1,18 +1,3 @@
-//! Blocks the thread and receive input.
-//!
-//! # Examples
-//!
-//! ```no_run
-//! use hookmap::*;
-//! let hook = Hook::new();
-//! hook.bind(Button::A).on_press(|_| {
-//!     let event = interruption::button_event();
-//!     println!("button: {:?}", event.target);
-//!     println!("action: {:?}", event.action);
-//! });
-//! ```
-//!
-
 use hookmap_core::{ButtonEvent, ButtonKind, EventBlock};
 use once_cell::sync::Lazy;
 use std::{
@@ -92,26 +77,56 @@ impl EventSender {
     }
 }
 
+/// Blocks the thread and receive input.
+///
+/// # Examples
+///
+/// ```no_run
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// hook.bind(Button::A).on_press(|_| {
+///     let event = Interruption::unblock().keyboard().recv();
+///     println!("button: {:?}", event.target);
+///     println!("action: {:?}", event.action);
+/// });
+/// ```
+///
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Interruption(EventBlock);
 
 impl Interruption {
-    pub fn block() -> Self {
-        Self(EventBlock::Block)
-    }
-
-    pub fn unblock() -> Self {
-        Self(EventBlock::Unblock)
-    }
-
-    /// Waits for the keyboard event.
-    ///
+    /// Creates a new instance of `Interruption` and block events.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap::*;
-    /// let event = interruption::keyboard_event();
+    /// let event = Interruption::block().keyboard().recv();
+    /// ```
+    ///
+    pub fn block() -> Self {
+        Self(EventBlock::Block)
+    }
+
+    /// Creates a new instance of `Interruption` and do not events.
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap::*;
+    /// let event = Interruption::unblock().keyboard().recv();
+    /// ```
+    ///
+    pub fn unblock() -> Self {
+        Self(EventBlock::Unblock)
+    }
+
+    /// Creates a new [`EventReceiver`] for keyboard events.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap::*;
+    /// let event = Interruption::unblock().keyboard().recv();
     /// println!("key:    {:?}", event.target);
     /// println!("action: {:?}", event.action);
     /// ```
@@ -120,14 +135,14 @@ impl Interruption {
         EventReceiver::new(&INTERRUPTION_EVENT.keyboard, self.0)
     }
 
-    /// Waits for the mouse button event.
+    /// Creates a new [`EventReceiver`] for mouse button events.
     ///
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap::*;
-    /// let event = interruption::mouse_button_event();
+    /// let event = Interruption::unblock().mouse_button().recv();
     /// println!("button: {:?}", event.target);
     /// println!("action: {:?}", event.action);
     /// ```
@@ -136,13 +151,13 @@ impl Interruption {
         EventReceiver::new(&INTERRUPTION_EVENT.mouse_button, self.0)
     }
 
-    /// Waits for the mouse cursor movement event.
+    /// Creates a new [`EventReceiver`] for mouse cursor events.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap::*;
-    /// let position = interruption::mouse_cursor_event();
+    /// let position = Interruption::unblock().mouse_cursor().recv();
     /// println!("x: {}, y: {}", position.0, position.0);
     /// ```
     ///
@@ -150,13 +165,13 @@ impl Interruption {
         EventReceiver::new(&INTERRUPTION_EVENT.mouse_cursor, self.0)
     }
 
-    /// Waits for the mouse wheel rotation event.
+    /// Creates a new [`EventReceiver`] for mouse wheel events.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap::*;
-    /// let speed = interruption::mouse_wheel_event();
+    /// let speed = Interruption::unblock().mouse_wheel().recv();
     /// println!("speed: {}", speed);
     /// ```
     ///
@@ -172,10 +187,31 @@ impl<'a, E: Debug + Copy> EventReceiver<'a, E> {
         Self(event_sender_vec, event_block)
     }
 
+    /// Waits for the event.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap::*;
+    /// let event = Interruption::unblock().keyboard().recv();
+    /// ```
+    ///
     pub fn recv(&self) -> E {
         self.iter().next().unwrap()
     }
 
+    /// Creates a Iterator of the events.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// use hookmap::*;
+    /// Interruption::unblock()
+    ///     .keyboard()
+    ///     .iter()
+    ///     .filter(|e| e.target == Button::A)
+    ///     .for_each(|e| println!("{:?}", e));
+    /// ```
+    ///
     pub fn iter(&self) -> impl Iterator<Item = E> + 'a {
         Iter::new(self.0, self.1)
     }
