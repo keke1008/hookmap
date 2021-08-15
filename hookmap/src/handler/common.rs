@@ -1,4 +1,4 @@
-use crate::cond::Conditions;
+use crate::interface::Conditions;
 use hookmap_core::common::event::EventBlock;
 use std::{fmt::Debug, sync::Arc};
 

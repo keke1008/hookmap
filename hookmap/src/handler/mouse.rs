@@ -1,5 +1,5 @@
 use super::{HandlerVec, SatisfiedHandler};
-use crate::cond::Conditions;
+use crate::interface::Conditions;
 use hookmap_core::EventBlock;
 use std::fmt::Debug;
 use std::sync::Arc;

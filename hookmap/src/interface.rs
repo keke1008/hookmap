@@ -1,12 +1,19 @@
+mod button;
+mod cond;
+
 mod conditional_hook;
 mod hook;
 mod register;
 
+pub use button::{All, Any, ButtonSet};
+pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
 pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 
-use crate::{button::DownCastableButtonState, cond::Cond};
+pub(crate) use cond::Conditions;
+
+use button::DownCastableButtonState;
 
 pub trait SelectHandleTarget {
     /// Returns a [`ButtonRegister`] for registering a hook to the button.
@@ -54,9 +61,9 @@ pub trait SelectHandleTarget {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let modifier_space = hook.modifier(Button::Space);
+    /// let modifier_space = hook.cond(Cond::pressed(Button::Space));
     /// modifier_space
     ///     .bind(Button::A)
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));

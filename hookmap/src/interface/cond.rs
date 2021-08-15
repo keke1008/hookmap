@@ -1,4 +1,4 @@
-use crate::button::{ButtonWithState, DownCastableButtonState};
+use super::button::{ButtonWithState, DownCastableButtonState};
 use hookmap_core::ButtonState;
 use std::{fmt::Debug, sync::Arc};
 

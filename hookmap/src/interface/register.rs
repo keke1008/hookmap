@@ -1,8 +1,8 @@
-use crate::{
+use super::{
     button::{ButtonWithState, DownCastableButtonState},
     cond::Conditions,
-    handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
 };
+use crate::handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack};
 use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
 use std::{
     cell::RefCell,

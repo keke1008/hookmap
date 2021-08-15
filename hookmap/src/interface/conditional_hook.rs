@@ -1,9 +1,8 @@
-use super::{ButtonRegister, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget};
-use crate::{
-    button::DownCastableButtonState,
-    cond::{Cond, Conditions},
-    handler::EventCallback,
+use super::{
+    ButtonRegister, Cond, Conditions, DownCastableButtonState, MouseCursorRegister,
+    MouseWheelRegister, SelectHandleTarget,
 };
+use crate::handler::EventCallback;
 use std::{
     rc::{Rc, Weak},
     sync::Arc,

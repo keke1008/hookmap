@@ -1,12 +1,11 @@
 use super::{
-    ButtonRegister, ConditionalHook, MouseCursorRegister, MouseWheelRegister, SelectHandleTarget,
-};
-use crate::{
     button::DownCastableButtonState,
     cond::{Cond, Conditions},
-    handler::EventCallback,
-    runtime::HookInstaller,
+    conditional_hook::ConditionalHook,
+    register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
+    SelectHandleTarget,
 };
+use crate::{handler::EventCallback, runtime::HookInstaller};
 use std::{rc::Rc, sync::Arc};
 
 /// A struct that handles generated input events.
