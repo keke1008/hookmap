@@ -210,6 +210,7 @@ impl ButtonState for ButtonWithState {
     }
 }
 
+/// Abstracted button that can get state.
 pub trait DownCastableButtonState: ButtonState + Downcast {
     fn into_button_with_state(self: Box<Self>) -> ButtonWithState {
         let button = self.into_any().downcast::<Button>();

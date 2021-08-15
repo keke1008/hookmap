@@ -5,15 +5,13 @@ mod conditional_hook;
 mod hook;
 mod register;
 
-pub use button::{All, Any, ButtonSet};
+pub use button::{All, Any, ButtonSet, DownCastableButtonState};
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
 pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 
 pub(crate) use cond::Conditions;
-
-use button::DownCastableButtonState;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
