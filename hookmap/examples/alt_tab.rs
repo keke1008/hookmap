@@ -7,7 +7,7 @@ use std::sync::{
 fn emulate_alt_tab<T, B>(hook: &T, alt: B, tab: B)
 where
     T: SelectHandleTarget,
-    B: ButtonState + Clone,
+    B: EmulateButtonState + Clone,
 {
     let is_working = Arc::new(AtomicBool::new(false));
 

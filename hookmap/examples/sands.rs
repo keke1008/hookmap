@@ -9,7 +9,7 @@ use std::thread;
 fn emulate_sands<T, B>(hook: &T, space: B, ignore: HashSet<Button>)
 where
     T: SelectHandleTarget,
-    B: ButtonInput + ButtonState + Clone + Send + Sync,
+    B: EmulateButtonInput + EmulateButtonState + Clone + Send + Sync,
 {
     hook.bind(space.clone()).like(Button::Shift);
 

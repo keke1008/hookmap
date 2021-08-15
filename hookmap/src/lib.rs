@@ -13,11 +13,12 @@ mod interface;
 mod runtime;
 
 pub use hookmap_core::{
-    Button, ButtonAction, ButtonInput, EmulateMouseCursor, EmulateMouseWheel, Mouse,
+    Button, ButtonAction, ButtonInput as EmulateButtonInput, ButtonState, EmulateMouseCursor,
+    EmulateMouseWheel, Mouse,
 };
 pub use interface::{
     All, Any, ButtonRegister, ButtonSet, Cond, ConditionalHook,
-    DownCastableButtonState as ButtonState, Hook, MouseCursorRegister, MouseWheelRegister,
+    DownCastableButtonState as EmulateButtonState, Hook, MouseCursorRegister, MouseWheelRegister,
     SelectHandleTarget,
 };
 pub use runtime::interruption;
