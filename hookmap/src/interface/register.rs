@@ -5,7 +5,7 @@ use super::{
 };
 use crate::{
     handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
-    All,
+    interface::All,
 };
 use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
 use std::{

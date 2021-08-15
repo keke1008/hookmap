@@ -1,4 +1,4 @@
-use hookmap::*;
+use hookmap::{button::EmulateButtonState, *};
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,

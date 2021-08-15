@@ -1,4 +1,4 @@
-use hookmap::*;
+use hookmap::{button::EmulateButtonState, *};
 use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicBool, Ordering},

@@ -16,9 +16,17 @@ pub use hookmap_core::{
     Button, ButtonAction, ButtonInput as EmulateButtonInput, ButtonState, EmulateMouseCursor,
     EmulateMouseWheel, Mouse,
 };
-pub use interface::{
-    All, Any, ButtonRegister, ButtonSet, Cond, ConditionalHook,
-    DownCastableButtonState as EmulateButtonState, Hook, MouseCursorRegister, MouseWheelRegister,
-    SelectHandleTarget, SetEventBlock,
-};
-pub use runtime::interruption::{EventReceiver, Interruption};
+pub use interface::{ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
+pub use runtime::interruption::Interruption;
+
+pub mod button {
+    pub use super::interface::{All, Any, DownCastableButtonState as EmulateButtonState};
+}
+
+pub mod register {
+    pub use super::interface::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
+}
+
+pub mod interruption {
+    pub use super::runtime::interruption::EventReceiver;
+}
