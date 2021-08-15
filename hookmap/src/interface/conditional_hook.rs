@@ -3,6 +3,7 @@ use super::{
     MouseWheelRegister, SelectHandleTarget,
 };
 use crate::handler::EventCallback;
+use hookmap_core::EventBlock;
 use std::{
     rc::{Rc, Weak},
     sync::Arc,
@@ -23,6 +24,7 @@ use std::{
 pub struct ConditionalHook {
     handler: Weak<EventCallback>,
     conditions: Arc<Conditions>,
+    event_block: EventBlock,
 }
 
 impl ConditionalHook {
@@ -31,7 +33,20 @@ impl ConditionalHook {
         Self {
             handler,
             conditions,
+            event_block: EventBlock::default(),
         }
+    }
+
+    /// Blocks input event.
+    pub fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    /// Unblocks input event.
+    pub fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 }
 
@@ -41,6 +56,7 @@ impl SelectHandleTarget for ConditionalHook {
             Rc::downgrade(&self.handler.upgrade().unwrap().button),
             Arc::clone(&self.conditions),
             button,
+            self.event_block,
         )
     }
 

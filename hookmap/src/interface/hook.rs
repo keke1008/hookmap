@@ -6,6 +6,7 @@ use super::{
     SelectHandleTarget,
 };
 use crate::{handler::EventCallback, runtime::HookInstaller};
+use hookmap_core::EventBlock;
 use std::{rc::Rc, sync::Arc};
 
 /// A struct for selecting the target of the hook.
@@ -54,6 +55,7 @@ impl SelectHandleTarget for Hook {
             Rc::downgrade(&self.handler.button),
             Arc::clone(&self.conditions),
             button,
+            EventBlock::default(),
         )
     }
 

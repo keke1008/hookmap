@@ -21,11 +21,12 @@ impl ButtonRegister {
         handler: Weak<RefCell<ButtonEventCallback>>,
         conditions: Arc<Conditions>,
         button: impl DownCastableButtonState,
+        event_block: EventBlock,
     ) -> Self {
         let button = Box::new(button).into_button_with_state();
         Self {
             inner: ButtonRegisterInner::new(handler, conditions, button),
-            event_block: EventBlock::default(),
+            event_block,
         }
     }
 
