@@ -6,71 +6,35 @@ use std::{fmt::Debug, rc::Rc};
 
 static RUNTIME_EVENT_HANDLER: OnceCell<RuntimeHandler> = OnceCell::new();
 
-pub struct EventHandler<'a, E: Copy + Debug + PartialEq + Send + Sync + 'static> {
-    handlers: SatisfiedHandler<'a, E>,
-    event: E,
+pub(crate) enum EventHandler<'a, E: Copy + Debug + PartialEq + Send + Sync + 'static> {
+    Interruption,
+    Normal(SatisfiedHandler<'a, E>),
 }
 
-impl<'a, E: Copy + Debug + PartialEq + Send + Sync + 'static> EventHandler<'a, E> {
-    fn new(handlers: SatisfiedHandler<'a, E>, event: E) -> Self {
-        Self { handlers, event }
-    }
-
+impl<'a, E: Copy + Debug + PartialEq + Send + Sync + 'static> EventCallback
+    for EventHandler<'a, E>
+{
     fn get_event_block(&self) -> EventBlock {
-        let is_contains_block = self
-            .handlers
-            .get_event_blocks()
-            .iter()
-            .any(|event_block| event_block == &EventBlock::Block);
-        if is_contains_block {
-            EventBlock::Block
-        } else {
-            EventBlock::Unblock
-        }
-    }
-}
-
-impl<'a> EventCallback for EventHandler<'a, ButtonEvent> {
-    fn get_event_block(&self) -> EventBlock {
-        match self.get_event_block() {
-            EventBlock::Block => EventBlock::Block,
-            EventBlock::Unblock => INTERRUPTION_EVENT.get_event_block(self.event),
+        match self {
+            Self::Interruption => EventBlock::Block,
+            Self::Normal(handlers) => {
+                let is_contains_block = handlers
+                    .get_event_blocks()
+                    .iter()
+                    .any(|event_block| event_block == &EventBlock::Block);
+                if is_contains_block {
+                    EventBlock::Block
+                } else {
+                    EventBlock::Unblock
+                }
+            }
         }
     }
 
     fn call(&mut self) {
-        INTERRUPTION_EVENT.send_button_event(self.event);
-        self.handlers.call();
-    }
-}
-
-impl<'a> EventCallback for EventHandler<'a, i32> {
-    fn get_event_block(&self) -> EventBlock {
-        self.get_event_block()
-    }
-
-    fn call(&mut self) {
-        INTERRUPTION_EVENT
-            .mouse_wheel
-            .lock()
-            .unwrap()
-            .send_event(self.event);
-        self.handlers.call();
-    }
-}
-
-impl<'a> EventCallback for EventHandler<'a, (i32, i32)> {
-    fn get_event_block(&self) -> EventBlock {
-        self.get_event_block()
-    }
-
-    fn call(&mut self) {
-        INTERRUPTION_EVENT
-            .mouse_cursor
-            .lock()
-            .unwrap()
-            .send_event(self.event);
-        self.handlers.call();
+        if let Self::Normal(handlers) = self {
+            handlers.call()
+        }
     }
 }
 
@@ -83,28 +47,50 @@ impl HookInstaller {
         RUNTIME_EVENT_HANDLER.set(self.handler).unwrap();
 
         INPUT_HANDLER.button.register_handler(move |event| {
-            let event_handler = RUNTIME_EVENT_HANDLER.get().unwrap();
-            let handlers = match event.action {
-                ButtonAction::Press => event_handler.button.on_press.get_satisfied(event),
-                ButtonAction::Release => event_handler.button.on_release.get_satisfied(event),
-            };
-            Box::new(EventHandler::new(handlers, event))
+            if INTERRUPTION_EVENT.send_button_event(event) == EventBlock::Block {
+                Box::new(EventHandler::<ButtonEvent>::Interruption)
+            } else {
+                let event_handler = RUNTIME_EVENT_HANDLER.get().unwrap();
+                let handlers = match event.action {
+                    ButtonAction::Press => event_handler.button.on_press.get_satisfied(event),
+                    ButtonAction::Release => event_handler.button.on_release.get_satisfied(event),
+                };
+                Box::new(EventHandler::Normal(handlers))
+            }
         });
         INPUT_HANDLER.mouse_cursor.register_handler(move |event| {
-            let satisfied_handlers = RUNTIME_EVENT_HANDLER
-                .get()
-                .unwrap()
+            let interruption_event_block = INTERRUPTION_EVENT
                 .mouse_cursor
-                .get_satisfied(event);
-            Box::new(EventHandler::new(satisfied_handlers, event))
+                .lock()
+                .unwrap()
+                .send_event(event);
+            if interruption_event_block == EventBlock::Block {
+                Box::new(EventHandler::<(i32, i32)>::Interruption)
+            } else {
+                let satisfied_handlers = RUNTIME_EVENT_HANDLER
+                    .get()
+                    .unwrap()
+                    .mouse_cursor
+                    .get_satisfied(event);
+                Box::new(EventHandler::Normal(satisfied_handlers))
+            }
         });
         INPUT_HANDLER.mouse_wheel.register_handler(move |event| {
-            let satisfied_handlers = RUNTIME_EVENT_HANDLER
-                .get()
-                .unwrap()
+            let event_block = INTERRUPTION_EVENT
                 .mouse_wheel
-                .get_satisfied(event);
-            Box::new(EventHandler::new(satisfied_handlers, event))
+                .lock()
+                .unwrap()
+                .send_event(event);
+            if event_block == EventBlock::Block {
+                Box::new(EventHandler::<i32>::Interruption)
+            } else {
+                let satisfied_handlers = RUNTIME_EVENT_HANDLER
+                    .get()
+                    .unwrap()
+                    .mouse_wheel
+                    .get_satisfied(event);
+                Box::new(EventHandler::Normal(satisfied_handlers))
+            }
         });
         INPUT_HANDLER.handle_input();
     }

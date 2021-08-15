@@ -18,13 +18,15 @@ pub(super) struct EventSenderVec<I: Debug> {
 }
 
 impl<E: Debug + Copy> EventSenderVec<E> {
-    pub(super) fn send_event(&mut self, event: E) {
+    pub(super) fn send_event(&mut self, event: E) -> EventBlock {
         if self.block.is_empty() {
             mem::take(&mut self.unblock)
                 .iter()
                 .for_each(|tx| tx.send(event).unwrap());
+            EventBlock::Unblock
         } else {
             self.block.remove(0).send(event).unwrap();
+            EventBlock::Block
         }
     }
 
@@ -32,14 +34,6 @@ impl<E: Debug + Copy> EventSenderVec<E> {
         match event_block {
             EventBlock::Block => self.block.push(tx),
             EventBlock::Unblock => self.unblock.push(tx),
-        }
-    }
-
-    fn get_event_block(&self) -> EventBlock {
-        if self.block.is_empty() {
-            EventBlock::Unblock
-        } else {
-            EventBlock::Block
         }
     }
 }
@@ -62,14 +56,7 @@ pub(super) struct EventSender {
 }
 
 impl EventSender {
-    pub(super) fn get_event_block(&self, event: ButtonEvent) -> EventBlock {
-        match event.target.kind() {
-            ButtonKind::Key => self.keyboard.lock().unwrap().get_event_block(),
-            ButtonKind::Mouse => self.mouse_button.lock().unwrap().get_event_block(),
-        }
-    }
-
-    pub(super) fn send_button_event(&self, event: ButtonEvent) {
+    pub(super) fn send_button_event(&self, event: ButtonEvent) -> EventBlock {
         match event.target.kind() {
             ButtonKind::Key => self.keyboard.lock().unwrap().send_event(event),
             ButtonKind::Mouse => self.mouse_button.lock().unwrap().send_event(event),
