@@ -1,4 +1,4 @@
-use super::{interruption::INTERRUPTION_EVENT_SENDER, runtime_handler::RuntimeHandler};
+use super::{interruption::INTERRUPTION_EVENT, runtime_handler::RuntimeHandler};
 use crate::{handler::SatisfiedHandler, Hook};
 use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, EventCallback, INPUT_HANDLER};
 use once_cell::sync::OnceCell;
@@ -32,15 +32,20 @@ impl<'a, E: Copy + Debug + PartialEq + Send + Sync + 'static> EventHandler<'a, E
 
 impl<'a> EventCallback for EventHandler<'a, ButtonEvent> {
     fn get_event_block(&self) -> EventBlock {
-        self.get_event_block()
+        match self.get_event_block() {
+            EventBlock::Block => EventBlock::Block,
+            EventBlock::Unblock => INTERRUPTION_EVENT
+                .lock()
+                .unwrap()
+                .get_event_block(self.event),
+        }
     }
 
     fn call(&mut self) {
-        INTERRUPTION_EVENT_SENDER
+        INTERRUPTION_EVENT
             .lock()
             .unwrap()
-            .button
-            .send_event(self.event);
+            .send_button_event(self.event);
         self.handlers.call();
     }
 }
@@ -51,7 +56,7 @@ impl<'a> EventCallback for EventHandler<'a, i32> {
     }
 
     fn call(&mut self) {
-        INTERRUPTION_EVENT_SENDER
+        INTERRUPTION_EVENT
             .lock()
             .unwrap()
             .mouse_wheel
@@ -66,7 +71,7 @@ impl<'a> EventCallback for EventHandler<'a, (i32, i32)> {
     }
 
     fn call(&mut self) {
-        INTERRUPTION_EVENT_SENDER
+        INTERRUPTION_EVENT
             .lock()
             .unwrap()
             .mouse_cursor

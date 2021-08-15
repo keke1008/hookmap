@@ -27,7 +27,7 @@ where
     }
 
     thread::spawn(move || loop {
-        let event = interruption::keyboard_event();
+        let event = Interruption::unblock().keyboard_event();
         if event.action == ButtonAction::Press && !ignore.contains(&event.target) {
             is_alone.store(false, Ordering::SeqCst);
         }
