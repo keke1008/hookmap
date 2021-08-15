@@ -235,17 +235,55 @@ impl ButtonRegisterInner {
 pub struct MouseCursorRegister {
     handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
     conditions: Arc<Conditions>,
+    event_block: EventBlock,
 }
 
 impl MouseCursorRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
         conditions: Arc<Conditions>,
+        event_block: EventBlock,
     ) -> Self {
         Self {
             handler,
             conditions,
+            event_block,
         }
+    }
+
+    /// Blocks the mouse cursor event when the hook to be registered is enabled.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor()
+    ///     .block()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    pub fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    /// Unblocks the mouse cursor event when the hook to be registered is enabled.
+    ///
+    /// If any other enabled hook blocks the event, this function will be ignored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor()
+    ///     .unblock()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    ///
+    pub fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 
     /// Registers a handler called when the mouse cursor is moved.
@@ -266,7 +304,7 @@ impl MouseCursorRegister {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),
             Arc::clone(&self.conditions),
-            Default::default(),
+            self.event_block,
         );
     }
 }
@@ -276,16 +314,19 @@ impl MouseCursorRegister {
 pub struct MouseWheelRegister {
     handler: Weak<RefCell<MouseEventCallBack<i32>>>,
     conditions: Arc<Conditions>,
+    event_block: EventBlock,
 }
 
 impl MouseWheelRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<MouseEventCallBack<i32>>>,
         conditions: Arc<Conditions>,
+        event_block: EventBlock,
     ) -> Self {
         Self {
             handler,
             conditions,
+            event_block,
         }
     }
 
@@ -312,7 +353,42 @@ impl MouseWheelRegister {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),
             Arc::clone(&self.conditions),
-            Default::default(),
+            self.event_block,
         );
+    }
+
+    /// Blocks the mouse cursor event when the hook to be registered is enabled.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor()
+    ///     .block()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    pub fn block(mut self) -> Self {
+        self.event_block = EventBlock::Block;
+        self
+    }
+
+    /// Unblocks the mouse cursor event when the hook to be registered is enabled.
+    ///
+    /// If any other enabled hook blocks the event, this function will be ignored.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::{Hook, Button, SelectHandleTarget};
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor()
+    ///     .unblock()
+    ///     .on_press(|e| println!("{:?}", e));
+    /// ```
+    ///
+    pub fn unblock(mut self) -> Self {
+        self.event_block = EventBlock::Unblock;
+        self
     }
 }

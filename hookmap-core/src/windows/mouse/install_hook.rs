@@ -40,14 +40,14 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
                 EventBlock::Block => 1,
             }
         }
-        MouseEventInfo::Wheel(speed) => {
-            INPUT_HANDLER.mouse_wheel.emit(speed);
-            call_next_hook(code, w_param, l_param)
-        }
-        MouseEventInfo::Cursor(pos) => {
-            INPUT_HANDLER.mouse_cursor.emit(pos);
-            call_next_hook(code, w_param, l_param)
-        }
+        MouseEventInfo::Wheel(speed) => match INPUT_HANDLER.mouse_wheel.emit(speed) {
+            EventBlock::Unblock => call_next_hook(code, w_param, l_param),
+            EventBlock::Block => 1,
+        },
+        MouseEventInfo::Cursor(pos) => match INPUT_HANDLER.mouse_cursor.emit(pos) {
+            EventBlock::Unblock => call_next_hook(code, w_param, l_param),
+            EventBlock::Block => 1,
+        },
     }
 }
 

@@ -64,6 +64,7 @@ impl SelectHandleTarget for ConditionalHook {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().mouse_wheel),
             Arc::clone(&self.conditions),
+            self.event_block,
         )
     }
 
@@ -71,6 +72,7 @@ impl SelectHandleTarget for ConditionalHook {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().mouse_cursor),
             Arc::clone(&self.conditions),
+            self.event_block,
         )
     }
 

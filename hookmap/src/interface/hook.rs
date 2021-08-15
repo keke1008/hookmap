@@ -63,6 +63,7 @@ impl SelectHandleTarget for Hook {
         MouseWheelRegister::new(
             Rc::downgrade(&self.handler.mouse_wheel),
             Arc::clone(&self.conditions),
+            EventBlock::default(),
         )
     }
 
@@ -70,6 +71,7 @@ impl SelectHandleTarget for Hook {
         MouseCursorRegister::new(
             Rc::downgrade(&self.handler.mouse_cursor),
             Arc::clone(&self.conditions),
+            EventBlock::default(),
         )
     }
 
