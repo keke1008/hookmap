@@ -10,11 +10,10 @@
 //!
 //! * `block-input-event`: Set button events to be blocked by default.
 
-pub mod cond;
-pub mod interface;
-
 mod button;
+mod cond;
 mod handler;
+mod interface;
 mod runtime;
 
 pub use button::{All, Any, ButtonSet};
