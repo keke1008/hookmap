@@ -1,5 +1,3 @@
-//! # Hookmap
-//!
 //! Register hotkeys and emulate input.
 //!
 //! ## Handler order.

@@ -8,7 +8,17 @@ use super::{
 use crate::{handler::EventCallback, runtime::HookInstaller};
 use std::{rc::Rc, sync::Arc};
 
-/// A struct that handles generated input events.
+/// A struct for selecting the target of the hook.
+///
+/// # Example
+///
+/// ```
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// hook.bind(Button::A)
+///     .on_press(|e| println!("{:?}", e));
+/// ```
+///
 #[derive(Debug, Default)]
 pub struct Hook {
     pub(crate) handler: Rc<EventCallback>,

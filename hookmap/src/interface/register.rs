@@ -10,6 +10,7 @@ use std::{
     sync::Arc,
 };
 
+/// A struct for registering handlers for the buttons.
 pub struct ButtonRegister {
     inner: ButtonRegisterInner,
     event_block: EventBlock,
@@ -228,7 +229,7 @@ impl ButtonRegisterInner {
     }
 }
 
-/// A struct for registering a handler for the mouse cursor.
+/// A struct for registering handlers for the mouse cursor.
 #[derive(Debug)]
 pub struct MouseCursorRegister {
     handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
@@ -269,7 +270,7 @@ impl MouseCursorRegister {
     }
 }
 
-/// A struct for registering a handler for the mouse wheel.
+/// A struct for registering handlers for the mouse wheel.
 #[derive(Debug)]
 pub struct MouseWheelRegister {
     handler: Weak<RefCell<MouseEventCallBack<i32>>>,

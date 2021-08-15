@@ -15,6 +15,7 @@ pub(crate) use cond::Conditions;
 
 use button::DownCastableButtonState;
 
+/// Selecting the target of the hook.
 pub trait SelectHandleTarget {
     /// Returns a [`ButtonRegister`] for registering a hook to the button.
     ///

@@ -8,6 +8,17 @@ use std::{
     sync::Arc,
 };
 
+/// A struct for selecting the target of the conditional hook.
+///
+/// # Example
+///
+/// ```
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// let mod_ctrl = hook.cond(Cond::pressed(Button::Ctrl));
+/// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
+/// ```
+///
 #[derive(Debug)]
 pub struct ConditionalHook {
     handler: Weak<EventCallback>,
@@ -15,6 +26,7 @@ pub struct ConditionalHook {
 }
 
 impl ConditionalHook {
+    /// Creates a new instance of `ConditionalHook`.
     pub(crate) fn new(handler: Weak<EventCallback>, conditions: Arc<Conditions>) -> Self {
         Self {
             handler,
