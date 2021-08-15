@@ -121,6 +121,10 @@ impl ButtonState for Any {
     fn is_pressed(&self) -> bool {
         self.0.iter().any(Button::is_pressed)
     }
+
+    fn is_released(&self) -> bool {
+        self.0.iter().any(Button::is_released)
+    }
 }
 
 /// A struct for operating all buttons.
@@ -144,6 +148,10 @@ pub struct All(Arc<HashSet<Button>>);
 impl ButtonState for All {
     fn is_pressed(&self) -> bool {
         self.0.iter().all(Button::is_pressed)
+    }
+
+    fn is_released(&self) -> bool {
+        self.0.iter().all(Button::is_released)
     }
 }
 
