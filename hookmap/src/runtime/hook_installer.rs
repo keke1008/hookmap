@@ -1,4 +1,4 @@
-use super::{interruption::EVENT_SENDER, runtime_handler::RuntimeHandler};
+use super::{interruption::INTERRUPTION_EVENT_SENDER, runtime_handler::RuntimeHandler};
 use crate::{handler::SatisfiedHandler, Hook};
 use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, EventCallback, INPUT_HANDLER};
 use once_cell::sync::OnceCell;
@@ -36,7 +36,11 @@ impl<'a> EventCallback for EventHandler<'a, ButtonEvent> {
     }
 
     fn call(&mut self) {
-        EVENT_SENDER.lock().unwrap().button.send_event(self.event);
+        INTERRUPTION_EVENT_SENDER
+            .lock()
+            .unwrap()
+            .button
+            .send_event(self.event);
         self.handlers.call();
     }
 }
@@ -47,7 +51,7 @@ impl<'a> EventCallback for EventHandler<'a, i32> {
     }
 
     fn call(&mut self) {
-        EVENT_SENDER
+        INTERRUPTION_EVENT_SENDER
             .lock()
             .unwrap()
             .mouse_wheel
@@ -62,7 +66,7 @@ impl<'a> EventCallback for EventHandler<'a, (i32, i32)> {
     }
 
     fn call(&mut self) {
-        EVENT_SENDER
+        INTERRUPTION_EVENT_SENDER
             .lock()
             .unwrap()
             .mouse_cursor

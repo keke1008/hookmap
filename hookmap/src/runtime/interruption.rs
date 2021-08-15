@@ -24,7 +24,7 @@ use std::{
     },
 };
 
-pub(super) static EVENT_SENDER: Lazy<Mutex<EventSender>> = Lazy::new(Mutex::default);
+pub(super) static INTERRUPTION_EVENT_SENDER: Lazy<Mutex<EventSender>> = Lazy::new(Mutex::default);
 
 #[derive(Debug)]
 pub(super) struct EventSenderVec<I: Debug>(Vec<Sender<I>>);
@@ -65,7 +65,7 @@ pub(super) struct EventSender {
 /// ```
 pub fn button_event() -> ButtonEvent {
     let (tx, rx) = mpsc::channel();
-    EVENT_SENDER.lock().unwrap().button.push(tx);
+    INTERRUPTION_EVENT_SENDER.lock().unwrap().button.push(tx);
     rx.recv().unwrap()
 }
 
@@ -123,7 +123,11 @@ pub fn mouse_button_event() -> ButtonEvent {
 ///
 pub fn mouse_cursor_event() -> (i32, i32) {
     let (tx, rx) = mpsc::channel();
-    EVENT_SENDER.lock().unwrap().mouse_cursor.push(tx);
+    INTERRUPTION_EVENT_SENDER
+        .lock()
+        .unwrap()
+        .mouse_cursor
+        .push(tx);
     rx.recv().unwrap()
 }
 
@@ -139,6 +143,10 @@ pub fn mouse_cursor_event() -> (i32, i32) {
 ///
 pub fn mouse_wheel_event() -> i32 {
     let (tx, rx) = mpsc::channel();
-    EVENT_SENDER.lock().unwrap().mouse_wheel.push(tx);
+    INTERRUPTION_EVENT_SENDER
+        .lock()
+        .unwrap()
+        .mouse_wheel
+        .push(tx);
     rx.recv().unwrap()
 }
