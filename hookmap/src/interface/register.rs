@@ -3,7 +3,10 @@ use super::{
     cond::Conditions,
     SetEventBlock,
 };
-use crate::handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack};
+use crate::{
+    handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
+    All,
+};
 use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
 use std::{
     cell::RefCell,
@@ -156,7 +159,6 @@ type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 
 impl ButtonRegisterInner {
     fn bind(&self, map: &mut ButtonCallbackMap, callback: ButtonCallback, event_block: EventBlock) {
-        let callback = self.generate_callback(callback);
         self.button.iter_buttons().for_each(move |&button| {
             map.get_mut(button).push(
                 Arc::clone(&callback),
@@ -166,14 +168,19 @@ impl ButtonRegisterInner {
         });
     }
 
-    fn generate_callback(&self, callback: ButtonCallback) -> ButtonCallback {
+    fn generate_callback(
+        &self,
+        callback: ButtonCallback,
+        predict: fn(&All) -> bool,
+    ) -> ButtonCallback {
         if let ButtonWithState::All(ref all) = self.button {
             let all = all.clone();
-            Arc::new(move |e| {
-                if all.is_pressed() {
+            let callback = move |e| {
+                if predict(&all) {
                     callback(e)
                 }
-            })
+            };
+            Arc::new(callback)
         } else {
             callback
         }
@@ -194,12 +201,14 @@ impl ButtonRegisterInner {
     fn on_press(&self, callback: ButtonCallback, event_block: EventBlock) {
         let callback_map = self.upgrade_handler();
         let mut callback_map = &mut callback_map.borrow_mut().on_press;
+        let callback = self.generate_callback(callback, All::is_pressed);
         self.bind(&mut callback_map, callback, event_block);
     }
 
     fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
         let callback_map = self.upgrade_handler();
         let mut callback_map = &mut callback_map.borrow_mut().on_release;
+        let callback = self.generate_callback(callback, All::is_released);
         self.bind(&mut callback_map, callback, event_block);
     }
 
