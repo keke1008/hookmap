@@ -10,13 +10,13 @@ use winapi::{
     um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
 };
 
-fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
+fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32, recursive: bool) {
     let mouse_input = MOUSEINPUT {
         dx,
         dy,
         mouseData: mouse_data,
         dwFlags: dw_flags,
-        dwExtraInfo: DW_EXTRA_INFO,
+        dwExtraInfo: if recursive { 0 } else { DW_EXTRA_INFO },
         time: 0,
     };
     let mut input = INPUT {
@@ -29,26 +29,26 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) {
     }
 }
 
-pub(in crate::windows) fn press(this: &Button) {
+pub(in crate::windows) fn press(this: &Button, recursive: bool) {
     let MouseParameter {
         mouse_data,
         dw_flags,
     } = this.into_press();
-    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
+    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32, recursive);
 }
 
-pub(in crate::windows) fn release(this: &Button) {
+pub(in crate::windows) fn release(this: &Button, recursive: bool) {
     let MouseParameter {
         mouse_data,
         dw_flags,
     } = this.into_release();
-    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32);
+    send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32, recursive);
 }
 
 impl EmulateMouseWheel for Mouse {
     fn rotate(speed: i32) {
         let speed = speed * WHEEL_DELTA as i32;
-        send_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
+        send_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL, false);
     }
 }
 

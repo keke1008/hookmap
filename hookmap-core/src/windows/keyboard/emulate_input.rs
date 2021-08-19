@@ -6,22 +6,22 @@ use winapi::{
     um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP},
 };
 
-pub(crate) fn press(key: &Button) {
-    send_key_input(key, 0);
+pub(crate) fn press(key: &Button, recursive: bool) {
+    send_key_input(key, 0, recursive);
 }
 
-pub(crate) fn release(key: &Button) {
-    send_key_input(key, KEYEVENTF_KEYUP);
+pub(crate) fn release(key: &Button, recursive: bool) {
+    send_key_input(key, KEYEVENTF_KEYUP, recursive);
 }
 
-fn send_key_input(key: &Button, flags: u32) {
+fn send_key_input(key: &Button, flags: u32, recursive: bool) {
     let vk_code = VkCode::from(*key).0;
     let keybd_input = KEYBDINPUT {
         wVk: vk_code as u16,
         wScan: 0,
         dwFlags: flags,
         time: 0,
-        dwExtraInfo: DW_EXTRA_INFO,
+        dwExtraInfo: if recursive { 0 } else { DW_EXTRA_INFO },
     };
     let mut input = INPUT {
         type_: INPUT_KEYBOARD,

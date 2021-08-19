@@ -162,6 +162,14 @@ impl ButtonInput for All {
     fn release(&self) {
         self.0.iter().for_each(Button::release);
     }
+
+    fn press_recursive(&self) {
+        self.0.iter().for_each(Button::press_recursive);
+    }
+
+    fn release_recursive(&self) {
+        self.0.iter().for_each(Button::release_recursive);
+    }
 }
 
 #[derive(Clone)]

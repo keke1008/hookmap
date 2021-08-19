@@ -1,14 +1,28 @@
 pub trait ButtonInput {
-    /// Emulates the action of pressing a button.
+    /// Emulates a button press operation.
     fn press(&self);
 
-    /// Emulates the action of pressing a button.
+    /// Emulates a button release operation.
     fn release(&self);
 
-    /// Presses the button and releases it immediately.
+    /// Presses a button and releases it immediately.
     fn click(&self) {
         self.press();
         self.release();
+    }
+
+    /// Emulates a button press operation.
+    /// This differs from [`ButtonInput::press`] in that it can call hook handlers.
+    fn press_recursive(&self);
+
+    /// Emulates a button release operation.
+    /// This differs from [`ButtonInput::release`] in that it can call hook handlers.
+    fn release_recursive(&self);
+
+    /// Calls [`ButtonInput::press_recursive`] and [`ButtonInput::release_recursive`].
+    fn click_recursive(&self) {
+        self.press_recursive();
+        self.release_recursive();
     }
 }
 
