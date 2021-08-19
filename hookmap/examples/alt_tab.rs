@@ -7,7 +7,7 @@ use std::sync::{
 fn emulate_alt_tab<T, B>(hook: &T, alt: B, tab: B)
 where
     T: SelectHandleTarget,
-    B: EmulateButtonState + Clone,
+    B: EmulateButtonState,
 {
     let is_working = Arc::new(AtomicBool::new(false));
 
@@ -20,7 +20,7 @@ where
         });
     }
 
-    let mod_a = hook.cond(Cond::pressed(alt));
+    let mod_a = hook.cond(&Cond::pressed(&alt));
 
     mod_a.bind(&tab).block().on_press(move |_| {
         if !is_working.load(Ordering::SeqCst) {
@@ -28,14 +28,12 @@ where
             is_working.store(true, Ordering::SeqCst);
         }
     });
-    mod_a.bind(&tab).like(Button::Tab);
+    mod_a.bind(&tab).like(&Button::Tab);
 }
 
 // Emulate Alt-tab with a-t
 fn main() {
     let hook = Hook::new();
-
     emulate_alt_tab(&hook, Button::A, Button::T);
-
     hook.handle_input();
 }

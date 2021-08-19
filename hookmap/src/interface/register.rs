@@ -45,7 +45,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(&Button::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
     pub fn on_press<F>(self, callback: F) -> Self
@@ -66,7 +66,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{ButtonAction, Button, Hook, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press_or_release(|event| {
+    /// hook.bind(&Button::A).on_press_or_release(|event| {
     ///     match event.action {
     ///         ButtonAction::Press => println!("The A key is pressed"),
     ///         ButtonAction::Release => println!("The A key is released"),
@@ -95,7 +95,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
+    /// hook.bind(&Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
     pub fn on_release<F>(self, callback: F) -> Self
@@ -114,7 +114,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::H).like(Button::LeftArrow);
+    /// hook.bind(&Button::H).like(&Button::LeftArrow);
     /// ```
     ///
     pub fn like<B>(self, button: &B)
@@ -136,7 +136,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A).disable();
+    /// hook.bind(&Button::A).disable();
     /// ```
     pub fn disable(self) -> Self {
         self.block().on_press_or_release(|_| {})

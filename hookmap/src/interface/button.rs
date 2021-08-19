@@ -10,13 +10,13 @@ use std::{collections::HashSet, fmt::Debug, sync::Arc};
 /// let hook = Hook::new();
 /// let set1 = ButtonSet::new(&[Button::A, Button::B, Button::C]);
 ///
-/// hook.bind(set1.any())
+/// hook.bind(&set1.any())
 ///     .on_press(|e| println!("{:?}", e));
 ///
 /// let set2 = ButtonSet::new(&[Button::D, Button::E]);
-/// hook.cond(Cond::pressed(set1.all()))
-///     .cond(Cond::released(set2.any()))
-///     .bind(Button::Q)
+/// hook.cond(&Cond::pressed(&set1.all()))
+///     .cond(&Cond::released(&set2.any()))
+///     .bind(&Button::Q)
 ///     .on_release(|e| println!("{:?}", e));
 /// ```
 ///
@@ -107,7 +107,7 @@ impl ButtonSet {
 /// use hookmap::*;
 /// let hook = Hook::new();
 /// let any = ButtonSet::new(&[Button::A, Button::B]).any();
-/// hook.bind(any)
+/// hook.bind(&any)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
 ///     });
@@ -134,7 +134,7 @@ impl ButtonState for Any {
 /// use hookmap::*;
 /// let hook = Hook::new();
 /// let all = ButtonSet::new(&[Button::A, Button::B]).all();
-/// hook.bind(all)
+/// hook.bind(&all)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
 ///         assert!(Button::A.is_pressed() && Button::B.is_pressed());

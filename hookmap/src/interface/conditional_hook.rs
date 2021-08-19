@@ -18,8 +18,8 @@ use std::{
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let mod_ctrl = hook.cond(Cond::pressed(Button::Ctrl));
-/// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
+/// let mod_ctrl = hook.cond(&Cond::pressed(&Button::Ctrl));
+/// mod_ctrl.bind(&Button::H).like(&Button::LeftArrow);
 /// ```
 ///
 #[derive(Debug)]

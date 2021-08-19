@@ -22,9 +22,9 @@ enum _Cond {
 /// let times_ = Arc::clone(&times);
 ///
 /// let conditional_hook = hook
-///     .cond(Cond::pressed(Button::C))
-///     .cond(Cond::released(set.all()))
-///     .cond(Cond::callback(move || {
+///     .cond(&Cond::pressed(&Button::C))
+///     .cond(&Cond::released(&set.all()))
+///     .cond(&Cond::callback(move || {
 ///          times.load(Ordering::SeqCst) < 10
 ///     }));
 ///
@@ -32,7 +32,7 @@ enum _Cond {
 /// //      C key is pressed and
 /// //      A key and B key is released and
 /// //      `times` < 10.
-/// conditional_hook.bind(Button::D).on_press(move |_| {
+/// conditional_hook.bind(&Button::D).on_press(move |_| {
 ///     let times = times_.fetch_add(1, Ordering::SeqCst);
 ///     println!("Called {} times", times);
 /// });
@@ -57,9 +57,9 @@ impl Cond {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let cond = Cond::pressed(Button::A);
-    /// hook.cond(cond)
-    ///     .bind(Button::B)
+    /// let cond = Cond::pressed(&Button::A);
+    /// hook.cond(&cond)
+    ///     .bind(&Button::B)
     ///     .on_press(|_| assert!(Button::A.is_pressed()));
     /// ```
     ///
@@ -74,9 +74,9 @@ impl Cond {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let cond = Cond::released(Button::A);
-    /// hook.cond(cond)
-    ///     .bind(Button::B)
+    /// let cond = Cond::released(&Button::A);
+    /// hook.cond(&cond)
+    ///     .bind(&Button::B)
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
     pub fn released(button: &impl ToButtonWithState) -> Self {
@@ -96,8 +96,8 @@ impl Cond {
     ///     let times = Arc::clone(&times);
     ///     Cond::callback(move || times.load(Ordering::SeqCst) < 10)
     /// };
-    /// hook.cond(cond)
-    ///     .bind(Button::A)
+    /// hook.cond(&cond)
+    ///     .bind(&Button::A)
     ///     .on_press(move |_| {
     ///         assert!(times.fetch_add(1, Ordering::SeqCst) < 10);
     ///     });

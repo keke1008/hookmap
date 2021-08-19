@@ -16,7 +16,7 @@ use std::{rc::Rc, sync::Arc};
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// hook.bind(Button::A)
+/// hook.bind(&Button::A)
 ///     .on_press(|e| println!("{:?}", e));
 /// ```
 ///
@@ -40,7 +40,7 @@ impl Hook {
     /// ```no_run
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(&Button::A).on_press(|_| println!("The A key is pressed"));
     /// hook.handle_input(); // Blocking the current thread.
     /// ```
     ///

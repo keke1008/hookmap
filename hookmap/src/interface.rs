@@ -22,7 +22,7 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(Button::A)
+    /// hook.bind(&Button::A)
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
@@ -62,9 +62,9 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let modifier_space = hook.cond(Cond::pressed(Button::Space));
+    /// let modifier_space = hook.cond(&Cond::pressed(&Button::Space));
     /// modifier_space
-    ///     .bind(Button::A)
+    ///     .bind(&Button::A)
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
@@ -80,7 +80,7 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(Button::A)
+    /// hook.bind(&Button::A)
     ///     .block()
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
@@ -96,7 +96,7 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(Button::A)
+    /// hook.bind(&Button::A)
     ///     .unblock()
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
