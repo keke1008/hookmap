@@ -1,5 +1,5 @@
 use super::button::{Button, ButtonAction};
-use std::{collections::HashMap, hash::Hash, sync::Mutex};
+use std::hash::Hash;
 
 /// Indicates whether to pass the generated event to the next program or not .
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -24,25 +24,6 @@ impl Default for &EventBlock {
 impl Default for EventBlock {
     fn default() -> Self {
         *<&EventBlock>::default()
-    }
-}
-
-#[derive(Debug)]
-pub struct ButtonEventBlockMap(Mutex<HashMap<Button, EventBlock>>);
-
-impl ButtonEventBlockMap {
-    pub fn get_or_default(&self, k: Button) -> EventBlock {
-        *self.0.lock().unwrap().get(&k).unwrap_or_default()
-    }
-
-    pub fn insert(&self, k: Button, v: EventBlock) -> Option<EventBlock> {
-        self.0.lock().unwrap().insert(k, v)
-    }
-}
-
-impl Default for ButtonEventBlockMap {
-    fn default() -> Self {
-        Self(Default::default())
     }
 }
 
