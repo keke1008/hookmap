@@ -11,18 +11,18 @@ where
     T: SelectHandleTarget,
     B: EmulateButtonInput + EmulateButtonState + Clone + Send + Sync,
 {
-    hook.bind(space.clone()).like(Button::Shift);
+    hook.bind(&space).like(Button::Shift);
 
     let is_alone = Arc::new(AtomicBool::new(true));
     {
         let is_alone = Arc::clone(&is_alone);
-        hook.bind(space.clone())
+        hook.bind(&space)
             .on_press(move |_| is_alone.store(true, Ordering::SeqCst));
     }
     {
         let is_alone = Arc::clone(&is_alone);
         hook.cond(Cond::callback(move || is_alone.load(Ordering::SeqCst)))
-            .bind(space.clone())
+            .bind(&space)
             .on_release(move |_| space.click());
     }
 
@@ -39,7 +39,7 @@ fn main() {
     let hook = Hook::new();
     let ignore = [Button::Space, Button::Shift, Button::Ctrl, Button::Alt]
         .iter()
-        .map(|&b| b)
+        .copied()
         .collect();
 
     emulate_sands(&hook, Button::Space, ignore);

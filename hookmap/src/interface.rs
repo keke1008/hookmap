@@ -26,7 +26,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind(&self, button: impl DownCastableButtonState) -> ButtonRegister;
+    fn bind<B: DownCastableButtonState + Clone>(&self, button: &B) -> ButtonRegister;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
     ///

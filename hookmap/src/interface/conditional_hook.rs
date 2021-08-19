@@ -41,11 +41,11 @@ impl ConditionalHook {
 }
 
 impl SelectHandleTarget for ConditionalHook {
-    fn bind(&self, button: impl DownCastableButtonState) -> ButtonRegister {
+    fn bind<B: DownCastableButtonState + Clone>(&self, button: &B) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().button),
             Arc::clone(&self.conditions),
-            button,
+            button.clone(),
             self.event_block,
         )
     }
