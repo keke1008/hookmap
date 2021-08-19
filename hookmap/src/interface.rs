@@ -68,7 +68,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
-    fn cond(&self, cond: Cond) -> ConditionalHook;
+    fn cond(&self, cond: &Cond) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

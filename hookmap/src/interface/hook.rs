@@ -76,9 +76,9 @@ impl SelectHandleTarget for Hook {
         )
     }
 
-    fn cond(&self, cond: Cond) -> ConditionalHook {
+    fn cond(&self, cond: &Cond) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
-        conditions.add(cond);
+        conditions.add(cond.clone());
         ConditionalHook::new(Rc::downgrade(&self.handler), Arc::new(conditions))
     }
 }

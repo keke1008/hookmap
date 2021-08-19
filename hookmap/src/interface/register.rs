@@ -7,7 +7,7 @@ use crate::{
     handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
     interface::All,
 };
-use hookmap_core::{Button, ButtonEvent, ButtonInput, ButtonState, EventBlock};
+use hookmap_core::{ButtonEvent, ButtonInput, ButtonState, EventBlock};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -117,10 +117,16 @@ impl ButtonRegister {
     /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like(self, button: Button) {
-        self.block()
-            .on_press(move |_| button.press())
-            .on_release(move |_| button.release());
+    pub fn like<B>(self, button: &B)
+    where
+        B: ButtonInput + Clone + Send + Sync + 'static,
+    {
+        let this = {
+            let button = button.clone();
+            self.block().on_press(move |_| button.press())
+        };
+        let button = button.clone();
+        this.on_release(move |_| button.release());
     }
 
     /// Disables the button and blocks the event.

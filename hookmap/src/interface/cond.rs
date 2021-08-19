@@ -63,7 +63,6 @@ impl Cond {
     ///     .on_press(|_| assert!(Button::A.is_pressed()));
     /// ```
     ///
-    pub fn pressed(button: impl ToButtonWithState) -> Self {
     pub fn pressed(button: &impl ToButtonWithState) -> Self {
         Self(_Cond::Pressed(button.to_button_with_state()))
     }
@@ -80,7 +79,6 @@ impl Cond {
     ///     .bind(Button::B)
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
-    pub fn released(button: impl ToButtonWithState) -> Self {
     pub fn released(button: &impl ToButtonWithState) -> Self {
         Self(_Cond::Released(button.to_button_with_state()))
     }
