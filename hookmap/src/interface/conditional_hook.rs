@@ -1,5 +1,5 @@
 use super::{
-    button::DownCastableButtonState,
+    button::ToButtonWithState,
     cond::{Cond, Conditions},
     register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
     SelectHandleTarget, SetEventBlock,
@@ -41,7 +41,7 @@ impl ConditionalHook {
 }
 
 impl SelectHandleTarget for ConditionalHook {
-    fn bind<B: DownCastableButtonState + Clone>(&self, button: &B) -> ButtonRegister {
+    fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap().button),
             Arc::clone(&self.conditions),

@@ -1,5 +1,5 @@
 use super::{
-    button::{ButtonWithState, DownCastableButtonState},
+    button::{ButtonWithState, ToButtonWithState},
     cond::Conditions,
     SetEventBlock,
 };
@@ -24,10 +24,10 @@ impl ButtonRegister {
     pub(crate) fn new(
         handler: Weak<RefCell<ButtonEventCallback>>,
         conditions: Arc<Conditions>,
-        button: impl DownCastableButtonState,
+        button: impl ToButtonWithState,
         event_block: EventBlock,
     ) -> Self {
-        let button = Box::new(button).into_button_with_state();
+        let button = button.to_button_with_state();
         Self {
             inner: ButtonRegisterInner::new(handler, conditions, button),
             event_block,

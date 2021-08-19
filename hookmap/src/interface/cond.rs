@@ -1,4 +1,4 @@
-use super::button::{ButtonWithState, DownCastableButtonState};
+use super::button::{ButtonWithState, ToButtonWithState};
 use hookmap_core::ButtonState;
 use std::{fmt::Debug, sync::Arc};
 
@@ -63,8 +63,8 @@ impl Cond {
     ///     .on_press(|_| assert!(Button::A.is_pressed()));
     /// ```
     ///
-    pub fn pressed(button: impl DownCastableButtonState) -> Self {
-        let button = Box::new(button).into_button_with_state();
+    pub fn pressed(button: impl ToButtonWithState) -> Self {
+        let button = button.to_button_with_state();
         Self(_Cond::Pressed(button))
     }
 
@@ -80,8 +80,8 @@ impl Cond {
     ///     .bind(Button::B)
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
-    pub fn released(button: impl DownCastableButtonState) -> Self {
-        let button = Box::new(button).into_button_with_state();
+    pub fn released(button: impl ToButtonWithState) -> Self {
+        let button = button.to_button_with_state();
         Self(_Cond::Released(button))
     }
 

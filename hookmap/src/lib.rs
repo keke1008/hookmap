@@ -20,7 +20,7 @@ pub use interface::{ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, 
 pub use runtime::interruption::Interruption;
 
 pub mod button {
-    pub use super::interface::{All, Any, DownCastableButtonState as EmulateButtonState};
+    pub use super::interface::{All, Any, ToButtonWithState};
 }
 
 pub mod register {

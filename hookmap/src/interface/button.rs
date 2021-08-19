@@ -1,4 +1,3 @@
-use downcast_rs::{impl_downcast, Downcast};
 use hookmap_core::{Button, ButtonInput, ButtonState};
 use std::{collections::HashSet, fmt::Debug, sync::Arc};
 
@@ -218,23 +217,24 @@ impl ButtonState for ButtonWithState {
     }
 }
 
-/// Abstracted button that can get state.
-pub trait DownCastableButtonState: ButtonState + Downcast {
-    fn into_button_with_state(self: Box<Self>) -> ButtonWithState {
-        let button = self.into_any().downcast::<Button>();
-        if let Ok(button) = button {
-            return ButtonWithState::Button(*button);
-        }
-        let button = button.unwrap_err().downcast::<Any>();
-        if let Ok(any) = button {
-            return ButtonWithState::Any(*any);
-        }
-        let button = button.unwrap_err().downcast::<All>();
-        match button {
-            Ok(all) => ButtonWithState::All(*all),
-            Err(_) => panic!(),
-        }
+pub trait ToButtonWithState: Send + Sync {
+    fn to_button_with_state(&self) -> ButtonWithState;
+}
+
+impl ToButtonWithState for Button {
+    fn to_button_with_state(&self) -> ButtonWithState {
+        ButtonWithState::Button(*self)
     }
 }
-impl<T: ButtonState + Downcast> DownCastableButtonState for T {}
-impl_downcast!(DownCastableButtonState);
+
+impl ToButtonWithState for Any {
+    fn to_button_with_state(&self) -> ButtonWithState {
+        ButtonWithState::Any(self.clone())
+    }
+}
+
+impl ToButtonWithState for All {
+    fn to_button_with_state(&self) -> ButtonWithState {
+        ButtonWithState::All(self.clone())
+    }
+}
