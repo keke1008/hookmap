@@ -215,6 +215,14 @@ impl ButtonState for ButtonWithState {
             ButtonWithState::All(all) => all.is_pressed(),
         }
     }
+
+    fn is_released(&self) -> bool {
+        match self {
+            ButtonWithState::Button(button) => button.is_released(),
+            ButtonWithState::Any(any) => any.is_released(),
+            ButtonWithState::All(all) => all.is_released(),
+        }
+    }
 }
 
 pub trait ToButtonWithState: Send + Sync {

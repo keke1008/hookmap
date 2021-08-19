@@ -45,7 +45,7 @@ impl Cond {
     pub(crate) fn is_satisfied(&self) -> bool {
         match &self.0 {
             _Cond::Pressed(button) => button.is_pressed(),
-            _Cond::Released(button) => !button.is_pressed(),
+            _Cond::Released(button) => button.is_released(),
             _Cond::Callback(callback) => callback(),
         }
     }
@@ -64,8 +64,8 @@ impl Cond {
     /// ```
     ///
     pub fn pressed(button: impl ToButtonWithState) -> Self {
-        let button = button.to_button_with_state();
-        Self(_Cond::Pressed(button))
+    pub fn pressed(button: &impl ToButtonWithState) -> Self {
+        Self(_Cond::Pressed(button.to_button_with_state()))
     }
 
     /// Creates a new `Cond` that is conditional on the button being released.
@@ -81,8 +81,8 @@ impl Cond {
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
     pub fn released(button: impl ToButtonWithState) -> Self {
-        let button = button.to_button_with_state();
-        Self(_Cond::Released(button))
+    pub fn released(button: &impl ToButtonWithState) -> Self {
+        Self(_Cond::Released(button.to_button_with_state()))
     }
 
     /// Creates a new `Cond` that is conditioned on the callback function.
