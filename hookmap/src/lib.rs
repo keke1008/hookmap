@@ -15,7 +15,9 @@ mod runtime;
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, Mouse,
 };
-pub use interface::{ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
+pub use interface::{
+    ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock, Utils,
+};
 pub use runtime::interruption::Interruption;
 
 pub mod button {

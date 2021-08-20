@@ -1,5 +1,6 @@
 mod button;
 mod cond;
+mod utils;
 
 mod conditional_hook;
 mod hook;
@@ -10,6 +11,7 @@ pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
 pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
+pub use utils::Utils;
 
 pub(crate) use cond::Conditions;
 
