@@ -1,6 +1,6 @@
 [package]
 name = "hookmap-core"
-version = "0.1.3"
+version = "0.1.4"
 authors = ["keke1008 <keke2222337@gmail.com>"]
 edition = "2018"
 description = "Input emulation and global hooks for keyboard and mouse."
