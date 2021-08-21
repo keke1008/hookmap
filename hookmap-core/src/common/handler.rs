@@ -1,4 +1,4 @@
-use super::event::{ButtonEvent, EventBlock};
+use super::event::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{fmt::Debug, sync::Mutex, thread};
 
 pub trait EventCallback: Send + Sync {
@@ -79,8 +79,8 @@ pub trait HookInstaller {
 #[derive(Debug, Default)]
 pub struct InputHandler {
     pub button: EventHandler<ButtonEvent>,
-    pub mouse_wheel: EventHandler<i32>,
-    pub mouse_cursor: EventHandler<(i32, i32)>,
+    pub mouse_wheel: EventHandler<MouseWheelEvent>,
+    pub mouse_cursor: EventHandler<MouseCursorEvent>,
 }
 
 impl InputHandler

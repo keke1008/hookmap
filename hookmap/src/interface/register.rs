@@ -7,7 +7,9 @@ use crate::{
     handler::{ButtonCallbackMap, ButtonEventCallback, MouseEventCallBack},
     interface::All,
 };
-use hookmap_core::{ButtonEvent, ButtonInput, ButtonState, EventBlock};
+use hookmap_core::{
+    ButtonEvent, ButtonInput, ButtonState, EventBlock, MouseCursorEvent, MouseWheelEvent,
+};
 use std::{
     cell::RefCell,
     rc::{Rc, Weak},
@@ -226,14 +228,14 @@ impl ButtonRegisterInner {
 /// A struct for registering handlers for the mouse cursor.
 #[derive(Debug)]
 pub struct MouseCursorRegister {
-    handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
+    handler: Weak<RefCell<MouseEventCallBack<MouseCursorEvent>>>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
 
 impl MouseCursorRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<MouseEventCallBack<(i32, i32)>>>,
+        handler: Weak<RefCell<MouseEventCallBack<MouseCursorEvent>>>,
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) -> Self {
@@ -260,7 +262,7 @@ impl MouseCursorRegister {
     /// ```
     pub fn on_move<F>(&self, callback: F)
     where
-        F: Fn((i32, i32)) + Send + Sync + 'static,
+        F: Fn(MouseCursorEvent) + Send + Sync + 'static,
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),
@@ -284,14 +286,14 @@ impl SetEventBlock for MouseCursorRegister {
 /// A struct for registering handlers for the mouse wheel.
 #[derive(Debug)]
 pub struct MouseWheelRegister {
-    handler: Weak<RefCell<MouseEventCallBack<i32>>>,
+    handler: Weak<RefCell<MouseEventCallBack<MouseWheelEvent>>>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
 
 impl MouseWheelRegister {
     pub(crate) fn new(
-        handler: Weak<RefCell<MouseEventCallBack<i32>>>,
+        handler: Weak<RefCell<MouseEventCallBack<MouseWheelEvent>>>,
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) -> Self {
@@ -320,7 +322,7 @@ impl MouseWheelRegister {
     ///
     pub fn on_rotate<F>(&self, callback: F)
     where
-        F: Fn(i32) + Send + Sync + 'static,
+        F: Fn(MouseWheelEvent) + Send + Sync + 'static,
     {
         self.handler.upgrade().unwrap().borrow_mut().push(
             Arc::new(callback),

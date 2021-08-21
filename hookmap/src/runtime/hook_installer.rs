@@ -1,6 +1,9 @@
 use super::{interruption::INTERRUPTION_EVENT, runtime_handler::RuntimeHandler};
 use crate::{handler::SatisfiedHandler, Hook};
-use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, EventCallback, INPUT_HANDLER};
+use hookmap_core::{
+    ButtonAction, ButtonEvent, EventBlock, EventCallback, MouseCursorEvent, MouseWheelEvent,
+    INPUT_HANDLER,
+};
 use once_cell::sync::OnceCell;
 use std::{fmt::Debug, rc::Rc};
 
@@ -65,7 +68,7 @@ impl HookInstaller {
                 .unwrap()
                 .send_event(event);
             if interruption_event_block == EventBlock::Block {
-                Box::new(EventHandler::<(i32, i32)>::Interruption)
+                Box::new(EventHandler::<MouseCursorEvent>::Interruption)
             } else {
                 let satisfied_handlers = RUNTIME_EVENT_HANDLER
                     .get()
@@ -82,7 +85,7 @@ impl HookInstaller {
                 .unwrap()
                 .send_event(event);
             if event_block == EventBlock::Block {
-                Box::new(EventHandler::<i32>::Interruption)
+                Box::new(EventHandler::<MouseWheelEvent>::Interruption)
             } else {
                 let satisfied_handlers = RUNTIME_EVENT_HANDLER
                     .get()

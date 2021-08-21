@@ -1,5 +1,6 @@
 use crate::common::{
     button::{Button, ButtonAction},
+    event::{MouseCursorEvent, MouseWheelEvent},
     mouse::{EmulateMouseCursor, Mouse},
 };
 use winapi::{
@@ -61,8 +62,8 @@ enum MouseTarget {
 #[derive(Clone, Copy)]
 pub(super) enum MouseEventInfo {
     Button(Button, ButtonAction),
-    Wheel(i32),
-    Cursor((i32, i32)),
+    Wheel(MouseWheelEvent),
+    Cursor(MouseCursorEvent),
 }
 
 impl MouseEventInfo {

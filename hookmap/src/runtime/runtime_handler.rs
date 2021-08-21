@@ -1,11 +1,12 @@
 use crate::handler::{ButtonEventCallback, EventCallback, MouseEventCallBack};
+use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
 use std::rc::Rc;
 
 #[derive(Debug)]
 pub(super) struct RuntimeHandler {
     pub(super) button: ButtonEventCallback,
-    pub(super) mouse_cursor: MouseEventCallBack<(i32, i32)>,
-    pub(super) mouse_wheel: MouseEventCallBack<i32>,
+    pub(super) mouse_cursor: MouseEventCallBack<MouseCursorEvent>,
+    pub(super) mouse_wheel: MouseEventCallBack<MouseWheelEvent>,
 }
 
 impl From<EventCallback> for RuntimeHandler {

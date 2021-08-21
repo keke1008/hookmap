@@ -28,7 +28,7 @@ mod windows;
 
 pub use common::{
     button::{Button, ButtonAction, ButtonInput, ButtonKind, ButtonState},
-    event::{ButtonEvent, EventBlock},
+    event::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent},
     handler::{EventCallback, EventCallbackGenerator, EventHandler, InputHandler},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
     INPUT_HANDLER,

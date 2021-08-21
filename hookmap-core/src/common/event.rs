@@ -43,3 +43,6 @@ impl ButtonEvent {
         Self { target, action }
     }
 }
+
+pub type MouseCursorEvent = (i32, i32);
+pub type MouseWheelEvent = i32;

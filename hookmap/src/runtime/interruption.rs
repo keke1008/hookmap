@@ -1,4 +1,4 @@
-use hookmap_core::{ButtonEvent, ButtonKind, EventBlock};
+use hookmap_core::{ButtonEvent, ButtonKind, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use once_cell::sync::Lazy;
 use std::{
     fmt::Debug,
@@ -51,8 +51,8 @@ impl<I: Debug> Default for EventSenderVec<I> {
 pub(super) struct EventSender {
     pub(super) keyboard: Mutex<EventSenderVec<ButtonEvent>>,
     pub(super) mouse_button: Mutex<EventSenderVec<ButtonEvent>>,
-    pub(super) mouse_cursor: Mutex<EventSenderVec<(i32, i32)>>,
-    pub(super) mouse_wheel: Mutex<EventSenderVec<i32>>,
+    pub(super) mouse_cursor: Mutex<EventSenderVec<MouseCursorEvent>>,
+    pub(super) mouse_wheel: Mutex<EventSenderVec<MouseWheelEvent>>,
 }
 
 impl EventSender {
@@ -148,7 +148,7 @@ impl Interruption {
     /// println!("x: {}, y: {}", position.0, position.0);
     /// ```
     ///
-    pub fn mouse_cursor(&self) -> EventReceiver<(i32, i32)> {
+    pub fn mouse_cursor(&self) -> EventReceiver<MouseCursorEvent> {
         EventReceiver::new(&INTERRUPTION_EVENT.mouse_cursor, self.0)
     }
 
@@ -162,7 +162,7 @@ impl Interruption {
     /// println!("speed: {}", speed);
     /// ```
     ///
-    pub fn mouse_wheel(&self) -> EventReceiver<i32> {
+    pub fn mouse_wheel(&self) -> EventReceiver<MouseWheelEvent> {
         EventReceiver::new(&INTERRUPTION_EVENT.mouse_wheel, self.0)
     }
 }
