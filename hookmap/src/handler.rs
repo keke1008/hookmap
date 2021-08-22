@@ -8,17 +8,17 @@ pub(crate) use storage::Storage;
 
 use crate::interface::Conditions;
 use hookmap_core::EventBlock;
-use std::sync::Arc;
+use std::{fmt::Debug, sync::Arc};
 
 type Callback<E> = Arc<dyn Fn(E) + Send + Sync>;
 
-pub(crate) struct Handler<E> {
+pub(crate) struct Handler<E: Debug> {
     pub(crate) callback: Callback<E>,
     pub(crate) conditions: Arc<Conditions>,
     pub(crate) event_block: EventBlock,
 }
 
-impl<E> Handler<E> {
+impl<E: Debug> Handler<E> {
     pub(crate) fn new(
         callback: Callback<E>,
         conditions: Arc<Conditions>,
@@ -29,5 +29,14 @@ impl<E> Handler<E> {
             conditions,
             event_block,
         }
+    }
+}
+
+impl<E: Debug> Debug for Handler<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Handler")
+            .field("conditions", &self.conditions)
+            .field("event_block", &self.event_block)
+            .finish()
     }
 }

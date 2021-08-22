@@ -91,11 +91,8 @@ impl HookInstaller {
 
 impl From<Hook> for HookInstaller {
     fn from(hook: Hook) -> Self {
-        match Rc::try_unwrap(hook.register) {
-            Ok(register) => Self {
-                storage: register.into_inner(),
-            },
-            Err(_) => panic!(),
+        Self {
+            storage: Rc::try_unwrap(hook.register).unwrap().into_inner(),
         }
     }
 }

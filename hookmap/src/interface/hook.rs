@@ -7,7 +7,7 @@ use super::{
 };
 use crate::{handler::Register, runtime::HookInstaller};
 use hookmap_core::EventBlock;
-use std::{rc::Rc, sync::Arc};
+use std::{fmt::Debug, rc::Rc, sync::Arc};
 
 /// A struct for selecting the target of the hook.
 ///
@@ -92,5 +92,13 @@ impl SetEventBlock for Hook {
     fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
+    }
+}
+
+impl Debug for Hook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Hook")
+            .field("event_block", &self.event_block)
+            .finish()
     }
 }

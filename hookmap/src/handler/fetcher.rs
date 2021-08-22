@@ -1,12 +1,13 @@
-use super::Handler;
+use crate::handler::Handler;
 use hookmap_core::{Button, ButtonEvent};
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, fmt::Debug, sync::Arc};
 
-pub(crate) struct VecFetcher<E> {
+#[derive(Debug)]
+pub(crate) struct VecFetcher<E: Debug> {
     storage: Vec<Arc<Handler<E>>>,
 }
 
-impl<E> VecFetcher<E> {
+impl<E: Debug> VecFetcher<E> {
     pub(crate) fn new(storage: Vec<Arc<Handler<E>>>) -> Self {
         Self { storage }
     }
@@ -22,6 +23,7 @@ impl<E> VecFetcher<E> {
 
 pub(crate) type MouseFetcher<E> = VecFetcher<E>;
 
+#[derive(Debug)]
 pub(crate) struct ButtonFetcher {
     storage: HashMap<Button, VecFetcher<ButtonEvent>>,
 }

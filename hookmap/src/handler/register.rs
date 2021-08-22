@@ -2,7 +2,7 @@ use super::{Handler, Storage};
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent};
 use std::{cell::RefCell, sync::Arc};
 
-#[derive(Default)]
+#[derive(Default, Debug)]
 pub(crate) struct Register {
     storage: RefCell<Storage>,
 }

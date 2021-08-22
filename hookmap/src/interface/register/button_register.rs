@@ -8,7 +8,7 @@ use crate::{
     interface::All,
 };
 use hookmap_core::{ButtonEvent, ButtonInput, ButtonState, EventBlock};
-use std::{rc::Weak, sync::Arc};
+use std::{fmt::Debug, rc::Weak, sync::Arc};
 
 type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 
@@ -150,6 +150,16 @@ impl SetEventBlock for ButtonRegister {
     fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
+    }
+}
+
+impl Debug for ButtonRegister {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ButtonRegister")
+            .field("button", &self.inner.button)
+            .field("conditions", &self.inner.conditions)
+            .field("event_block", &self.event_block)
+            .finish()
     }
 }
 

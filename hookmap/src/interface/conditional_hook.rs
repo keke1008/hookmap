@@ -7,6 +7,7 @@ use super::{
 use crate::handler::Register;
 use hookmap_core::EventBlock;
 use std::{
+    fmt::Debug,
     rc::{Rc, Weak},
     sync::Arc,
 };
@@ -81,5 +82,14 @@ impl SetEventBlock for ConditionalHook {
     fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
+    }
+}
+
+impl Debug for ConditionalHook {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ConditionalHook")
+            .field("conditions", &*self.conditions)
+            .field("event_block", &self.event_block)
+            .finish()
     }
 }

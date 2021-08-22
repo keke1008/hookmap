@@ -112,14 +112,14 @@ impl Debug for Cond {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}::", std::any::type_name::<Self>()))?;
         match &self.0 {
-            _Cond::Pressed(button) => f.write_fmt(format_args!("Press({:?})", button)),
-            _Cond::Released(button) => f.write_fmt(format_args!("Release({:?})", button)),
+            _Cond::Pressed(button) => f.write_fmt(format_args!("Pressed({:?})", button)),
+            _Cond::Released(button) => f.write_fmt(format_args!("Released({:?})", button)),
             _Cond::Callback(_) => f.write_str("callback"),
         }
     }
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Default, Clone)]
 pub(crate) struct Conditions(Vec<Cond>);
 
 impl Conditions {
@@ -129,5 +129,11 @@ impl Conditions {
 
     pub(crate) fn add(&mut self, cond: Cond) {
         self.0.push(cond);
+    }
+}
+
+impl Debug for Conditions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self.0.iter()).finish()
     }
 }
