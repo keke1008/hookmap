@@ -20,7 +20,7 @@ where
         Button::Alt.release();
     });
 
-    let modifier_alt = hook.cond(&Cond::pressed(alt));
+    let modifier_alt = hook.cond(Cond::pressed(alt));
     modifier_alt.bind(tab).block().on_press(move |_| {
         if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
             Button::Alt.press();
@@ -64,7 +64,7 @@ pub trait Utils: SelectHandleTarget + Sized {
     /// hook.bind_shift_alt_tab(&Button::A, &Button::R);
     /// ```
     fn bind_shift_alt_tab<B: EmulateButtonState>(&self, alt: &B, tab: &B) {
-        let shift_tab = ButtonSet::new(&[Button::Tab, Button::Shift]);
+        let shift_tab = ButtonSet::new([Button::Tab, Button::Shift]);
         alt_tab(self, alt, tab, &shift_tab.all());
     }
 }

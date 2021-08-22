@@ -1,6 +1,6 @@
 use super::button::{ButtonWithState, ToButtonWithState};
 use hookmap_core::ButtonState;
-use std::{fmt::Debug, sync::Arc};
+use std::{borrow::Borrow, fmt::Debug, sync::Arc};
 
 #[derive(Clone)]
 enum _Cond {
@@ -17,14 +17,14 @@ enum _Cond {
 /// use hookmap::*;
 /// use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 /// let hook = Hook::new();
-/// let set = ButtonSet::new(&[Button::A, Button::B]);
+/// let set = ButtonSet::new([Button::A, Button::B]);
 /// let times = Arc::new(AtomicU32::new(0));
 /// let times_ = Arc::clone(&times);
 ///
 /// let conditional_hook = hook
-///     .cond(&Cond::pressed(&Button::C))
-///     .cond(&Cond::released(&set.all()))
-///     .cond(&Cond::callback(move || {
+///     .cond(Cond::pressed(Button::C))
+///     .cond(Cond::released(set.all()))
+///     .cond(Cond::callback(move || {
 ///          times.load(Ordering::SeqCst) < 10
 ///     }));
 ///
@@ -32,7 +32,7 @@ enum _Cond {
 /// //      C key is pressed and
 /// //      A key and B key is released and
 /// //      `times` < 10.
-/// conditional_hook.bind(&Button::D).on_press(move |_| {
+/// conditional_hook.bind(Button::D).on_press(move |_| {
 ///     let times = times_.fetch_add(1, Ordering::SeqCst);
 ///     println!("Called {} times", times);
 /// });
@@ -57,13 +57,13 @@ impl Cond {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let cond = Cond::pressed(&Button::A);
-    /// hook.cond(&cond)
-    ///     .bind(&Button::B)
+    /// let cond = Cond::pressed(Button::A);
+    /// hook.cond(cond)
+    ///     .bind(Button::B)
     ///     .on_press(|_| assert!(Button::A.is_pressed()));
     /// ```
     ///
-    pub fn pressed(button: &impl ToButtonWithState) -> Self {
+    pub fn pressed<B: Borrow<B> + ToButtonWithState>(button: B) -> Self {
         Self(_Cond::Pressed(button.to_button_with_state()))
     }
 
@@ -74,12 +74,12 @@ impl Cond {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let cond = Cond::released(&Button::A);
-    /// hook.cond(&cond)
-    ///     .bind(&Button::B)
+    /// let cond = Cond::released(Button::A);
+    /// hook.cond(cond)
+    ///     .bind(Button::B)
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
-    pub fn released(button: &impl ToButtonWithState) -> Self {
+    pub fn released<B: Borrow<B> + ToButtonWithState>(button: B) -> Self {
         Self(_Cond::Released(button.to_button_with_state()))
     }
 
@@ -96,8 +96,8 @@ impl Cond {
     ///     let times = Arc::clone(&times);
     ///     Cond::callback(move || times.load(Ordering::SeqCst) < 10)
     /// };
-    /// hook.cond(&cond)
-    ///     .bind(&Button::A)
+    /// hook.cond(cond)
+    ///     .bind(Button::A)
     ///     .on_press(move |_| {
     ///         assert!(times.fetch_add(1, Ordering::SeqCst) < 10);
     ///     });

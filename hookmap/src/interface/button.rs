@@ -1,5 +1,5 @@
 use hookmap_core::{Button, ButtonInput, ButtonState};
-use std::{collections::HashSet, fmt::Debug, sync::Arc};
+use std::{borrow::Borrow, collections::HashSet, fmt::Debug, sync::Arc};
 
 /// A struct for operating multiple buttons.
 ///
@@ -8,15 +8,15 @@ use std::{collections::HashSet, fmt::Debug, sync::Arc};
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let set1 = ButtonSet::new(&[Button::A, Button::B, Button::C]);
+/// let set1 = ButtonSet::new([Button::A, Button::B, Button::C]);
 ///
-/// hook.bind(&set1.any())
+/// hook.bind(set1.any())
 ///     .on_press(|e| println!("{:?}", e));
 ///
-/// let set2 = ButtonSet::new(&[Button::D, Button::E]);
-/// hook.cond(&Cond::pressed(&set1.all()))
-///     .cond(&Cond::released(&set2.any()))
-///     .bind(&Button::Q)
+/// let set2 = ButtonSet::new([Button::D, Button::E]);
+/// hook.cond(Cond::pressed(set1.all()))
+///     .cond(Cond::released(set2.any()))
+///     .bind(Button::Q)
 ///     .on_release(|e| println!("{:?}", e));
 /// ```
 ///
@@ -30,11 +30,11 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set = ButtonSet::new(&[Button::A, Button::B]);
+    /// let set = ButtonSet::new([Button::A, Button::B]);
     /// ```
     ///
-    pub fn new(buttons: &[Button]) -> Self {
-        let set = buttons.iter().copied().collect();
+    pub fn new(buttons: impl Borrow<[Button]>) -> Self {
+        let set = buttons.borrow().iter().copied().collect();
         Self(Arc::new(set))
     }
 
@@ -44,7 +44,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set1 = ButtonSet::new(&[Button::A, Button::B]);
+    /// let set1 = ButtonSet::new([Button::A, Button::B]);
     /// let set2 = set1.insert(Button::C);
     /// ```
     ///
@@ -60,7 +60,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set1 = ButtonSet::new(&[Button::A, Button::B]);
+    /// let set1 = ButtonSet::new([Button::A, Button::B]);
     /// let set2 = set1.remove(Button::C);
     /// ```
     ///
@@ -76,7 +76,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set = ButtonSet::new(&[Button::A, Button::B]);
+    /// let set = ButtonSet::new([Button::A, Button::B]);
     /// let any = set.any();
     /// ```
     ///
@@ -90,7 +90,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set = ButtonSet::new(&[Button::A, Button::B]);
+    /// let set = ButtonSet::new([Button::A, Button::B]);
     /// let any = set.any();
     /// ```
     ///
@@ -106,8 +106,8 @@ impl ButtonSet {
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let any = ButtonSet::new(&[Button::A, Button::B]).any();
-/// hook.bind(&any)
+/// let any = ButtonSet::new([Button::A, Button::B]).any();
+/// hook.bind(any)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
 ///     });
@@ -133,8 +133,8 @@ impl ButtonState for Any {
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let all = ButtonSet::new(&[Button::A, Button::B]).all();
-/// hook.bind(&all)
+/// let all = ButtonSet::new([Button::A, Button::B]).all();
+/// hook.bind(all)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
 ///         assert!(Button::A.is_pressed() && Button::B.is_pressed());
@@ -233,8 +233,29 @@ impl ButtonState for ButtonWithState {
     }
 }
 
+pub trait EmulateButtonInput: ButtonInput + Send + Sync + Clone + 'static {}
+pub trait EmulateButtonState: ToButtonWithState + Send + Sync + Clone + 'static {}
+
+impl<T: ButtonInput + Send + Sync + Clone + 'static> EmulateButtonInput for T {}
+impl<T: ToButtonWithState + Send + Sync + Clone + 'static> EmulateButtonState for T {}
+
+/// A trait that allows references to the types that impl [`ButtonInput`] to be given as arguments.
+pub trait BorrowedEmulateButtonInput<T: EmulateButtonInput>: Borrow<T> {
+    fn clone_static(&self) -> T {
+        T::clone(self.borrow())
+    }
+}
+impl<T: EmulateButtonInput> BorrowedEmulateButtonInput<T> for T {}
+impl<T: EmulateButtonInput> BorrowedEmulateButtonInput<T> for &T {}
+
 pub trait ToButtonWithState: Send + Sync {
     fn to_button_with_state(&self) -> ButtonWithState;
+}
+
+impl<T: ToButtonWithState> ToButtonWithState for &T {
+    fn to_button_with_state(&self) -> ButtonWithState {
+        (*self).to_button_with_state()
+    }
 }
 
 impl ToButtonWithState for Button {

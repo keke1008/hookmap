@@ -21,14 +21,10 @@ pub use interface::{
 pub use runtime::interruption::Interruption;
 
 pub mod button {
-    pub use super::interface::{All, Any, ToButtonWithState};
-
-    use hookmap_core::ButtonInput;
-    pub trait EmulateButtonInput: ButtonInput + Send + Sync + Clone + 'static {}
-    pub trait EmulateButtonState: ToButtonWithState + Send + Sync + Clone + 'static {}
-
-    impl<T: ButtonInput + Send + Sync + Clone + 'static> EmulateButtonInput for T {}
-    impl<T: ToButtonWithState + Send + Sync + Clone + 'static> EmulateButtonState for T {}
+    pub use super::interface::{
+        All, Any, BorrowedEmulateButtonInput, EmulateButtonInput, EmulateButtonState,
+        ToButtonWithState,
+    };
 }
 
 pub mod register {

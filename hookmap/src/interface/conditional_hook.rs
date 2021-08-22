@@ -7,6 +7,7 @@ use super::{
 use crate::handler::Register;
 use hookmap_core::EventBlock;
 use std::{
+    borrow::Borrow,
     fmt::Debug,
     rc::{Rc, Weak},
     sync::Arc,
@@ -19,8 +20,8 @@ use std::{
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let mod_ctrl = hook.cond(&Cond::pressed(&Button::Ctrl));
-/// mod_ctrl.bind(&Button::H).like(&Button::LeftArrow);
+/// let mod_ctrl = hook.cond(Cond::pressed(Button::Ctrl));
+/// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
 /// ```
 ///
 pub struct ConditionalHook {
@@ -41,11 +42,11 @@ impl ConditionalHook {
 }
 
 impl SelectHandleTarget for ConditionalHook {
-    fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister {
+    fn bind<B: Borrow<B> + ToButtonWithState + Clone>(&self, button: B) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
-            button.clone(),
+            button,
             self.event_block,
         )
     }
@@ -66,9 +67,9 @@ impl SelectHandleTarget for ConditionalHook {
         )
     }
 
-    fn cond(&self, cond: &Cond) -> ConditionalHook {
+    fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
-        conditions.add(cond.clone());
+        conditions.add(cond.borrow().clone());
         ConditionalHook::new(Weak::clone(&self.handler), Arc::new(conditions))
     }
 }

@@ -1,5 +1,5 @@
 use super::super::{
-    button::{ButtonWithState, ToButtonWithState},
+    button::{BorrowedEmulateButtonInput, ButtonWithState, ToButtonWithState},
     cond::Conditions,
     SetEventBlock,
 };
@@ -43,7 +43,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
     pub fn on_press<F>(self, callback: F) -> Self
@@ -64,7 +64,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{ButtonAction, Button, Hook, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A).on_press_or_release(|event| {
+    /// hook.bind(Button::A).on_press_or_release(|event| {
     ///     match event.action {
     ///         ButtonAction::Press => println!("The A key is pressed"),
     ///         ButtonAction::Release => println!("The A key is released"),
@@ -93,7 +93,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A).on_release(|_| println!("The A key is released"));
+    /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
     pub fn on_release<F>(self, callback: F) -> Self
@@ -112,18 +112,19 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::H).like(&Button::LeftArrow);
+    /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like<B>(self, button: &B)
+    pub fn like<B, R>(self, button: B)
     where
-        B: ButtonInput + Clone + Send + Sync + 'static,
+        B: BorrowedEmulateButtonInput<R>,
+        R: ButtonInput + Clone + Send + Sync + 'static,
     {
         let this = {
-            let button = button.clone();
+            let button = button.clone_static();
             self.block().on_press(move |_| button.press())
         };
-        let button = button.clone();
+        let button = button.clone_static();
         this.on_release(move |_| button.release());
     }
 
@@ -134,7 +135,7 @@ impl ButtonRegister {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A).disable();
+    /// hook.bind(Button::A).disable();
     /// ```
     pub fn disable(self) -> Self {
         self.block().on_press_or_release(|_| {})

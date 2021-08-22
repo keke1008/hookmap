@@ -16,7 +16,7 @@ use std::{fmt::Debug, rc::Rc, sync::Arc};
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// hook.bind(&Button::A)
+/// hook.bind(Button::A)
 ///     .on_press(|e| println!("{:?}", e));
 /// ```
 ///
@@ -40,7 +40,7 @@ impl Hook {
     /// ```no_run
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A).on_press(|_| println!("The A key is pressed"));
+    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// hook.handle_input(); // Blocking the current thread.
     /// ```
     ///
@@ -51,11 +51,14 @@ impl Hook {
 }
 
 impl SelectHandleTarget for Hook {
-    fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister {
+    fn bind<B: std::borrow::Borrow<B> + ToButtonWithState + Clone>(
+        &self,
+        button: B,
+    ) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
-            button.clone(),
+            button,
             self.event_block,
         )
     }
@@ -76,9 +79,9 @@ impl SelectHandleTarget for Hook {
         )
     }
 
-    fn cond(&self, cond: &Cond) -> ConditionalHook {
+    fn cond(&self, cond: impl std::borrow::Borrow<Cond>) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
-        conditions.add(cond.clone());
+        conditions.add(cond.borrow().clone());
         ConditionalHook::new(Rc::downgrade(&self.register), Arc::new(conditions))
     }
 }

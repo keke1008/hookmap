@@ -6,7 +6,10 @@ mod conditional_hook;
 mod hook;
 mod register;
 
-pub use button::{All, Any, ButtonSet, ToButtonWithState};
+pub use button::{
+    All, Any, BorrowedEmulateButtonInput, ButtonSet, EmulateButtonInput, EmulateButtonState,
+    ToButtonWithState,
+};
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
@@ -14,6 +17,8 @@ pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
 pub use utils::Utils;
 
 pub(crate) use cond::Conditions;
+
+use std::borrow::Borrow;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
@@ -24,11 +29,11 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::{Hook, Button, SelectHandleTarget};
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A)
+    /// hook.bind(Button::A)
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister;
+    fn bind<B: Borrow<B> + ToButtonWithState + Clone>(&self, button: B) -> ButtonRegister;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
     ///
@@ -64,13 +69,13 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let modifier_space = hook.cond(&Cond::pressed(&Button::Space));
+    /// let modifier_space = hook.cond(Cond::pressed(Button::Space));
     /// modifier_space
-    ///     .bind(&Button::A)
+    ///     .bind(Button::A)
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
-    fn cond(&self, cond: &Cond) -> ConditionalHook;
+    fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.
@@ -82,7 +87,7 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A)
+    /// hook.bind(Button::A)
     ///     .block()
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
@@ -98,7 +103,7 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(&Button::A)
+    /// hook.bind(Button::A)
     ///     .unblock()
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
