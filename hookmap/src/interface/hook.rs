@@ -5,7 +5,7 @@ use super::{
     register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::{handler::EventCallback, runtime::HookInstaller};
+use crate::{handler::Register, runtime::HookInstaller};
 use hookmap_core::EventBlock;
 use std::{rc::Rc, sync::Arc};
 
@@ -20,9 +20,9 @@ use std::{rc::Rc, sync::Arc};
 ///     .on_press(|e| println!("{:?}", e));
 /// ```
 ///
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct Hook {
-    pub(crate) handler: Rc<EventCallback>,
+    pub(crate) register: Rc<Register>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
@@ -53,7 +53,7 @@ impl Hook {
 impl SelectHandleTarget for Hook {
     fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister {
         ButtonRegister::new(
-            Rc::downgrade(&self.handler.button),
+            Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
             button.clone(),
             self.event_block,
@@ -62,7 +62,7 @@ impl SelectHandleTarget for Hook {
 
     fn bind_mouse_wheel(&self) -> MouseWheelRegister {
         MouseWheelRegister::new(
-            Rc::downgrade(&self.handler.mouse_wheel),
+            Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
             self.event_block,
         )
@@ -70,7 +70,7 @@ impl SelectHandleTarget for Hook {
 
     fn bind_mouse_cursor(&self) -> MouseCursorRegister {
         MouseCursorRegister::new(
-            Rc::downgrade(&self.handler.mouse_cursor),
+            Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
             self.event_block,
         )
@@ -79,7 +79,7 @@ impl SelectHandleTarget for Hook {
     fn cond(&self, cond: &Cond) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond.clone());
-        ConditionalHook::new(Rc::downgrade(&self.handler), Arc::new(conditions))
+        ConditionalHook::new(Rc::downgrade(&self.register), Arc::new(conditions))
     }
 }
 

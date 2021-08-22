@@ -4,7 +4,7 @@ use super::{
     register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::handler::EventCallback;
+use crate::handler::Register;
 use hookmap_core::EventBlock;
 use std::{
     rc::{Rc, Weak},
@@ -22,16 +22,15 @@ use std::{
 /// mod_ctrl.bind(&Button::H).like(&Button::LeftArrow);
 /// ```
 ///
-#[derive(Debug)]
 pub struct ConditionalHook {
-    handler: Weak<EventCallback>,
+    handler: Weak<Register>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
 
 impl ConditionalHook {
     /// Creates a new instance of `ConditionalHook`.
-    pub(crate) fn new(handler: Weak<EventCallback>, conditions: Arc<Conditions>) -> Self {
+    pub(crate) fn new(handler: Weak<Register>, conditions: Arc<Conditions>) -> Self {
         Self {
             handler,
             conditions,
@@ -43,7 +42,7 @@ impl ConditionalHook {
 impl SelectHandleTarget for ConditionalHook {
     fn bind<B: ToButtonWithState + Clone>(&self, button: &B) -> ButtonRegister {
         ButtonRegister::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap().button),
+            Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             button.clone(),
             self.event_block,
@@ -52,7 +51,7 @@ impl SelectHandleTarget for ConditionalHook {
 
     fn bind_mouse_wheel(&self) -> MouseWheelRegister {
         MouseWheelRegister::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap().mouse_wheel),
+            Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             self.event_block,
         )
@@ -60,7 +59,7 @@ impl SelectHandleTarget for ConditionalHook {
 
     fn bind_mouse_cursor(&self) -> MouseCursorRegister {
         MouseCursorRegister::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap().mouse_cursor),
+            Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             self.event_block,
         )
