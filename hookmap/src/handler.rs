@@ -1,17 +1,33 @@
-mod button;
-mod common;
-mod mouse;
-pub(crate) use button::{ButtonCallbackMap, ButtonEventCallback};
-pub(crate) use common::{HandlerVec, SatisfiedHandler};
-pub(crate) use mouse::MouseEventCallBack;
+mod fetcher;
+mod register;
+mod storage;
 
-use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
+pub(crate) use fetcher::{ButtonFetcher, MouseFetcher};
+pub(crate) use register::Register;
+pub(crate) use storage::Storage;
 
-use std::{cell::RefCell, fmt::Debug, rc::Rc};
+use crate::interface::Conditions;
+use hookmap_core::EventBlock;
+use std::sync::Arc;
 
-#[derive(Debug, Default)]
-pub struct EventCallback {
-    pub(crate) button: Rc<RefCell<ButtonEventCallback>>,
-    pub(crate) mouse_cursor: Rc<RefCell<MouseEventCallBack<MouseCursorEvent>>>,
-    pub(crate) mouse_wheel: Rc<RefCell<MouseEventCallBack<MouseWheelEvent>>>,
+type Callback<E> = Arc<dyn Fn(E) + Send + Sync>;
+
+pub(crate) struct Handler<E> {
+    pub(crate) callback: Callback<E>,
+    pub(crate) conditions: Arc<Conditions>,
+    pub(crate) event_block: EventBlock,
+}
+
+impl<E> Handler<E> {
+    pub(crate) fn new(
+        callback: Callback<E>,
+        conditions: Arc<Conditions>,
+        event_block: EventBlock,
+    ) -> Self {
+        Self {
+            callback,
+            conditions,
+            event_block,
+        }
+    }
 }
