@@ -12,14 +12,14 @@ mod handler;
 mod interface;
 mod macros;
 mod runtime;
+mod utils;
 
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, Mouse,
 };
-pub use interface::{
-    ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock, Utils,
-};
+pub use interface::{ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
 pub use runtime::interruption::Interruption;
+pub use utils::Utils;
 
 pub mod button {
     pub use super::interface::{
