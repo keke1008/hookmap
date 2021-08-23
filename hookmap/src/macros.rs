@@ -37,9 +37,9 @@ macro_rules! seq {
         seq!($($button),+)
     };
 
-    ($($button:tt),*) => {
+    ($($button:tt),*) => {{
         $(button_name!($button).click();)*
-    };
+    }};
 }
 
 /// While holding down the keys after "with", clicks the keys before "with".
@@ -55,9 +55,9 @@ macro_rules! press {
         press!($($button),*, with $(modifier),*)
     };
 
-    ($($button:tt),* with $($modifier:tt),*) => {
+    ($($button:tt),* with $($modifier:tt),*) => {{
         $(button_name!($modifier).press();)*
         seq!($($button),*);
         $(button_name!($modifier).release();)*
-    };
+    }};
 }
