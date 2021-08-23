@@ -10,6 +10,7 @@
 
 mod handler;
 mod interface;
+mod macros;
 mod runtime;
 
 pub use hookmap_core::{
