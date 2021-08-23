@@ -51,11 +51,11 @@ macro_rules! seq {
 ///
 #[macro_export]
 macro_rules! press {
-    ($($button:tt),* with $(modifier:tt,)*) => {
+    ($($button:tt),* with [$(modifier:tt,)*]) => {
         press!($($button),*, with $(modifier),*)
     };
 
-    ($($button:tt),* with $($modifier:tt),*) => {{
+    ($($button:tt),* with [$($modifier:tt),*]) => {{
         $(button_name!($modifier).press();)*
         seq!($($button),*);
         $(button_name!($modifier).release();)*
