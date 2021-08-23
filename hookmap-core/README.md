@@ -1,5 +1,7 @@
 # hookmap-core
 
+Core crate of [hookmap](https://crates.io/crates/hookmap)
+
 Input emulation and global hooks for keyboard and mouse.
 
 ## Supported OS

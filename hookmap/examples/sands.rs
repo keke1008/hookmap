@@ -1,5 +1,5 @@
 use hookmap::{
-    button::{EmulateButtonInput, EmulateButtonState},
+    button::{BorrowedEmulateButtonInput, EmulateButtonInput, ToButtonWithState},
     *,
 };
 use std::collections::HashSet;
@@ -9,11 +9,13 @@ use std::sync::{
 };
 use std::thread;
 
-fn emulate_sands<T, B>(hook: &T, space: B, ignore: HashSet<Button>)
+fn emulate_sands<T, U, V>(hook: &T, space: U, ignore: HashSet<Button>)
 where
     T: SelectHandleTarget,
-    B: EmulateButtonInput + EmulateButtonState,
+    U: BorrowedEmulateButtonInput<V>,
+    V: EmulateButtonInput + ToButtonWithState,
 {
+    let space = space.clone_static();
     hook.bind(&space).like(&Button::Shift);
 
     let is_alone = Arc::new(AtomicBool::new(true));
