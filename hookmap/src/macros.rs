@@ -37,8 +37,12 @@ macro_rules! seq {
         seq!($($button),+)
     };
 
-    ($($button:tt),*) => {{
-        $(button_name!($button).click();)*
+    ($($button:tt),*) => {
+        seq!(@full_name $(button_name!($button)),*)
+    };
+
+    (@full_name $($button:expr),*) => {{
+        $($button.click();)*
     }};
 }
 
@@ -46,18 +50,26 @@ macro_rules! seq {
 ///
 /// ```
 /// use hookmap::*;
-/// press!(Delete with Ctrl, Alt);
+/// press!(Delete with [Ctrl, Alt]);
 /// ```
 ///
 #[macro_export]
 macro_rules! press {
-    ($($button:tt),* with [$(modifier:tt,)*]) => {
-        press!($($button),*, with $(modifier),*)
+    (@full_name [$($button:expr),*] with [$($modifier:expr),*]) => {{
+        $($modifier.press();)*
+        seq!(@full_name $($button),*);
+        $($modifier.release();)*
+    }};
+
+    ([$($button:tt),*] with [$($modifier:tt),*]) => {
+        press!(@full_name [$(button_name!($button)),*] with [$(button_name!($modifier)),*])
     };
 
-    ($($button:tt),* with [$($modifier:tt),*]) => {{
-        $(button_name!($modifier).press();)*
-        seq!($($button),*);
-        $(button_name!($modifier).release();)*
-    }};
+}
+
+#[macro_export]
+macro_rules! press_v{
+    ([$($button:expr),*] with [$($modifier:expr),*]) => {
+        press!(@full_name [$($button),*] with [$($modifier),*])
+    };
 }
