@@ -1,4 +1,4 @@
-use super::{call_next_hook, conversion, DW_EXTRA_INFO};
+use super::{call_next_hook, DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
     event::{ButtonEvent, EventBlock},
@@ -17,13 +17,20 @@ use winapi::{
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
+pub(super) fn into_button_action(event_info: KBDLLHOOKSTRUCT) -> ButtonAction {
+    match event_info.flags >> 7 {
+        0 => ButtonAction::Press,
+        _ => ButtonAction::Release,
+    }
+}
+
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
     if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
     let target = Button::from_vkcode(event_info.vkCode);
-    let action = conversion::into_action(event_info);
+    let action = into_button_action(event_info);
     match action {
         ButtonAction::Press => target.assume_pressed(),
         ButtonAction::Release => target.assume_released(),

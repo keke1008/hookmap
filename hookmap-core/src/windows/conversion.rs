@@ -1,7 +1,7 @@
-use crate::{bihashmap, common::button::Button, ButtonAction};
+use crate::bihashmap;
+use crate::common::button::Button;
 use bimap::BiHashMap;
 use once_cell::sync::Lazy;
-use winapi::um::winuser::KBDLLHOOKSTRUCT;
 
 impl Button {
     pub(super) fn from_vkcode(code: u32) -> Self {
@@ -19,15 +19,13 @@ impl Button {
     }
 }
 
-pub(super) fn into_action(event_info: KBDLLHOOKSTRUCT) -> ButtonAction {
-    match event_info.flags >> 7 {
-        0 => ButtonAction::Press,
-        _ => ButtonAction::Release,
-    }
-}
-
-pub(super) static VK_CODE_MAP: Lazy<BiHashMap<Button, u32>> = Lazy::new(|| {
+static VK_CODE_MAP: Lazy<BiHashMap<Button, u32>> = Lazy::new(|| {
     bihashmap! {
+        Button::LeftButton => 0x01,
+        Button::RightButton => 0x02,
+        Button::MiddleButton => 0x04,
+        Button::SideButton1 => 0x05,
+        Button::SideButton2 => 0x06,
         Button::Backspace => 0x08,
         Button::Tab => 0x09,
         Button::Enter => 0x0D,
