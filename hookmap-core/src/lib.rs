@@ -8,8 +8,7 @@
 //!
 //! In order to support another OS, these traits need to be implemented.
 //!
-//! * [`ButtonInput`] for [`Button`]
-//! * [`ButtonState`] for [`Button`]
+//! * [`ButtonOperation`] for [`Button`]
 //! * [`EmulateMouseCursor`] for [`Mouse`]
 //! * [`EmulateMouseWheel`] for [`Mouse`]
 //! * [`HookInstaller`] for [`InputHandler`]
@@ -27,7 +26,7 @@ mod macros;
 mod windows;
 
 pub use common::{
-    button::{Button, ButtonAction, ButtonInput, ButtonKind, ButtonState},
+    button::{Button, ButtonAction, ButtonKind, ButtonOperation},
     event::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent},
     handler::{EventCallback, EventCallbackGenerator, EventHandler, InputHandler},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},

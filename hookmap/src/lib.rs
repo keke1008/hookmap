@@ -14,20 +14,17 @@ mod macros;
 mod runtime;
 mod utils;
 
-pub use hookmap_core::{
-    Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, Mouse,
-};
+pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
 pub use interface::{
-    ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock, ALT, CTRL, META,
-    SHIFT,
+    ButtonInput, ButtonSet, ButtonState, Cond, ConditionalHook, Hook, SelectHandleTarget,
+    SetEventBlock, ALT, CTRL, META, SHIFT,
 };
 pub use runtime::interruption::Interruption;
 pub use utils::Utils;
 
 pub mod button {
     pub use super::interface::{
-        All, Any, BorrowedEmulateButtonInput, EmulateButtonInput, EmulateButtonState,
-        ToButtonWithState,
+        All, Any, EmulateButtonInput, EmulateButtonState, ToButtonWithState,
     };
 }
 

@@ -1,39 +1,7 @@
-pub trait ButtonInput {
-    /// Emulates a button press operation.
-    fn press(&self);
-
-    /// Emulates a button release operation.
-    fn release(&self);
-
-    /// Presses a button and releases it immediately.
-    fn click(&self) {
-        self.press();
-        self.release();
-    }
-
-    /// Emulates a button press operation.
-    /// This differs from [`ButtonInput::press`] in that it can call hook handlers.
-    fn press_recursive(&self);
-
-    /// Emulates a button release operation.
-    /// This differs from [`ButtonInput::release`] in that it can call hook handlers.
-    fn release_recursive(&self);
-
-    /// Calls [`ButtonInput::press_recursive`] and [`ButtonInput::release_recursive`].
-    fn click_recursive(&self) {
-        self.press_recursive();
-        self.release_recursive();
-    }
-}
-
-pub trait ButtonState {
-    /// Returns `true` if the button is pressed.
-    fn is_pressed(&self) -> bool;
-
-    /// Returns `true` if the button is released.
-    fn is_released(&self) -> bool {
-        !self.is_pressed()
-    }
+pub trait ButtonOperation {
+    fn generate_press_event(self, recursive: bool);
+    fn generate_release_event(self, recursive: bool);
+    fn read_is_pressed(self) -> bool;
 }
 
 /// A button input action.

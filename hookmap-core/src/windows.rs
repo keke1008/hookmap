@@ -3,7 +3,7 @@ mod keyboard;
 mod mouse;
 
 use crate::common::{
-    button::{Button, ButtonInput, ButtonKind, ButtonState},
+    button::{Button, ButtonKind, ButtonOperation},
     handler::{HookInstaller, InputHandler},
 };
 use once_cell::sync::Lazy;
@@ -30,41 +30,25 @@ fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
 
 static BUTTON_STATE: Lazy<Mutex<HashMap<Button, bool>>> = Lazy::new(Mutex::default);
 
-impl ButtonState for Button {
-    fn is_pressed(&self) -> bool {
-        *BUTTON_STATE.lock().unwrap().get(self).unwrap_or(&false)
-    }
-}
-
-impl ButtonInput for Button {
-    fn press(&self) {
+impl ButtonOperation for Button {
+    fn generate_press_event(self, recursive: bool) {
         self.assume_pressed();
         match self.kind() {
-            ButtonKind::Key => keyboard::press(self, false),
-            ButtonKind::Mouse => mouse::press(self, false),
+            ButtonKind::Key => keyboard::press(&self, recursive),
+            ButtonKind::Mouse => mouse::press(&self, recursive),
         }
     }
 
-    fn release(&self) {
+    fn generate_release_event(self, recursive: bool) {
         self.assume_released();
         match self.kind() {
-            ButtonKind::Key => keyboard::release(self, false),
-            ButtonKind::Mouse => mouse::release(self, false),
+            ButtonKind::Key => keyboard::release(&self, recursive),
+            ButtonKind::Mouse => mouse::release(&self, recursive),
         }
     }
-    fn press_recursive(&self) {
-        self.assume_pressed();
-        match self.kind() {
-            ButtonKind::Key => keyboard::press(self, true),
-            ButtonKind::Mouse => mouse::press(self, true),
-        }
-    }
-    fn release_recursive(&self) {
-        self.assume_released();
-        match self.kind() {
-            ButtonKind::Key => keyboard::release(self, true),
-            ButtonKind::Mouse => mouse::release(self, false),
-        }
+
+    fn read_is_pressed(self) -> bool {
+        *BUTTON_STATE.lock().unwrap().get(&self).unwrap_or(&false)
     }
 }
 

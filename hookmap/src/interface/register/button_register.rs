@@ -1,5 +1,5 @@
 use super::super::{
-    button::{BorrowedEmulateButtonInput, ButtonWithState, ToButtonWithState},
+    button::{ButtonInput, ButtonState, ButtonWithState, ToButtonWithState},
     cond::Conditions,
     SetEventBlock,
 };
@@ -7,8 +7,8 @@ use crate::{
     handler::{Handler, Register as HandlerRegister},
     interface::All,
 };
-use hookmap_core::{ButtonEvent, ButtonInput, ButtonState, EventBlock};
-use std::{fmt::Debug, rc::Weak, sync::Arc};
+use hookmap_core::{ButtonEvent, EventBlock};
+use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
 
 type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 
@@ -117,14 +117,14 @@ impl ButtonRegister {
     ///
     pub fn like<B, R>(self, button: B)
     where
-        B: BorrowedEmulateButtonInput<R>,
+        B: Borrow<R>,
         R: ButtonInput + Clone + Send + Sync + 'static,
     {
         let this = {
-            let button = button.clone_static();
+            let button = button.borrow().clone();
             self.block().on_press(move |_| button.press())
         };
-        let button = button.clone_static();
+        let button = button.borrow().clone();
         this.on_release(move |_| button.release());
     }
 

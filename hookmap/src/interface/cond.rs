@@ -1,5 +1,4 @@
-use super::button::{ButtonWithState, ToButtonWithState};
-use hookmap_core::ButtonState;
+use super::button::{ButtonState, ButtonWithState, ToButtonWithState};
 use std::{borrow::Borrow, fmt::Debug, sync::Arc};
 
 #[derive(Clone)]
