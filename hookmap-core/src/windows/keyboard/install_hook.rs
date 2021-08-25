@@ -1,8 +1,4 @@
-use super::{
-    call_next_hook,
-    conversion::{self, VkCode},
-    DW_EXTRA_INFO,
-};
+use super::{call_next_hook, conversion, DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
     event::{ButtonEvent, EventBlock},
@@ -26,7 +22,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
-    let target: Button = VkCode(event_info.vkCode).into();
+    let target = Button::from_vkcode(event_info.vkCode);
     let action = conversion::into_action(event_info);
     match action {
         ButtonAction::Press => target.assume_pressed(),

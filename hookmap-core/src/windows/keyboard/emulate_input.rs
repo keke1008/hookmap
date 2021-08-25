@@ -1,4 +1,4 @@
-use super::{conversion::VkCode, DW_EXTRA_INFO};
+use super::DW_EXTRA_INFO;
 use crate::common::button::Button;
 use std::mem;
 use winapi::{
@@ -15,7 +15,7 @@ pub(crate) fn release(key: &Button, recursive: bool) {
 }
 
 fn send_key_input(key: &Button, flags: u32, recursive: bool) {
-    let vk_code = VkCode::from(*key).0;
+    let vk_code = key.to_vkcode();
     let keybd_input = KEYBDINPUT {
         wVk: vk_code as u16,
         wScan: 0,

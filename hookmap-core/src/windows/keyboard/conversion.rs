@@ -3,24 +3,18 @@ use bimap::BiHashMap;
 use once_cell::sync::Lazy;
 use winapi::um::winuser::KBDLLHOOKSTRUCT;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct VkCode(pub(super) u32);
-
-impl From<Button> for VkCode {
-    fn from(button: Button) -> Self {
-        let code = match button {
-            Button::OtherKey(code) => code,
-            _ => *VK_CODE_MAP.get_by_left(&button).unwrap(),
-        };
-        VkCode(code)
-    }
-}
-
-impl From<VkCode> for Button {
-    fn from(code: VkCode) -> Self {
-        match VK_CODE_MAP.get_by_right(&code.0) {
+impl Button {
+    pub(super) fn from_vkcode(code: u32) -> Self {
+        match VK_CODE_MAP.get_by_right(&code) {
             Some(&button) => button,
-            None => Button::OtherKey(code.0),
+            None => Button::OtherKey(code),
+        }
+    }
+
+    pub(super) fn to_vkcode(self) -> u32 {
+        match self {
+            Button::OtherKey(vkcode) => vkcode,
+            _ => *VK_CODE_MAP.get_by_left(&self).unwrap(),
         }
     }
 }

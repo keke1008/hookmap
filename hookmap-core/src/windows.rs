@@ -54,7 +54,7 @@ impl ButtonInput for Button {
     }
 
     fn release(&self) {
-        self.assume_pressed();
+        self.assume_released();
         match self.kind() {
             ButtonKind::Key => keyboard::release(self, false),
             ButtonKind::Mouse => mouse::release(self, false),
@@ -68,7 +68,7 @@ impl ButtonInput for Button {
         }
     }
     fn release_recursive(&self) {
-        self.assume_pressed();
+        self.assume_released();
         match self.kind() {
             ButtonKind::Key => keyboard::release(self, true),
             ButtonKind::Mouse => mouse::release(self, false),
