@@ -15,13 +15,13 @@ where
     hook.bind(&alt).disable();
     hook.bind(&alt).block().on_release(move |_| {
         IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-        Button::Alt.release();
+        Button::LAlt.release();
     });
 
     let modifier_alt = hook.cond(Cond::pressed(alt));
     modifier_alt.bind(&tab).block().on_press(move |_| {
         if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-            Button::Alt.press();
+            Button::LAlt.press();
         }
     });
     modifier_alt.bind(tab).like(tab_like);
@@ -71,7 +71,7 @@ pub trait Utils: SelectHandleTarget + Sized {
     where
         T: ToButtonWithState + Clone,
     {
-        let shift_tab = ButtonSet::new([Button::Tab, Button::Shift]);
+        let shift_tab = ButtonSet::new([Button::Tab, Button::LShift]);
         alt_tab(self, alt, tab, shift_tab.all());
     }
 }

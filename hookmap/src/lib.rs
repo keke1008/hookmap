@@ -17,7 +17,10 @@ mod utils;
 pub use hookmap_core::{
     Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel, Mouse,
 };
-pub use interface::{ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
+pub use interface::{
+    ButtonSet, Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock, ALT, CTRL, META,
+    SHIFT,
+};
 pub use runtime::interruption::Interruption;
 pub use utils::Utils;
 

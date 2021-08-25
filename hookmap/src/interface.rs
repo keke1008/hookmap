@@ -7,7 +7,7 @@ mod register;
 
 pub use button::{
     All, Any, BorrowedEmulateButtonInput, ButtonSet, EmulateButtonInput, EmulateButtonState,
-    ToButtonWithState,
+    ToButtonWithState, ALT, CTRL, META, SHIFT,
 };
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;

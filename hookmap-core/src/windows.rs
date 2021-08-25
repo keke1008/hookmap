@@ -32,16 +32,7 @@ static BUTTON_STATE: Lazy<Mutex<HashMap<Button, bool>>> = Lazy::new(Mutex::defau
 
 impl ButtonState for Button {
     fn is_pressed(&self) -> bool {
-        let button_state = BUTTON_STATE.lock().unwrap();
-        let buttons = match self {
-            Button::Shift => [Button::LShift, Button::RShift, Button::Shift],
-            Button::Ctrl => [Button::LCtrl, Button::RCtrl, Button::Ctrl],
-            Button::Alt => [Button::LAlt, Button::RAlt, Button::Alt],
-            _ => return *button_state.get(self).unwrap_or(&false),
-        };
-        buttons
-            .iter()
-            .any(|button| *button_state.get(button).unwrap_or(&false))
+        *BUTTON_STATE.lock().unwrap().get(self).unwrap_or(&false)
     }
 }
 

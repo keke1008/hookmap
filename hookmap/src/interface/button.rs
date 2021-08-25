@@ -1,4 +1,5 @@
 use hookmap_core::{Button, ButtonInput, ButtonState};
+use once_cell::sync::Lazy;
 use std::{borrow::Borrow, collections::HashSet, fmt::Debug, sync::Arc};
 
 /// A struct for operating multiple buttons.
@@ -232,6 +233,11 @@ impl ButtonState for ButtonWithState {
         }
     }
 }
+
+pub static SHIFT: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LShift, Button::RShift]).any());
+pub static CTRL: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LCtrl, Button::RCtrl]).any());
+pub static ALT: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LAlt, Button::RAlt]).any());
+pub static META: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LMeta, Button::RMeta]).any());
 
 pub trait EmulateButtonInput: ButtonInput + Send + Sync + Clone + 'static {}
 pub trait EmulateButtonState: ToButtonWithState + Send + Sync + Clone + 'static {}

@@ -50,7 +50,7 @@ macro_rules! seq {
 ///
 /// ```
 /// use hookmap::*;
-/// press!(Delete with [Ctrl, Alt]);
+/// press!([Delete] with [LCtrl, RAlt]);
 /// ```
 ///
 #[macro_export]
