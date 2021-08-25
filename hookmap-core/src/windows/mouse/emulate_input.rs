@@ -1,14 +1,12 @@
-use super::DW_EXTRA_INFO;
+use super::IGNORED_DW_EXTRA_INFO;
 use crate::common::{
     button::Button,
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
 };
-use crate::windows::mouse::MouseParameter;
 use std::mem::{self, MaybeUninit};
-use winapi::{
-    ctypes::c_int,
-    um::winuser::{self, INPUT, MOUSEEVENTF_WHEEL, MOUSEINPUT, WHEEL_DELTA},
-};
+use winapi::{ctypes::c_int, um::winuser};
+// For many constants.
+use winapi::um::winuser::*;
 
 fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32, recursive: bool) {
     let mouse_input = MOUSEINPUT {
@@ -16,32 +14,39 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32, recursive:
         dy,
         mouseData: mouse_data,
         dwFlags: dw_flags,
-        dwExtraInfo: if recursive { 0 } else { DW_EXTRA_INFO },
+        dwExtraInfo: if recursive { 0 } else { IGNORED_DW_EXTRA_INFO },
         time: 0,
     };
     let mut input = INPUT {
         type_: 0,
         u: unsafe { mem::transmute(mouse_input) },
     };
-
     unsafe {
         winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as c_int);
     }
 }
 
-pub(in crate::windows) fn press(this: &Button, recursive: bool) {
-    let MouseParameter {
-        mouse_data,
-        dw_flags,
-    } = this.into_press();
+pub(in crate::windows) fn press(button: &Button, recursive: bool) {
+    let (mouse_data, dw_flags) = match button {
+        Button::LeftButton => (0, MOUSEEVENTF_LEFTDOWN),
+        Button::RightButton => (0, MOUSEEVENTF_RIGHTDOWN),
+        Button::MiddleButton => (0, MOUSEEVENTF_MIDDLEDOWN),
+        Button::SideButton1 => (XBUTTON1, MOUSEEVENTF_XDOWN),
+        Button::SideButton2 => (XBUTTON2, MOUSEEVENTF_XDOWN),
+        _ => panic!("{:?} is not a mouse button.", button),
+    };
     send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32, recursive);
 }
 
-pub(in crate::windows) fn release(this: &Button, recursive: bool) {
-    let MouseParameter {
-        mouse_data,
-        dw_flags,
-    } = this.into_release();
+pub(in crate::windows) fn release(button: &Button, recursive: bool) {
+    let (mouse_data, dw_flags) = match button {
+        Button::LeftButton => (0, MOUSEEVENTF_LEFTUP),
+        Button::RightButton => (0, MOUSEEVENTF_RIGHTUP),
+        Button::MiddleButton => (0, MOUSEEVENTF_MIDDLEUP),
+        Button::SideButton1 => (XBUTTON1, MOUSEEVENTF_XUP),
+        Button::SideButton2 => (XBUTTON2, MOUSEEVENTF_XUP),
+        _ => panic!("{:?} is not a mouse button.", button),
+    };
     send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32, recursive);
 }
 

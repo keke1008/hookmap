@@ -1,4 +1,4 @@
-use super::DW_EXTRA_INFO;
+use super::IGNORED_DW_EXTRA_INFO;
 use crate::common::button::Button;
 use std::mem;
 use winapi::{
@@ -21,7 +21,7 @@ fn send_key_input(key: &Button, flags: u32, recursive: bool) {
         wScan: 0,
         dwFlags: flags,
         time: 0,
-        dwExtraInfo: if recursive { 0 } else { DW_EXTRA_INFO },
+        dwExtraInfo: if recursive { 0 } else { IGNORED_DW_EXTRA_INFO },
     };
     let mut input = INPUT {
         type_: INPUT_KEYBOARD,

@@ -1,4 +1,4 @@
-use super::{call_next_hook, DW_EXTRA_INFO};
+use super::{call_next_hook, IGNORED_DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
     event::{ButtonEvent, EventBlock},
@@ -26,7 +26,7 @@ pub(super) fn into_button_action(event_info: KBDLLHOOKSTRUCT) -> ButtonAction {
 
 extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     let event_info = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
-    if event_info.dwExtraInfo & DW_EXTRA_INFO != 0 {
+    if event_info.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
     let target = Button::from_vkcode(event_info.vkCode);

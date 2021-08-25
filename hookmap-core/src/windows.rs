@@ -14,7 +14,7 @@ use winapi::{
     um::winuser,
 };
 
-static DW_EXTRA_INFO: usize = 0x1;
+static IGNORED_DW_EXTRA_INFO: usize = 0x1;
 
 fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     unsafe {

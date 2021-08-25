@@ -1,4 +1,4 @@
-use super::{call_next_hook, DW_EXTRA_INFO};
+use super::{call_next_hook, IGNORED_DW_EXTRA_INFO};
 
 mod emulate_input;
 mod install_hook;
