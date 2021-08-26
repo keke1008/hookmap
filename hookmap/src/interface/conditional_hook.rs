@@ -32,11 +32,15 @@ pub struct ConditionalHook {
 
 impl ConditionalHook {
     /// Creates a new instance of `ConditionalHook`.
-    pub(crate) fn new(handler: Weak<Register>, conditions: Arc<Conditions>) -> Self {
+    pub(crate) fn new(
+        handler: Weak<Register>,
+        conditions: Arc<Conditions>,
+        event_block: EventBlock,
+    ) -> Self {
         Self {
             handler,
             conditions,
-            event_block: EventBlock::default(),
+            event_block,
         }
     }
 }
@@ -70,19 +74,31 @@ impl SelectHandleTarget for ConditionalHook {
     fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond.borrow().clone());
-        ConditionalHook::new(Weak::clone(&self.handler), Arc::new(conditions))
+        ConditionalHook::new(
+            Weak::clone(&self.handler),
+            Arc::new(conditions),
+            self.event_block,
+        )
     }
 }
 
 impl SetEventBlock for ConditionalHook {
-    fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
+    fn block(&self) -> Self {
+        let conditions = (*self.conditions).clone();
+        ConditionalHook::new(
+            Weak::clone(&self.handler),
+            Arc::new(conditions),
+            EventBlock::Block,
+        )
     }
 
-    fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
+    fn unblock(&self) -> Self {
+        let conditions = (*self.conditions).clone();
+        ConditionalHook::new(
+            Weak::clone(&self.handler),
+            Arc::new(conditions),
+            EventBlock::Unblock,
+        )
     }
 }
 

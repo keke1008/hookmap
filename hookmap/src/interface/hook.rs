@@ -24,7 +24,6 @@ use std::{fmt::Debug, rc::Rc, sync::Arc};
 pub struct Hook {
     pub(crate) register: Rc<Register>,
     conditions: Arc<Conditions>,
-    event_block: EventBlock,
 }
 
 impl Hook {
@@ -59,7 +58,7 @@ impl SelectHandleTarget for Hook {
             Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
             button,
-            self.event_block,
+            EventBlock::default(),
         )
     }
 
@@ -67,7 +66,7 @@ impl SelectHandleTarget for Hook {
         MouseWheelRegister::new(
             Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
-            self.event_block,
+            EventBlock::default(),
         )
     }
 
@@ -75,33 +74,39 @@ impl SelectHandleTarget for Hook {
         MouseCursorRegister::new(
             Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),
-            self.event_block,
+            EventBlock::default(),
         )
     }
 
     fn cond(&self, cond: impl std::borrow::Borrow<Cond>) -> ConditionalHook {
         let mut conditions = (*self.conditions).clone();
         conditions.add(cond.borrow().clone());
-        ConditionalHook::new(Rc::downgrade(&self.register), Arc::new(conditions))
+        ConditionalHook::new(
+            Rc::downgrade(&self.register),
+            Arc::new(conditions),
+            EventBlock::default(),
+        )
     }
 }
 
 impl SetEventBlock for Hook {
-    fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
+    fn block(&self) -> ConditionalHook {
+        let register = Rc::downgrade(&self.register);
+        let conditions = (*self.conditions).clone();
+        ConditionalHook::new(register, Arc::new(conditions), EventBlock::Block)
     }
 
-    fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
+    fn unblock(&self) -> ConditionalHook {
+        let register = Rc::downgrade(&self.register);
+        let conditions = (*self.conditions).clone();
+        ConditionalHook::new(register, Arc::new(conditions), EventBlock::Unblock)
     }
 }
 
 impl Debug for Hook {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Hook")
-            .field("event_block", &self.event_block)
+            .field("event_block", &EventBlock::default())
             .finish()
     }
 }

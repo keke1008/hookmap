@@ -1,7 +1,6 @@
 use super::super::{
     button::{ButtonInput, ButtonState, ButtonWithState, ToButtonWithState},
     cond::Conditions,
-    SetEventBlock,
 };
 use crate::{
     handler::{Handler, Register as HandlerRegister},
@@ -115,7 +114,7 @@ impl ButtonRegister {
     /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like<B, R>(self, button: B)
+    pub fn like<B, R>(self, button: B) -> Self
     where
         B: Borrow<R>,
         R: ButtonInput + Clone + Send + Sync + 'static,
@@ -125,7 +124,7 @@ impl ButtonRegister {
             self.block().on_press(move |_| button.press())
         };
         let button = button.borrow().clone();
-        this.on_release(move |_| button.release());
+        this.on_release(move |_| button.release())
     }
 
     /// Disables the button and blocks the event.
@@ -140,15 +139,13 @@ impl ButtonRegister {
     pub fn disable(self) -> Self {
         self.block().on_press_or_release(|_| {})
     }
-}
 
-impl SetEventBlock for ButtonRegister {
-    fn block(mut self) -> Self {
+    pub fn block(mut self) -> Self {
         self.event_block = EventBlock::Block;
         self
     }
 
-    fn unblock(mut self) -> Self {
+    pub fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
     }

@@ -1,4 +1,4 @@
-use super::super::{cond::Conditions, SetEventBlock};
+use super::super::cond::Conditions;
 use crate::handler::{Handler, Register as HandlerRegister};
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{fmt::Debug, rc::Weak, sync::Arc};
@@ -70,13 +70,13 @@ impl MouseCursorRegister {
     }
 }
 
-impl SetEventBlock for MouseCursorRegister {
-    fn block(mut self) -> Self {
+impl MouseCursorRegister {
+    pub fn block(mut self) -> Self {
         self.event_block = EventBlock::Block;
         self
     }
 
-    fn unblock(mut self) -> Self {
+    pub fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
     }
@@ -157,13 +157,13 @@ impl MouseWheelRegister {
     }
 }
 
-impl SetEventBlock for MouseWheelRegister {
-    fn block(mut self) -> Self {
+impl MouseWheelRegister {
+    pub fn block(mut self) -> Self {
         self.event_block = EventBlock::Block;
         self
     }
 
-    fn unblock(mut self) -> Self {
+    pub fn unblock(mut self) -> Self {
         self.event_block = EventBlock::Unblock;
         self
     }

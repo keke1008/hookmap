@@ -90,7 +90,7 @@ pub trait SetEventBlock {
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
-    fn block(self) -> Self;
+    fn block(&self) -> ConditionalHook;
 
     /// Do not block the input event when the hook to be registered is enable.
     ///
@@ -106,5 +106,5 @@ pub trait SetEventBlock {
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
-    fn unblock(self) -> Self;
+    fn unblock(&self) -> ConditionalHook;
 }
