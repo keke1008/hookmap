@@ -232,12 +232,13 @@ macro_rules! send {
     ($($button:tt $($modifier:ident)?),*) => {{
         let pressed_modifiers = $crate::macros::MODIFIER_LIST
             .iter()
-            .filter(|button| button.is_pressed());
-        pressed_modifiers.clone().for_each(ButtonInput::release);
+            .filter(|button| button.is_pressed())
+            .collect::<Vec<_>>();
+        pressed_modifiers.iter().for_each(|button| button.release());
         $(
             send!(@single button_name!($button) $(, $modifier)?);
         )*
-        pressed_modifiers.for_each(ButtonInput::press);
+        pressed_modifiers.iter().for_each(|button| button.press());
 
     }};
 
