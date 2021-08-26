@@ -1,6 +1,7 @@
 use super::{All, Any};
 use crate::interface::button::ButtonWithState;
 use hookmap_core::{Button, ButtonOperation};
+use once_cell::sync::Lazy;
 
 pub trait ButtonInput {
     /// Emulates a button press operation.
@@ -128,6 +129,12 @@ impl ToButtonWithState for Any {
 impl ToButtonWithState for All {
     fn to_button_with_state(&self) -> ButtonWithState {
         ButtonWithState::All(self.clone())
+    }
+}
+
+impl<T: ToButtonWithState> ToButtonWithState for Lazy<T> {
+    fn to_button_with_state(&self) -> ButtonWithState {
+        (**self).to_button_with_state()
     }
 }
 
