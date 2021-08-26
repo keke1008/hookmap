@@ -18,19 +18,19 @@ where
 
     hotkey!(hook => {
         bind [&space] => LShift;
+
         on_press [&space] => {
             let is_alone = Arc::clone(&is_alone);
             move |_| is_alone.store(true, Ordering::SeqCst)
         };
-    });
 
-    {
-        let is_alone = Arc::clone(&is_alone);
-        let is_shift_alone = hook.cond(Cond::callback(move || is_alone.load(Ordering::SeqCst)));
-        hotkey!(is_shift_alone => {
+        if (callback {
+            let is_alone = Arc::clone(&is_alone);
+            move || is_alone.load(Ordering::SeqCst)
+        };) {
             on_release [&space] => move |_| space.click();
-        });
-    }
+        }
+    });
 
     thread::spawn(move || loop {
         Interruption::unblock()

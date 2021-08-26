@@ -18,15 +18,15 @@ where
             IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
             Button::LAlt.release();
         };
-    });
 
-    hotkey!(hook.cond(Cond::pressed(alt)) => {
-        on_press [&tab] => move |_| {
-            if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                Button::LAlt.press();
-            }
-        };
-        bind [&tab] => [tab_like];
+        if (pressed [alt]) {
+            on_press [&tab] => move |_| {
+                if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
+                    Button::LAlt.press();
+                }
+            };
+            bind [&tab] => [tab_like];
+        }
     });
 }
 
