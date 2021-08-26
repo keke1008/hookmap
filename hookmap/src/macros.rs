@@ -33,57 +33,6 @@ macro_rules! button_name {
 
 }
 
-/// Presses and releases the keys in sequence.
-///
-///
-/// ```no_run
-/// use hookmap::*;
-/// seq!(0, 1, 2, 3, A, B, C);
-/// ```
-///
-#[macro_export]
-macro_rules! seq {
-    ($($button:tt,)+) => {
-        seq!($($button),+)
-    };
-
-    ($($button:tt),*) => {
-        seq!(@full_name $(button_name!($button)),*)
-    };
-
-    (@full_name $($button:expr),*) => {{
-        $($button.click();)*
-    }};
-}
-
-/// While holding down the keys after "with", clicks the keys before "with".
-///
-/// ```
-/// use hookmap::*;
-/// press!([Delete] with [LCtrl, RAlt]);
-/// ```
-///
-#[macro_export]
-macro_rules! press {
-    (@full_name [$($button:expr),*] with [$($modifier:expr),*]) => {{
-        $($modifier.press();)*
-        seq!(@full_name $($button),*);
-        $($modifier.release();)*
-    }};
-
-    ([$($button:tt),*] with [$($modifier:tt),*]) => {
-        press!(@full_name [$(button_name!($button)),*] with [$(button_name!($modifier)),*])
-    };
-
-}
-
-#[macro_export]
-macro_rules! press_v{
-    ([$($button:expr),*] with [$($modifier:expr),*]) => {
-        press!(@full_name [$($button),*] with [$($modifier),*])
-    };
-}
-
 /// Registers hotkeys.
 ///
 /// # Commands
