@@ -12,19 +12,22 @@ where
     U: ToButtonWithState + Clone,
     V: EmulateButtonInput,
 {
-    hook.bind(&alt).disable();
-    hook.bind(&alt).block().on_release(move |_| {
-        IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-        Button::LAlt.release();
+    hotkey!(hook => {
+        disable [&alt];
+        on_release [&alt] => move |_| {
+            IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
+            Button::LAlt.release();
+        };
     });
 
-    let modifier_alt = hook.cond(Cond::pressed(alt));
-    modifier_alt.bind(&tab).block().on_press(move |_| {
-        if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-            Button::LAlt.press();
-        }
+    hotkey!(hook.cond(Cond::pressed(alt)) => {
+        on_press [&tab] => move |_| {
+            if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
+                Button::LAlt.press();
+            }
+        };
+        bind [&tab] => [tab_like];
     });
-    modifier_alt.bind(tab).like(tab_like);
 }
 
 /// Utility function.

@@ -1,5 +1,5 @@
 use hookmap::{
-    button::{BorrowedEmulateButtonInput, EmulateButtonInput, ToButtonWithState},
+    button::{EmulateButtonInput, ToButtonWithState},
     *,
 };
 use std::collections::HashSet;
@@ -9,26 +9,27 @@ use std::sync::{
 };
 use std::thread;
 
-fn emulate_sands<T, U, V>(hook: &T, space: U, ignore: HashSet<Button>)
+fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
 where
     T: SelectHandleTarget,
-    U: BorrowedEmulateButtonInput<V>,
-    V: EmulateButtonInput + ToButtonWithState,
+    U: EmulateButtonInput + ToButtonWithState,
 {
-    let space = space.clone_static();
-    hook.bind(&space).like(&Button::Shift);
-
     let is_alone = Arc::new(AtomicBool::new(true));
+
+    hotkey!(hook => {
+        bind [&space] => LShift;
+        on_press [&space] => {
+            let is_alone = Arc::clone(&is_alone);
+            move |_| is_alone.store(true, Ordering::SeqCst)
+        };
+    });
+
     {
         let is_alone = Arc::clone(&is_alone);
-        hook.bind(&space)
-            .on_press(move |_| is_alone.store(true, Ordering::SeqCst));
-    }
-    {
-        let is_alone = Arc::clone(&is_alone);
-        hook.cond(&Cond::callback(move || is_alone.load(Ordering::SeqCst)))
-            .bind(&space)
-            .on_release(move |_| space.click());
+        let is_shift_alone = hook.cond(Cond::callback(move || is_alone.load(Ordering::SeqCst)));
+        hotkey!(is_shift_alone => {
+            on_release [&space] => move |_| space.click();
+        });
     }
 
     thread::spawn(move || loop {
@@ -42,10 +43,20 @@ where
 
 fn main() {
     let hook = Hook::new();
-    let ignore = [Button::Space, Button::Shift, Button::Ctrl, Button::Alt]
-        .iter()
-        .copied()
-        .collect();
+    let ignore = [
+        Button::Space,
+        Button::LShift,
+        Button::RShift,
+        Button::LCtrl,
+        Button::RCtrl,
+        Button::LAlt,
+        Button::RAlt,
+        Button::LMeta,
+        Button::RMeta,
+    ]
+    .iter()
+    .copied()
+    .collect();
 
     emulate_sands(&hook, Button::Space, ignore);
 

@@ -1,14 +1,3 @@
-# hookmap
-
-Register hotkeys and simulate keyboard and mosue input.
-
-## Supported OS
-
-* Windows 10
-
-## Example
-
-```rust
 use hookmap::*;
 
 fn main() {
@@ -43,4 +32,3 @@ fn main() {
 
     hook.handle_input();
 }
-```

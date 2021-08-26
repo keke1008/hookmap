@@ -14,20 +14,32 @@ use hookmap::*;
 fn main() {
     let hook = Hook::new();
 
-    // Bind Ctrl + W,A,S,D as cursor key
-    let mod_ctrl = hook
-        .cond(Cond::pressed(Button::Ctrl))
-        .cond(Cond::released(Button::Shift));
-    mod_ctrl.bind(Button::W).like(Button::UpArrow);
-    mod_ctrl.bind(Button::A).like(Button::LeftArrow);
-    mod_ctrl.bind(Button::S).like(Button::DownArrow);
-    mod_ctrl.bind(Button::D).like(Button::RightArrow);
+    // Binds the H,J,K,L keys as in vim.
+    hotkey!(hook => {
+        bind H => LeftArrow;
+        bind J => DownArrow;
+        bind K => UpArrow;
+        bind L => RightArrow;
+    });
 
-    // Mouse wheel rotation with Ctrl + Shift + W,A
-    let ctrl_shift = ButtonSet::new([Button::Ctrl, Button::Shift]);
-    let mod_c_s = hook.cond(Cond::pressed(ctrl_shift.all())).block();
-    mod_c_s.bind(Button::W).on_press(|_| Mouse::rotate(1));
-    mod_c_s.bind(Button::S).on_press(|_| Mouse::rotate(-1));
+    let mod_ctrl = hook.cond(Cond::pressed(&CTRL)).block();
+    hotkey!(mod_ctrl => {
+        // Disables the Mouse cursor movement while the Shift key is held down.
+        disable MouseMove;
+
+        // Send Ctrl+A when the Shift and the Space key are pressed.
+        on_press Space => |_| send!(LCtrl down, A, LCtrl up);
+    });
+
+    // let a_or_b = ButtonSet::new([Button::A, Button::B]).any();
+    let a_or_b = button_set!(A, B).any();
+    hotkey!(mod_ctrl => {
+                             // Called when the A key or the B key is pressed.
+        on_press [&a_or_b] => |event| println!("{:?} key is pressed.", event.target);
+
+        // Sends an uppercase A or B when the A or B key is released.
+        on_release [a_or_b] => |event| send!(LShift down, [event.target], LShift up);
+    });
 
     hook.handle_input();
 }
