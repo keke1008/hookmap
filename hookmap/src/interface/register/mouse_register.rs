@@ -23,6 +23,14 @@ impl MouseCursorRegister {
         }
     }
 
+    fn register_handler(&self, callback: Arc<dyn Fn(MouseCursorEvent) + Send + Sync>) {
+        let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
+        self.handler_register
+            .upgrade()
+            .unwrap()
+            .register_mouse_cursor(Arc::new(handler));
+    }
+
     /// Registers a handler called when the mouse cursor is moved.
     ///
     /// # Arguments
@@ -41,15 +49,24 @@ impl MouseCursorRegister {
     where
         F: Fn(MouseCursorEvent) + Send + Sync + 'static,
     {
-        let handler = Handler::new(
-            Arc::new(callback),
-            Arc::clone(&self.conditions),
-            self.event_block,
-        );
-        self.handler_register
-            .upgrade()
-            .unwrap()
-            .register_mouse_cursor(Arc::new(handler));
+        self.register_handler(Arc::new(callback));
+    }
+
+    /// Disables and blocks mouse move events.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_cursor().disable();
+    /// ```
+    ///
+    pub fn disable(&mut self) {
+        let tmp_event_block = self.event_block;
+        self.event_block = EventBlock::Block;
+        self.register_handler(Arc::new(|_| {}));
+        self.event_block = tmp_event_block;
     }
 }
 
@@ -94,6 +111,14 @@ impl MouseWheelRegister {
         }
     }
 
+    fn register_handler(&self, callback: Arc<dyn Fn(MouseWheelEvent) + Send + Sync>) {
+        let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
+        self.handler_register
+            .upgrade()
+            .unwrap()
+            .register_mouse_wheel(Arc::new(handler));
+    }
+
     /// Registers a handler called when the mouse wheel is rotated.
     ///
     /// # Arguments
@@ -114,15 +139,21 @@ impl MouseWheelRegister {
     where
         F: Fn(MouseWheelEvent) + Send + Sync + 'static,
     {
-        let handler = Handler::new(
-            Arc::new(callback),
-            Arc::clone(&self.conditions),
-            self.event_block,
-        );
-        self.handler_register
-            .upgrade()
-            .unwrap()
-            .register_mouse_wheel(Arc::new(handler));
+        self.register_handler(Arc::new(callback));
+    }
+
+    /// Disables and blocks mouse wheel events.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// hook.bind_mouse_wheel().disable();
+    /// ```
+    ///
+    pub fn disable(&self) {
+        self.register_handler(Arc::new(|_| {}));
     }
 }
 

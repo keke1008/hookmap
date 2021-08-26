@@ -95,13 +95,15 @@ macro_rules! button_name {
 ///
 /// ## disable
 ///
-/// Disables the specified button.
+/// Disables the specified button, `MouseMove`, or `MouseWheel`.
 ///
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
 /// hotkey!(hook => {
 ///     disable A;
+///     disable MouseMove;
+///     disable MouseWheel;
 /// });
 /// ```
 ///
@@ -159,6 +161,16 @@ macro_rules! hotkey {
 
     ($hook:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).on_press_or_release($rhs);
+        hotkey!($hook $($rest)*)
+    };
+
+    ($hook:ident disable MouseMove; $($rest:tt)*) => {
+        $hook.bind_mouse_cursor().disable();
+        hotkey!($hook $($rest)*)
+    };
+
+    ($hook:ident disable MouseWheel; $($rest:tt)*) => {
+        $hook.bind_mouse_wheel().disable();
         hotkey!($hook $($rest)*)
     };
 
