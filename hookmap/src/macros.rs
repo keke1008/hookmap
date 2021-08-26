@@ -254,3 +254,10 @@ macro_rules! send {
         $button.release()
     };
 }
+
+#[macro_export]
+macro_rules! button_set {
+    ($($button:tt),*) => {
+        $crate::ButtonSet::new([$(button_name!($button)),*])
+    };
+}

@@ -46,7 +46,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set1 = ButtonSet::new([Button::A, Button::B]);
+    /// let set1 = button_set!(A, B);
     /// let set2 = set1.insert(Button::C);
     /// ```
     ///
@@ -62,7 +62,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set1 = ButtonSet::new([Button::A, Button::B]);
+    /// let set1 = button_set!(A, B);
     /// let set2 = set1.remove(Button::C);
     /// ```
     ///
@@ -78,7 +78,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set = ButtonSet::new([Button::A, Button::B]);
+    /// let set = button_set!(A, B);
     /// let any = set.any();
     /// ```
     ///
@@ -92,7 +92,7 @@ impl ButtonSet {
     ///
     /// ```
     /// use hookmap::*;
-    /// let set = ButtonSet::new([Button::A, Button::B]);
+    /// let set = button_set!(A, B);
     /// let any = set.any();
     /// ```
     ///
@@ -108,7 +108,7 @@ impl ButtonSet {
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let any = ButtonSet::new([Button::A, Button::B]).any();
+/// let any = button_set!(A, B).any();
 /// hook.bind(any)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
@@ -125,7 +125,7 @@ pub struct Any(pub(super) Arc<HashSet<Button>>);
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let all = ButtonSet::new([Button::A, Button::B]).all();
+/// let all = button_set!(A, B).all();
 /// hook.bind(all)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
