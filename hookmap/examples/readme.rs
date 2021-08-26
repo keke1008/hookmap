@@ -20,7 +20,6 @@ fn main() {
         on_press Space => |_| send!(LCtrl down, A, LCtrl up);
     });
 
-    // let a_or_b = ButtonSet::new([Button::A, Button::B]).any();
     let a_or_b = button_set!(A, B).any();
     hotkey!(mod_ctrl => {
                              // Called when the A key or the B key is pressed.
