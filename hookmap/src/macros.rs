@@ -137,15 +137,15 @@ macro_rules! button_name {
 /// Adds conditions to the hotkeys defined in this statement.
 /// The Following commands can be used in the condition statement.
 ///
-/// * pressed - Checks whether all the specified buttons have been pressed or not.
-/// * released - Checks whether all the specified buttons have been released or not.
+/// * pressed - Checks whether the specified buttons have been pressed or not.
+/// * released - Checks whether the specified buttons have been released or not.
 /// * callback - Checks if the callback function returns true. Do not forget the semicolon at end.
 ///
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
 /// hotkey!(hook => {
-///     if (pressed LCtrl, LShift && released LAlt && callback || true;) {
+///     if (pressed LCtrl && released LAlt && callback || true;) {
 ///         bind A => B;
 ///     }
 /// })
@@ -235,8 +235,8 @@ macro_rules! hotkey {
     };
 
     // Matches `pressed` or `released` in if.
-    (@cond $hook:ident $cond:ident $($button:tt),+ $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond(Cond::$cond(button_set!($($button),+).all()));
+    (@cond $hook:ident $cond:ident $button:tt $(&& $($rest:tt)+)?) => {
+        let $hook = $hook.cond(Cond::$cond(button_name!($button)));
         $(hotkey!(@cond $hook $($rest)+))?
     };
 }
