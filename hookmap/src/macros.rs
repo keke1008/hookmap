@@ -44,6 +44,7 @@ macro_rules! button_name {
 /// * disable
 /// * mouse_cursor
 /// * mouse_wheel
+/// * if
 ///
 /// ## bind
 ///
@@ -131,6 +132,25 @@ macro_rules! button_name {
 /// });
 /// ```
 ///
+/// ## if
+///
+/// Adds conditions to the hotkeys defined in this statement.
+/// The Following commands can be used in the condition statement.
+///
+/// * pressed - Checks whether all the specified buttons have been pressed or not.
+/// * released - Checks whether all the specified buttons have been released or not.
+/// * callback - Checks if the callback function returns true. Do not forget the semicolon at end.
+///
+/// ```
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// hotkey!(hook => {
+///     if (pressed LCtrl, LShift && released LAlt && callback || true;) {
+///         bind A => B;
+///     }
+/// })
+/// ```
+///
 #[macro_export]
 macro_rules! hotkey {
     {
@@ -144,49 +164,80 @@ macro_rules! hotkey {
 
     ($hook:ident) => {};
 
+    // Matches `bind`.
     ($hook:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).like(button_name!($rhs));
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `on_perss`.
     ($hook:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).on_press($rhs);
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `on_release`.
     ($hook:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).on_release($rhs);
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `on_press_or_release`.
     ($hook:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).on_press_or_release($rhs);
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `disable MouseMove`.
     ($hook:ident disable MouseMove; $($rest:tt)*) => {
         $hook.bind_mouse_cursor().disable();
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `disable MouseWheel`.
     ($hook:ident disable MouseWheel; $($rest:tt)*) => {
         $hook.bind_mouse_wheel().disable();
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `disable $button`.
     ($hook:ident disable $lhs:tt; $($rest:tt)*) => {
         $hook.bind(button_name!($lhs)).disable();
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `mouse_cursor`.
     ($hook:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
         $hook.bind_mouse_cursor().on_move($lhs);
         hotkey!($hook $($rest)*)
     };
 
+    // Matches `mouse_wheel`.
     ($hook:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
         $hook.bind_mouse_wheel().on_rotate($lhs);
         hotkey!($hook $($rest)*)
+    };
+
+    // Matches `if`.
+    ($hook:ident if ($($cond:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
+        {
+            hotkey!(@cond $hook $($cond)*);
+            hotkey!($hook $($cmd)*);
+        }
+        hotkey!($hook $($rest)*)
+
+    };
+
+    // Matches `callback` in if.
+    (@cond $hook:ident callback $callback:expr; $(&& $($rest:tt)+)?) => {
+        let $hook = $hook.cond(Cond::callback($callback));
+        $(hotkey!(@cond $hook $($rest)+))?
+    };
+
+    // Matches `pressed` or `released` in if.
+    (@cond $hook:ident $cond:ident $($button:tt),+ $(&& $($rest:tt)+)?) => {
+        let $hook = $hook.cond(Cond::$cond(button_set!($($button),+).all()));
+        $(hotkey!(@cond $hook $($rest)+))?
     };
 }
 
