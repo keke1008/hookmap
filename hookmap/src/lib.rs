@@ -10,7 +10,7 @@
 
 mod handler;
 mod interface;
-mod macros;
+pub mod macros;
 mod runtime;
 mod utils;
 
