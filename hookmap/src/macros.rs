@@ -45,6 +45,8 @@ macro_rules! button_name {
 /// * mouse_cursor
 /// * mouse_wheel
 /// * if
+/// * block_event
+/// * unblock_event
 ///
 /// ## bind
 ///
@@ -151,6 +153,37 @@ macro_rules! button_name {
 /// })
 /// ```
 ///
+/// ## block_event
+///
+/// The button/mouse event will be blocked if the hotkey defined in this statement is executed.
+///
+/// ```
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// hotkey!(hook => {
+///     block_event {
+///         on_press A => |_| {};
+///     }
+/// });
+/// ```
+///
+/// ## unblock_event
+///
+/// The button/mouse event will not be blocked if the hotkey defined in this statement is executed.
+///
+/// If the hotkeys defined in the `block_event` statement are executed at the same time,
+/// the button event will be blocked.
+///
+/// ```
+/// use hookmap::*;
+/// let hook = Hook::new();
+/// hotkey!(hook => {
+///     unblock_event {
+///         on_press A => |_| {};
+///     }
+/// });
+/// ```
+///
 #[macro_export]
 macro_rules! hotkey {
     {
@@ -239,6 +272,24 @@ macro_rules! hotkey {
         let $hook = $hook.cond(Cond::$cond(button_name!($button)));
         $(hotkey!(@cond $hook $($rest)+))?
     };
+
+    // Matches `block_event`.
+    ($hook:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
+        {
+            let $hook = $hook.block();
+            hotkey!($hook $($cmd)*);
+        }
+        hotkey!($hook $($rest)*);
+    };
+
+    // Matches `unblock_event`.
+    ($hook:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
+        {
+            let $hook = $hook.unblock();
+            hotkey!($hook $($cmd)*);
+        }
+        hotkey!($hook $($rest)*);
+    }
 }
 
 use hookmap_core::Button;
