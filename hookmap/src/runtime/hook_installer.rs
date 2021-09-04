@@ -4,8 +4,8 @@ use crate::{
     Hook,
 };
 use hookmap_core::{
-    ButtonAction, ButtonEvent, EventBlock, EventCallback, MouseCursorEvent, MouseWheelEvent,
-    INPUT_HANDLER,
+    ButtonAction, ButtonEvent, EventBlock, EventCallback, InputHandler, MouseCursorEvent,
+    MouseWheelEvent,
 };
 use std::{fmt::Debug, rc::Rc, sync::Arc};
 
@@ -48,7 +48,8 @@ impl HookInstaller {
     pub(crate) fn install_hook(self) {
         let on_press_fetcher = ButtonFetcher::new(self.storage.button_on_press);
         let on_release_fetcher = ButtonFetcher::new(self.storage.button_on_release);
-        INPUT_HANDLER.button.register_handler(move |event| {
+        let input_handler = InputHandler::new();
+        input_handler.button.register_handler(move |event| {
             if INTERRUPTION_EVENT.send_button_event(event) == EventBlock::Block {
                 Box::new(EventHandler::<ButtonEvent>::Interruption)
             } else {
@@ -60,7 +61,7 @@ impl HookInstaller {
             }
         });
         let mouse_cursor_fetcher = MouseFetcher::new(self.storage.mouse_cursor);
-        INPUT_HANDLER.mouse_cursor.register_handler(move |event| {
+        input_handler.mouse_cursor.register_handler(move |event| {
             let interruption_event_block = INTERRUPTION_EVENT
                 .mouse_cursor
                 .lock()
@@ -73,7 +74,7 @@ impl HookInstaller {
             }
         });
         let mouse_wheel_fetcher = MouseFetcher::new(self.storage.mouse_wheel);
-        INPUT_HANDLER.mouse_wheel.register_handler(move |event| {
+        input_handler.mouse_wheel.register_handler(move |event| {
             let event_block = INTERRUPTION_EVENT
                 .mouse_wheel
                 .lock()
@@ -85,7 +86,7 @@ impl HookInstaller {
                 Box::new(EventHandler::Normal(mouse_wheel_fetcher.fetch(), event))
             }
         });
-        INPUT_HANDLER.handle_input();
+        input_handler.handle_input();
     }
 }
 

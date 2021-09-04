@@ -4,6 +4,7 @@ mod mouse;
 
 use crate::common::{
     button::{Button, ButtonKind, ButtonOperation},
+    event::EventMessageSender,
     handler::{HookInstaller, InputHandler},
 };
 use once_cell::sync::Lazy;
@@ -63,12 +64,9 @@ impl Button {
 }
 
 impl HookInstaller for InputHandler {
-    fn install() {
-        keyboard::install_hook();
-        mouse::install_hook();
-    }
-
-    fn handle_input() {
+    fn install(event_sender: EventMessageSender) {
+        keyboard::install_hook(event_sender.clone());
+        mouse::install_hook(event_sender);
         unsafe {
             winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
         }

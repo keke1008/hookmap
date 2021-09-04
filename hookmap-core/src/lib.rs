@@ -30,5 +30,4 @@ pub use common::{
     event::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent},
     handler::{EventCallback, EventCallbackGenerator, EventHandler, InputHandler},
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
-    INPUT_HANDLER,
 };

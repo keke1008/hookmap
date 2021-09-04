@@ -1,5 +1,12 @@
-use super::event::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
-use std::{fmt::Debug, sync::Mutex, thread};
+use super::event::{
+    ButtonEvent, Event, EventBlock, EventMessage, EventMessageSender, MouseCursorEvent,
+    MouseWheelEvent,
+};
+use std::{
+    fmt::Debug,
+    sync::{mpsc, Mutex},
+    thread,
+};
 
 pub trait EventCallback: Send + Sync {
     fn call(&mut self);
@@ -68,11 +75,8 @@ impl<E: Send + Copy + 'static> Default for EventHandler<E> {
 }
 
 pub trait HookInstaller {
-    /// Installs hooks in the way of each platform.
-    fn install();
-
-    /// Installs hooks and blocks a thread.
-    fn handle_input();
+    /// Handles keyboard and mouse event and blocks a thread.
+    fn install(event_message_sender: EventMessageSender);
 }
 
 /// A keyboard and mouse Event Handler.
@@ -87,20 +91,38 @@ impl InputHandler
 where
     Self: HookInstaller,
 {
+    /// Creates a new instance fof InputHandler.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap_core::InputHandler;
+    /// let input_hanlder = InputHandler::new();
+    /// ```
+    pub fn new() -> Self {
+        Self::default()
+    }
+
     /// Handles keyboard and mouse event and blocks a thread.
-    ///
-    /// # Panics
-    ///
-    /// Panics if a mutex lock fails.
     ///
     /// # Examples
     ///
     /// ```no_run
-    /// use hookmap_core::INPUT_HANDLER;
-    /// INPUT_HANDLER.handle_input();
+    /// use hookmap_core::InputHandler;
+    /// let input_handler = InputHandler::new();
+    /// input_handler.handle_input();
     /// ```
-    pub fn handle_input(&self) {
-        <Self as HookInstaller>::install();
-        <Self as HookInstaller>::handle_input();
+    pub fn handle_input(self) {
+        let (tx, rx) = mpsc::sync_channel::<EventMessage>(0);
+        thread::spawn(move || loop {
+            let message = rx.recv().unwrap();
+            let event_block = match message.event {
+                Event::Button(button_event) => self.button.emit(button_event),
+                Event::MouseWheel(wheel_event) => self.mouse_wheel.emit(wheel_event),
+                Event::MouseCursor(cursor_event) => self.mouse_cursor.emit(cursor_event),
+            };
+            message.event_block_sender.send(event_block).unwrap();
+        });
+        <Self as HookInstaller>::install(EventMessageSender::new(tx));
     }
 }
