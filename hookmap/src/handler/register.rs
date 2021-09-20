@@ -1,5 +1,6 @@
-use super::{Handler, Storage};
-use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent};
+use super::{storage::ButtonStorage, EventCallback, Handler, Storage};
+use crate::{button::All, interface::Conditions, ButtonSet, ButtonState};
+use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{cell::RefCell, sync::Arc};
 
 #[derive(Default, Debug)]
@@ -12,30 +13,61 @@ impl Register {
         self.storage.into_inner()
     }
 
+    fn generate_callback(
+        callback: EventCallback<ButtonEvent>,
+        button: &ButtonSet,
+        predict: fn(&All) -> bool,
+    ) -> EventCallback<ButtonEvent> {
+        if let ButtonSet::All(ref all) = button {
+            let all = all.clone();
+            Arc::new(move |e| {
+                if predict(&all) {
+                    callback(e)
+                }
+            })
+        } else {
+            callback
+        }
+    }
+
+    fn register_button_handler(
+        button: ButtonSet,
+        handler: Handler<ButtonEvent>,
+        storage: &mut ButtonStorage,
+    ) {
+        let handler = Arc::new(handler);
+        button.iter_buttons().for_each(|&button| {
+            storage
+                .entry(button)
+                .or_default()
+                .push(Arc::clone(&handler))
+        })
+    }
+
     pub(crate) fn register_button_on_press(
         &self,
-        button: Button,
-        handler: Arc<Handler<ButtonEvent>>,
+        button: ButtonSet,
+        callback: EventCallback<ButtonEvent>,
+        conditions: Arc<Conditions>,
+        event_block: EventBlock,
     ) {
-        self.storage
-            .borrow_mut()
-            .button_on_press
-            .entry(button)
-            .or_default()
-            .push(handler)
+        let callback = Self::generate_callback(callback, &button, All::is_pressed);
+        let handler = Handler::new(callback, conditions, event_block);
+        let storage = &mut self.storage.borrow_mut().button_on_press;
+        Self::register_button_handler(button, handler, storage);
     }
 
     pub(crate) fn register_button_on_release(
         &self,
-        button: Button,
-        handler: Arc<Handler<ButtonEvent>>,
+        button: ButtonSet,
+        callback: EventCallback<ButtonEvent>,
+        conditions: Arc<Conditions>,
+        event_block: EventBlock,
     ) {
-        self.storage
-            .borrow_mut()
-            .button_on_release
-            .entry(button)
-            .or_default()
-            .push(handler)
+        let callback = Self::generate_callback(callback, &button, All::is_released);
+        let handler = Handler::new(callback, conditions, event_block);
+        let storage = &mut self.storage.borrow_mut().button_on_release;
+        Self::register_button_handler(button, handler, storage);
     }
 
     pub(crate) fn register_mouse_cursor(&self, handler: Arc<Handler<MouseCursorEvent>>) {

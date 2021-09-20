@@ -1,11 +1,8 @@
 use super::super::{
-    button::{ButtonInput, ButtonSet, ButtonState, ToButtonSet},
+    button::{ButtonInput, ButtonSet, ToButtonSet},
     cond::Conditions,
 };
-use crate::{
-    handler::{Handler, Register as HandlerRegister},
-    interface::All,
-};
+use crate::handler::Register as HandlerRegister;
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
 
@@ -15,6 +12,46 @@ type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 pub struct ButtonRegister {
     inner: ButtonRegisterInner,
     event_block: EventBlock,
+}
+
+pub struct ButtonRegisterInner {
+    handler_register: Weak<HandlerRegister>,
+    conditions: Arc<Conditions>,
+    button: ButtonSet,
+}
+
+impl ButtonRegisterInner {
+    fn new(
+        handler_register: Weak<HandlerRegister>,
+        conditions: Arc<Conditions>,
+        button: ButtonSet,
+    ) -> Self {
+        Self {
+            handler_register,
+            conditions,
+            button,
+        }
+    }
+
+    fn on_press(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let handler_register = self.handler_register.upgrade().unwrap();
+        handler_register.register_button_on_press(
+            self.button.clone(),
+            callback,
+            self.conditions.clone(),
+            event_block,
+        );
+    }
+
+    fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
+        let handler_register = self.handler_register.upgrade().unwrap();
+        handler_register.register_button_on_release(
+            self.button.clone(),
+            callback,
+            self.conditions.clone(),
+            event_block,
+        );
+    }
 }
 
 impl ButtonRegister {
@@ -158,69 +195,5 @@ impl Debug for ButtonRegister {
             .field("conditions", &self.inner.conditions)
             .field("event_block", &self.event_block)
             .finish()
-    }
-}
-
-pub struct ButtonRegisterInner {
-    handler_register: Weak<HandlerRegister>,
-    conditions: Arc<Conditions>,
-    button: ButtonSet,
-}
-
-impl ButtonRegisterInner {
-    fn generate_callback(
-        &self,
-        callback: ButtonCallback,
-        predict: fn(&All) -> bool,
-    ) -> ButtonCallback {
-        if let ButtonSet::All(ref all) = self.button {
-            let all = all.clone();
-            let callback = move |e| {
-                if predict(&all) {
-                    callback(e)
-                }
-            };
-            Arc::new(callback)
-        } else {
-            callback
-        }
-    }
-
-    fn new(
-        handler_register: Weak<HandlerRegister>,
-        conditions: Arc<Conditions>,
-        button: ButtonSet,
-    ) -> Self {
-        Self {
-            handler_register,
-            conditions,
-            button,
-        }
-    }
-
-    fn on_press(&self, callback: ButtonCallback, event_block: EventBlock) {
-        let callback = self.generate_callback(callback, All::is_pressed);
-        let handler = Arc::new(Handler::new(
-            callback,
-            Arc::clone(&self.conditions),
-            event_block,
-        ));
-        let handler_register = self.handler_register.upgrade().unwrap();
-        self.button.iter_buttons().for_each(move |&button| {
-            handler_register.register_button_on_press(button, Arc::clone(&handler))
-        });
-    }
-
-    fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
-        let callback = self.generate_callback(callback, All::is_released);
-        let handler = Arc::new(Handler::new(
-            callback,
-            Arc::clone(&self.conditions),
-            event_block,
-        ));
-        let handler_register = self.handler_register.upgrade().unwrap();
-        self.button.iter_buttons().for_each(|&button| {
-            handler_register.register_button_on_release(button, Arc::clone(&handler))
-        });
     }
 }
