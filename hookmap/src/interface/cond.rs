@@ -33,8 +33,8 @@ use std::{fmt::Debug, sync::Arc};
 ///
 #[derive(Clone)]
 pub enum Cond {
-    Pressed(ButtonSet),
-    Released(ButtonSet),
+    Pressed(Arc<ButtonSet>),
+    Released(Arc<ButtonSet>),
     Callback(Arc<dyn Fn() -> bool + Send + Sync>),
 }
 
@@ -61,7 +61,7 @@ impl Cond {
     /// ```
     ///
     pub fn pressed<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self::Pressed(button.to_button_set())
+        Self::Pressed(Arc::new(button.to_button_set()))
     }
 
     /// Creates a new `Cond` that is conditional on the button being released.
@@ -77,7 +77,7 @@ impl Cond {
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
     pub fn released<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self::Released(button.to_button_set())
+        Self::Released(Arc::new(button.to_button_set()))
     }
 
     /// Creates a new `Cond` that is conditioned on the callback function.

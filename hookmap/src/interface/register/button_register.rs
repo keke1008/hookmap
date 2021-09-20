@@ -2,11 +2,9 @@ use super::super::{
     button::{ButtonInput, ButtonSet, ToButtonSet},
     cond::Conditions,
 };
-use crate::handler::Register as HandlerRegister;
+use crate::handler::{Callback, Register as HandlerRegister};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
-
-type ButtonCallback = Arc<dyn Fn(ButtonEvent) + Send + Sync>;
 
 pub struct ButtonRegisterInner {
     handler_register: Weak<HandlerRegister>,
@@ -27,20 +25,20 @@ impl ButtonRegisterInner {
         }
     }
 
-    fn on_press(&self, callback: ButtonCallback, event_block: EventBlock) {
+    fn on_press(&self, callback: Callback<ButtonEvent>, event_block: EventBlock) {
         let handler_register = self.handler_register.upgrade().unwrap();
         handler_register.register_button_on_press(
-            self.button.clone(),
+            &self.button,
             callback,
             self.conditions.clone(),
             event_block,
         );
     }
 
-    fn on_release(&self, callback: ButtonCallback, event_block: EventBlock) {
+    fn on_release(&self, callback: Callback<ButtonEvent>, event_block: EventBlock) {
         let handler_register = self.handler_register.upgrade().unwrap();
         handler_register.register_button_on_release(
-            self.button.clone(),
+            &self.button,
             callback,
             self.conditions.clone(),
             event_block,
@@ -111,7 +109,7 @@ impl ButtonRegister {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback: ButtonCallback = Arc::new(callback);
+        let callback: Callback<ButtonEvent> = Arc::new(callback);
         self.inner.on_press(Arc::clone(&callback), self.event_block);
         self.inner.on_release(callback, self.event_block);
     }
@@ -174,7 +172,7 @@ impl ButtonRegister {
     /// hook.bind(Button::A).disable();
     /// ```
     pub fn disable(&self) {
-        let callback: ButtonCallback = Arc::new(|_| {});
+        let callback: Callback<ButtonEvent> = Arc::new(|_| {});
         self.inner
             .on_press(Arc::clone(&callback), EventBlock::Block);
         self.inner.on_release(callback, EventBlock::Block);

@@ -1,4 +1,4 @@
-use super::{storage::ButtonStorage, EventCallback, Handler, Storage};
+use super::{storage::ButtonStorage, Callback, Handler, Storage};
 use crate::{button::All, interface::Conditions, ButtonSet, ButtonState};
 use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{cell::RefCell, sync::Arc};
@@ -14,10 +14,10 @@ impl Register {
     }
 
     fn generate_callback(
-        callback: EventCallback<ButtonEvent>,
+        callback: Callback<ButtonEvent>,
         button: &ButtonSet,
         predict: fn(&All) -> bool,
-    ) -> EventCallback<ButtonEvent> {
+    ) -> Callback<ButtonEvent> {
         if let ButtonSet::All(ref all) = button {
             let all = all.clone();
             Arc::new(move |e| {
@@ -31,7 +31,7 @@ impl Register {
     }
 
     fn register_button_handler(
-        button: ButtonSet,
+        button: &ButtonSet,
         handler: Handler<ButtonEvent>,
         storage: &mut ButtonStorage,
     ) {
@@ -46,8 +46,8 @@ impl Register {
 
     pub(crate) fn register_button_on_press(
         &self,
-        button: ButtonSet,
-        callback: EventCallback<ButtonEvent>,
+        button: &ButtonSet,
+        callback: Callback<ButtonEvent>,
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {
@@ -59,8 +59,8 @@ impl Register {
 
     pub(crate) fn register_button_on_release(
         &self,
-        button: ButtonSet,
-        callback: EventCallback<ButtonEvent>,
+        button: &ButtonSet,
+        callback: Callback<ButtonEvent>,
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {

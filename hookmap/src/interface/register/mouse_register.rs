@@ -1,5 +1,5 @@
 use super::super::cond::Conditions;
-use crate::handler::{Handler, Register as HandlerRegister};
+use crate::handler::{Callback, Handler, Register as HandlerRegister};
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{fmt::Debug, rc::Weak, sync::Arc};
 
@@ -23,7 +23,7 @@ impl MouseCursorRegister {
         }
     }
 
-    fn register_handler(&self, callback: Arc<dyn Fn(MouseCursorEvent) + Send + Sync>) {
+    fn register_handler(&self, callback: Callback<MouseCursorEvent>) {
         let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
         self.handler_register
             .upgrade()
@@ -111,7 +111,7 @@ impl MouseWheelRegister {
         }
     }
 
-    fn register_handler(&self, callback: Arc<dyn Fn(MouseWheelEvent) + Send + Sync>) {
+    fn register_handler(&self, callback: Callback<MouseWheelEvent>) {
         let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
         self.handler_register
             .upgrade()

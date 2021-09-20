@@ -3,26 +3,26 @@ use crate::any;
 use hookmap_core::Button;
 use once_cell::sync::Lazy;
 use std::borrow::Borrow;
-use std::{collections::HashSet, fmt::Debug, sync::Arc};
+use std::{collections::HashSet, fmt::Debug};
 
 macro_rules! impl_any_or_all {
     ($name:ident) => {
         impl $name {
             pub fn new<T: Borrow<[Button]>>(buttons: T) -> Self {
                 let inner = buttons.borrow().iter().copied().collect();
-                Self(Arc::new(inner))
+                Self(inner)
             }
 
             pub fn append<T: Borrow<Button>>(&self, button: T) -> Self {
-                let mut inner = (*self.0).clone();
+                let mut inner = self.0.clone();
                 inner.insert(*button.borrow());
-                Self(Arc::new(inner))
+                Self(inner)
             }
 
             pub fn remove<T: Borrow<Button>>(&self, button: T) -> Self {
-                let mut inner = (*self.0).clone();
+                let mut inner = self.0.clone();
                 inner.remove(&button.borrow());
-                Self(Arc::new(inner))
+                Self(inner)
             }
         }
     };
@@ -43,7 +43,7 @@ macro_rules! impl_any_or_all {
 /// ```
 ///
 #[derive(Debug, Clone)]
-pub struct Any(pub(super) Arc<HashSet<Button>>);
+pub struct Any(pub(super) HashSet<Button>);
 impl_any_or_all!(Any);
 
 /// A struct for operating all buttons.
@@ -62,10 +62,9 @@ impl_any_or_all!(Any);
 /// ```
 ///
 #[derive(Debug, Clone)]
-pub struct All(pub(super) Arc<HashSet<Button>>);
+pub struct All(pub(super) HashSet<Button>);
 impl_any_or_all!(All);
 
-#[derive(Clone)]
 pub enum ButtonSet {
     Single(Button),
     Any(Any),
@@ -126,6 +125,11 @@ impl ButtonState for ButtonSet {
     }
 }
 
+pub static SHIFT: Lazy<Any> = Lazy::new(|| any!(LShift, RShift));
+pub static CTRL: Lazy<Any> = Lazy::new(|| any!(LCtrl, RCtrl));
+pub static ALT: Lazy<Any> = Lazy::new(|| any!(LAlt, RAlt));
+pub static META: Lazy<Any> = Lazy::new(|| any!(LMeta, RMeta));
+
 #[cfg(test)]
 mod tests {
     use super::super::traits::*;
@@ -147,8 +151,3 @@ mod tests {
         assert_eq!(iter.next(), None);
     }
 }
-
-pub static SHIFT: Lazy<Any> = Lazy::new(|| any!(LShift, RShift));
-pub static CTRL: Lazy<Any> = Lazy::new(|| any!(LCtrl, RCtrl));
-pub static ALT: Lazy<Any> = Lazy::new(|| any!(LAlt, RAlt));
-pub static META: Lazy<Any> = Lazy::new(|| any!(LMeta, RMeta));
