@@ -261,15 +261,21 @@ macro_rules! hotkey {
 
     };
 
-    // Matches `callback` in if.
+    // Matches `callback` in if condition.
     (@cond $hook:ident callback $callback:expr; $(&& $($rest:tt)+)?) => {
         let $hook = $hook.cond(Cond::callback($callback));
         $(hotkey!(@cond $hook $($rest)+))?
     };
 
-    // Matches `pressed` or `released` in if.
-    (@cond $hook:ident $cond:ident $button:tt $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond(Cond::$cond(button_name!($button)));
+    // Matches `pressed` in if condition.
+    (@cond $hook:ident pressed $button:tt $(&& $($rest:tt)+)?) => {
+        let $hook = $hook.cond(Cond::pressed(button_name!($button)));
+        $(hotkey!(@cond $hook $($rest)+))?
+    };
+
+    // Matches `released` in if condition`
+    (@cond $hook:ident released $button:tt $(&& $($rest:tt)+)?) => {
+        let $hook = $hook.cond(Cond::released(button_name!($button)));
         $(hotkey!(@cond $hook $($rest)+))?
     };
 

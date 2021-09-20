@@ -1,14 +1,8 @@
 use super::button::{ButtonSet, ButtonState, ToButtonSet};
-use std::{borrow::Borrow, fmt::Debug, sync::Arc};
+use std::borrow::Borrow;
+use std::{fmt::Debug, sync::Arc};
 
-#[derive(Clone)]
-enum _Cond {
-    Pressed(ButtonSet),
-    Released(ButtonSet),
-    Callback(Arc<dyn Fn() -> bool + Send + Sync>),
-}
-
-/// A struct that represents the conditions under which hooks are enabled.
+/// An enum that represents the conditions under which hooks are enabled.
 ///
 /// # Example
 ///
@@ -38,14 +32,18 @@ enum _Cond {
 /// ```
 ///
 #[derive(Clone)]
-pub struct Cond(_Cond);
+pub enum Cond {
+    Pressed(ButtonSet),
+    Released(ButtonSet),
+    Callback(Arc<dyn Fn() -> bool + Send + Sync>),
+}
 
 impl Cond {
     pub(crate) fn is_satisfied(&self) -> bool {
-        match &self.0 {
-            _Cond::Pressed(button) => button.is_pressed(),
-            _Cond::Released(button) => button.is_released(),
-            _Cond::Callback(callback) => callback(),
+        match self {
+            Cond::Pressed(button) => button.is_pressed(),
+            Cond::Released(button) => button.is_released(),
+            Cond::Callback(callback) => callback(),
         }
     }
 
@@ -63,7 +61,7 @@ impl Cond {
     /// ```
     ///
     pub fn pressed<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self(_Cond::Pressed(button.to_button_set()))
+        Self::Pressed(button.to_button_set())
     }
 
     /// Creates a new `Cond` that is conditional on the button being released.
@@ -79,7 +77,7 @@ impl Cond {
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
     pub fn released<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self(_Cond::Released(button.to_button_set()))
+        Self::Released(button.to_button_set())
     }
 
     /// Creates a new `Cond` that is conditioned on the callback function.
@@ -103,17 +101,17 @@ impl Cond {
     /// ```
     ///
     pub fn callback<F: 'static + Fn() -> bool + Send + Sync>(callback: F) -> Self {
-        Self(_Cond::Callback(Arc::new(callback)))
+        Self::Callback(Arc::new(callback))
     }
 }
 
 impl Debug for Cond {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!("{}::", std::any::type_name::<Self>()))?;
-        match &self.0 {
-            _Cond::Pressed(button) => f.write_fmt(format_args!("Pressed({:?})", button)),
-            _Cond::Released(button) => f.write_fmt(format_args!("Released({:?})", button)),
-            _Cond::Callback(_) => f.write_str("callback"),
+        match self {
+            Cond::Pressed(button) => f.write_fmt(format_args!("Pressed({:?})", button)),
+            Cond::Released(button) => f.write_fmt(format_args!("Released({:?})", button)),
+            Cond::Callback(_) => f.write_str("callback"),
         }
     }
 }
