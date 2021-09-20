@@ -1,6 +1,6 @@
 use crate::{button::EmulateButtonInput, *};
 use hookmap_core::Button;
-use interface::ToButtonWithState;
+use interface::ToButtonSet;
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicBool, Ordering};
 
@@ -9,7 +9,7 @@ static IS_ALT_TAB_WORKING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false
 fn alt_tab<T, U, V>(hook: &T, alt: U, tab: U, tab_like: V)
 where
     T: SelectHandleTarget,
-    U: ToButtonWithState + Clone,
+    U: ToButtonSet + Clone,
     V: EmulateButtonInput,
 {
     hotkey!(hook => {
@@ -51,7 +51,7 @@ pub trait Utils: SelectHandleTarget + Sized {
     // }
     fn bind_alt_tab<T>(&self, alt: T, tab: T)
     where
-        T: ToButtonWithState + Clone,
+        T: ToButtonSet + Clone,
     {
         alt_tab(self, alt, tab, Button::Tab);
     }
@@ -72,7 +72,7 @@ pub trait Utils: SelectHandleTarget + Sized {
     /// ```
     fn bind_shift_alt_tab<T>(&self, alt: T, tab: T)
     where
-        T: ToButtonWithState + Clone,
+        T: ToButtonSet + Clone,
     {
         let shift_tab = all!(Tab, LShift);
         alt_tab(self, alt, tab, shift_tab);

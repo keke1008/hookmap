@@ -1,10 +1,10 @@
-use super::button::{ButtonState, ButtonWithState, ToButtonWithState};
+use super::button::{ButtonSet, ButtonState, ToButtonSet};
 use std::{borrow::Borrow, fmt::Debug, sync::Arc};
 
 #[derive(Clone)]
 enum _Cond {
-    Pressed(ButtonWithState),
-    Released(ButtonWithState),
+    Pressed(ButtonSet),
+    Released(ButtonSet),
     Callback(Arc<dyn Fn() -> bool + Send + Sync>),
 }
 
@@ -62,8 +62,8 @@ impl Cond {
     ///     .on_press(|_| assert!(Button::A.is_pressed()));
     /// ```
     ///
-    pub fn pressed<B: Borrow<B> + ToButtonWithState>(button: B) -> Self {
-        Self(_Cond::Pressed(button.to_button_with_state()))
+    pub fn pressed<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
+        Self(_Cond::Pressed(button.to_button_set()))
     }
 
     /// Creates a new `Cond` that is conditional on the button being released.
@@ -78,8 +78,8 @@ impl Cond {
     ///     .bind(Button::B)
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
-    pub fn released<B: Borrow<B> + ToButtonWithState>(button: B) -> Self {
-        Self(_Cond::Released(button.to_button_with_state()))
+    pub fn released<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
+        Self(_Cond::Released(button.to_button_set()))
     }
 
     /// Creates a new `Cond` that is conditioned on the callback function.

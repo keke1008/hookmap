@@ -66,28 +66,28 @@ pub struct All(pub(super) Arc<HashSet<Button>>);
 impl_any_or_all!(All);
 
 #[derive(Clone)]
-pub enum ButtonWithState {
-    Button(Button),
+pub enum ButtonSet {
+    Single(Button),
     Any(Any),
     All(All),
 }
 
-impl ButtonWithState {
+impl ButtonSet {
     pub(crate) fn iter_buttons(&self) -> impl Iterator<Item = &Button> + '_ {
         match self {
-            ButtonWithState::Button(button) => Iter::Once(Some(&button)),
-            ButtonWithState::Any(any) => Iter::Set(any.0.iter()),
-            ButtonWithState::All(all) => Iter::Set(all.0.iter()),
+            ButtonSet::Single(button) => Iter::Once(Some(&button)),
+            ButtonSet::Any(any) => Iter::Set(any.0.iter()),
+            ButtonSet::All(all) => Iter::Set(all.0.iter()),
         }
     }
 }
 
-impl Debug for ButtonWithState {
+impl Debug for ButtonSet {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ButtonWithState::Button(button) => f.write_fmt(format_args!("{:?}", button)),
-            ButtonWithState::Any(any) => f.write_fmt(format_args!("{:?}", any)),
-            ButtonWithState::All(all) => f.write_fmt(format_args!("{:?}", all)),
+            ButtonSet::Single(button) => f.write_fmt(format_args!("{:?}", button)),
+            ButtonSet::Any(any) => f.write_fmt(format_args!("{:?}", any)),
+            ButtonSet::All(all) => f.write_fmt(format_args!("{:?}", all)),
         }
     }
 }
@@ -108,20 +108,20 @@ impl<'a> Iterator for Iter<'a> {
     }
 }
 
-impl ButtonState for ButtonWithState {
+impl ButtonState for ButtonSet {
     fn is_pressed(&self) -> bool {
         match self {
-            ButtonWithState::Button(button) => button.is_pressed(),
-            ButtonWithState::Any(any) => any.is_pressed(),
-            ButtonWithState::All(all) => all.is_pressed(),
+            ButtonSet::Single(button) => button.is_pressed(),
+            ButtonSet::Any(any) => any.is_pressed(),
+            ButtonSet::All(all) => all.is_pressed(),
         }
     }
 
     fn is_released(&self) -> bool {
         match self {
-            ButtonWithState::Button(button) => button.is_released(),
-            ButtonWithState::Any(any) => any.is_released(),
-            ButtonWithState::All(all) => all.is_released(),
+            ButtonSet::Single(button) => button.is_released(),
+            ButtonSet::Any(any) => any.is_released(),
+            ButtonSet::All(all) => all.is_released(),
         }
     }
 }

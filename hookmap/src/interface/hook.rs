@@ -1,5 +1,5 @@
 use super::{
-    button::ToButtonWithState,
+    button::ToButtonSet,
     cond::{Cond, Conditions},
     conditional_hook::ConditionalHook,
     register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
@@ -50,10 +50,7 @@ impl Hook {
 }
 
 impl SelectHandleTarget for Hook {
-    fn bind<B: std::borrow::Borrow<B> + ToButtonWithState + Clone>(
-        &self,
-        button: B,
-    ) -> ButtonRegister {
+    fn bind<B: std::borrow::Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonRegister {
         ButtonRegister::new(
             Rc::downgrade(&self.register),
             Arc::clone(&self.conditions),

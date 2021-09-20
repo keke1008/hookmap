@@ -1,5 +1,5 @@
 use super::{All, Any};
-use crate::interface::button::ButtonWithState;
+use crate::interface::button::ButtonSet;
 use hookmap_core::{Button, ButtonOperation};
 use once_cell::sync::Lazy;
 
@@ -103,43 +103,43 @@ impl ButtonState for All {
     }
 }
 
-/// Convert to [`ButtonWithState`]
-pub trait ToButtonWithState: Send + Sync {
-    fn to_button_with_state(&self) -> ButtonWithState;
+/// Convert to [`ButtonSet`]
+pub trait ToButtonSet: Send + Sync {
+    fn to_button_set(&self) -> ButtonSet;
 }
 
-impl<T: ToButtonWithState> ToButtonWithState for &T {
-    fn to_button_with_state(&self) -> ButtonWithState {
-        (*self).to_button_with_state()
+impl<T: ToButtonSet> ToButtonSet for &T {
+    fn to_button_set(&self) -> ButtonSet {
+        (*self).to_button_set()
     }
 }
 
-impl ToButtonWithState for Button {
-    fn to_button_with_state(&self) -> ButtonWithState {
-        ButtonWithState::Button(*self)
+impl ToButtonSet for Button {
+    fn to_button_set(&self) -> ButtonSet {
+        ButtonSet::Single(*self)
     }
 }
 
-impl ToButtonWithState for Any {
-    fn to_button_with_state(&self) -> ButtonWithState {
-        ButtonWithState::Any(self.clone())
+impl ToButtonSet for Any {
+    fn to_button_set(&self) -> ButtonSet {
+        ButtonSet::Any(self.clone())
     }
 }
 
-impl ToButtonWithState for All {
-    fn to_button_with_state(&self) -> ButtonWithState {
-        ButtonWithState::All(self.clone())
+impl ToButtonSet for All {
+    fn to_button_set(&self) -> ButtonSet {
+        ButtonSet::All(self.clone())
     }
 }
 
-impl<T: ToButtonWithState> ToButtonWithState for Lazy<T> {
-    fn to_button_with_state(&self) -> ButtonWithState {
-        (**self).to_button_with_state()
+impl<T: ToButtonSet> ToButtonSet for Lazy<T> {
+    fn to_button_set(&self) -> ButtonSet {
+        (**self).to_button_set()
     }
 }
 
 pub trait EmulateButtonInput: ButtonInput + Send + Sync + Clone + 'static {}
-pub trait EmulateButtonState: ToButtonWithState + Clone + 'static {}
+pub trait EmulateButtonState: ToButtonSet + Clone + 'static {}
 
 impl<T: ButtonInput + Send + Sync + Clone + 'static> EmulateButtonInput for T {}
-impl<T: ToButtonWithState + Clone + 'static> EmulateButtonState for T {}
+impl<T: ToButtonSet + Clone + 'static> EmulateButtonState for T {}

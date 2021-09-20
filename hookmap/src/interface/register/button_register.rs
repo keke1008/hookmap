@@ -1,5 +1,5 @@
 use super::super::{
-    button::{ButtonInput, ButtonState, ButtonWithState, ToButtonWithState},
+    button::{ButtonInput, ButtonSet, ButtonState, ToButtonSet},
     cond::Conditions,
 };
 use crate::{
@@ -21,10 +21,10 @@ impl ButtonRegister {
     pub(crate) fn new(
         handler: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
-        button: impl ToButtonWithState,
+        button: impl ToButtonSet,
         event_block: EventBlock,
     ) -> Self {
-        let button = button.to_button_with_state();
+        let button = button.to_button_set();
         Self {
             inner: ButtonRegisterInner::new(handler, conditions, button),
             event_block,
@@ -164,7 +164,7 @@ impl Debug for ButtonRegister {
 pub struct ButtonRegisterInner {
     handler_register: Weak<HandlerRegister>,
     conditions: Arc<Conditions>,
-    button: ButtonWithState,
+    button: ButtonSet,
 }
 
 impl ButtonRegisterInner {
@@ -173,7 +173,7 @@ impl ButtonRegisterInner {
         callback: ButtonCallback,
         predict: fn(&All) -> bool,
     ) -> ButtonCallback {
-        if let ButtonWithState::All(ref all) = self.button {
+        if let ButtonSet::All(ref all) = self.button {
             let all = all.clone();
             let callback = move |e| {
                 if predict(&all) {
@@ -189,7 +189,7 @@ impl ButtonRegisterInner {
     fn new(
         handler_register: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
-        button: ButtonWithState,
+        button: ButtonSet,
     ) -> Self {
         Self {
             handler_register,

@@ -6,8 +6,8 @@ mod hook;
 mod register;
 
 pub use button::{
-    All, Any, ButtonInput, ButtonState, ButtonWithState, EmulateButtonInput, EmulateButtonState,
-    ToButtonWithState, ALT, CTRL, META, SHIFT,
+    All, Any, ButtonInput, ButtonSet, ButtonState, EmulateButtonInput, EmulateButtonState,
+    ToButtonSet, ALT, CTRL, META, SHIFT,
 };
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
@@ -31,7 +31,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind<B: Borrow<B> + ToButtonWithState + Clone>(&self, button: B) -> ButtonRegister;
+    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonRegister;
 
     /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
     ///

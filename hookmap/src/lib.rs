@@ -16,16 +16,14 @@ mod utils;
 
 pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
 pub use interface::{
-    ButtonInput, ButtonState, ButtonWithState, Cond, ConditionalHook, Hook, SelectHandleTarget,
+    ButtonInput, ButtonSet, ButtonState, Cond, ConditionalHook, Hook, SelectHandleTarget,
     SetEventBlock, ALT, CTRL, META, SHIFT,
 };
 pub use runtime::interruption::Interruption;
 pub use utils::Utils;
 
 pub mod button {
-    pub use super::interface::{
-        All, Any, EmulateButtonInput, EmulateButtonState, ToButtonWithState,
-    };
+    pub use super::interface::{All, Any, EmulateButtonInput, EmulateButtonState, ToButtonSet};
 }
 
 pub mod register {
