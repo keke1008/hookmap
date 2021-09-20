@@ -126,6 +126,28 @@ impl ButtonState for ButtonSet {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::super::traits::*;
+    use super::*;
+
+    #[test]
+    fn any_to_iterator() {
+        let any = any!(A, B).to_button_set();
+        let mut iter = any.iter_buttons();
+        assert!(matches!(iter.next(), Some(&Button::A | &Button::B)));
+        assert!(matches!(iter.next(), Some(&Button::A | &Button::B)));
+        assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn single_to_iterator() {
+        let mut iter = ButtonSet::Single(Button::A).iter_buttons();
+        assert_eq!(iter.next(), Some(&Button::A));
+        assert_eq!(iter.next(), None);
+    }
+}
+
 pub static SHIFT: Lazy<Any> = Lazy::new(|| any!(LShift, RShift));
 pub static CTRL: Lazy<Any> = Lazy::new(|| any!(LCtrl, RCtrl));
 pub static ALT: Lazy<Any> = Lazy::new(|| any!(LAlt, RAlt));
