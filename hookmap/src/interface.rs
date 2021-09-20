@@ -85,8 +85,8 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(Button::A)
-    ///     .block()
+    /// hook.block()
+    ///     .bind(Button::A)
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
@@ -101,8 +101,8 @@ pub trait SetEventBlock {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// hook.bind(Button::A)
-    ///     .unblock()
+    /// hook.unblock()
+    ///     .bind(Button::A)
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
