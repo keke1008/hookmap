@@ -16,13 +16,13 @@ enum _Cond {
 /// use hookmap::*;
 /// use std::sync::{Arc, atomic::{AtomicU32, Ordering}};
 /// let hook = Hook::new();
-/// let set = ButtonSet::new([Button::A, Button::B]);
+/// let a_and_b = all!(A, B);
 /// let times = Arc::new(AtomicU32::new(0));
 /// let times_ = Arc::clone(&times);
 ///
 /// let conditional_hook = hook
 ///     .cond(Cond::pressed(Button::C))
-///     .cond(Cond::released(set.all()))
+///     .cond(Cond::released(a_and_b))
 ///     .cond(Cond::callback(move || {
 ///          times.load(Ordering::SeqCst) < 10
 ///     }));

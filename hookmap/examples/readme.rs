@@ -22,7 +22,7 @@ fn main() {
                 on_press Space => |_| send!(LCtrl down, A, LCtrl up);
 
                 // Sends an uppercase A or B when the A or B key is pressed.
-                on_press [button_set!(A, B).any()] => |event| {
+                on_press [any!(A, B)] => |event| {
                     send!(LShift down, [event.target], LShift up)
                 };
             }

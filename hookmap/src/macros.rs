@@ -12,7 +12,7 @@
 /// assert_eq!(Button::A, button_name!([button_a]));
 /// ```
 ///
-#[rustfmt::skip]
+#[cfg_attr(rustfmt, rustfmt_skip)]
 #[macro_export]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
@@ -358,8 +358,15 @@ macro_rules! send {
 }
 
 #[macro_export]
-macro_rules! button_set {
-    ($($button:tt),*) => {
-        $crate::ButtonSet::new([$(button_name!($button)),*])
+macro_rules! any {
+    ($($button:tt),* $(,)?) => {
+        $crate::button::Any::new([$($crate::button_name!($button)),*])
+    };
+}
+
+#[macro_export]
+macro_rules! all {
+    ($($button:tt),* $(,)?) => {
+        $crate::button::All::new([$(button_name!($button)),*])
     };
 }

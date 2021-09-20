@@ -74,8 +74,8 @@ pub trait Utils: SelectHandleTarget + Sized {
     where
         T: ToButtonWithState + Clone,
     {
-        let shift_tab = ButtonSet::new([Button::Tab, Button::LShift]);
-        alt_tab(self, alt, tab, shift_tab.all());
+        let shift_tab = all!(Tab, LShift);
+        alt_tab(self, alt, tab, shift_tab);
     }
 }
 

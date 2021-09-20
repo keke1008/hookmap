@@ -1,104 +1,31 @@
 use super::ButtonState;
+use crate::any;
 use hookmap_core::Button;
 use once_cell::sync::Lazy;
-use std::{borrow::Borrow, collections::HashSet, fmt::Debug, sync::Arc};
+use std::borrow::Borrow;
+use std::{collections::HashSet, fmt::Debug, sync::Arc};
 
-/// A struct for operating multiple buttons.
-///
-/// # Example
-///
-/// ```
-/// use hookmap::*;
-/// let hook = Hook::new();
-/// let set1 = ButtonSet::new([Button::A, Button::B, Button::C]);
-///
-/// hook.bind(set1.any())
-///     .on_press(|e| println!("{:?}", e));
-///
-/// let set2 = ButtonSet::new([Button::D, Button::E]);
-/// hook.cond(Cond::pressed(set1.all()))
-///     .cond(Cond::released(set2.any()))
-///     .bind(Button::Q)
-///     .on_release(|e| println!("{:?}", e));
-/// ```
-///
-#[derive(Debug, Default, Clone)]
-pub struct ButtonSet(Arc<HashSet<Button>>);
+macro_rules! impl_any_or_all {
+    ($name:ident) => {
+        impl $name {
+            pub fn new<T: Borrow<[Button]>>(buttons: T) -> Self {
+                let inner = buttons.borrow().iter().copied().collect();
+                Self(Arc::new(inner))
+            }
 
-impl ButtonSet {
-    /// Creates a new instance of `ButtonSet`.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let set = ButtonSet::new([Button::A, Button::B]);
-    /// ```
-    ///
-    pub fn new(buttons: impl Borrow<[Button]>) -> Self {
-        let set = buttons.borrow().iter().copied().collect();
-        Self(Arc::new(set))
-    }
+            pub fn append<T: Borrow<Button>>(&self, button: T) -> Self {
+                let mut inner = (*self.0).clone();
+                inner.insert(*button.borrow());
+                Self(Arc::new(inner))
+            }
 
-    /// Creates a clone and inserts the button.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let set1 = button_set!(A, B);
-    /// let set2 = set1.insert(Button::C);
-    /// ```
-    ///
-    pub fn insert(&self, button: Button) -> Self {
-        let mut set = (*self.0).clone();
-        set.insert(button);
-        Self(Arc::new(set))
-    }
-
-    /// Creates a clone and remove the button.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let set1 = button_set!(A, B);
-    /// let set2 = set1.remove(Button::C);
-    /// ```
-    ///
-    pub fn remove(&self, button: Button) -> Self {
-        let mut set = (*self.0).clone();
-        set.remove(&button);
-        Self(Arc::new(set))
-    }
-
-    /// Creates a new [`Any`] to operate any button.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let set = button_set!(A, B);
-    /// let any = set.any();
-    /// ```
-    ///
-    pub fn any(&self) -> Any {
-        Any(Arc::clone(&self.0))
-    }
-
-    /// Creates a new [`All`] to operate all buttons.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let set = button_set!(A, B);
-    /// let any = set.any();
-    /// ```
-    ///
-    pub fn all(&self) -> All {
-        All(Arc::clone(&self.0))
-    }
+            pub fn remove<T: Borrow<Button>>(&self, button: T) -> Self {
+                let mut inner = (*self.0).clone();
+                inner.remove(&button.borrow());
+                Self(Arc::new(inner))
+            }
+        }
+    };
 }
 
 /// A struct foe operating any buttons.
@@ -108,7 +35,7 @@ impl ButtonSet {
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let any = button_set!(A, B).any();
+/// let any = any!(A, B);
 /// hook.bind(any)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
@@ -117,6 +44,7 @@ impl ButtonSet {
 ///
 #[derive(Debug, Clone)]
 pub struct Any(pub(super) Arc<HashSet<Button>>);
+impl_any_or_all!(Any);
 
 /// A struct for operating all buttons.
 ///
@@ -125,7 +53,7 @@ pub struct Any(pub(super) Arc<HashSet<Button>>);
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let all = button_set!(A, B).all();
+/// let all = all!(A, B);
 /// hook.bind(all)
 ///     .on_press(|e| {
 ///         assert!(e.target == Button::A || e.target == Button::B);
@@ -135,6 +63,7 @@ pub struct Any(pub(super) Arc<HashSet<Button>>);
 ///
 #[derive(Debug, Clone)]
 pub struct All(pub(super) Arc<HashSet<Button>>);
+impl_any_or_all!(All);
 
 #[derive(Clone)]
 pub enum ButtonWithState {
@@ -197,7 +126,7 @@ impl ButtonState for ButtonWithState {
     }
 }
 
-pub static SHIFT: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LShift, Button::RShift]).any());
-pub static CTRL: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LCtrl, Button::RCtrl]).any());
-pub static ALT: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LAlt, Button::RAlt]).any());
-pub static META: Lazy<Any> = Lazy::new(|| ButtonSet::new([Button::LMeta, Button::RMeta]).any());
+pub static SHIFT: Lazy<Any> = Lazy::new(|| any!(LShift, RShift));
+pub static CTRL: Lazy<Any> = Lazy::new(|| any!(LCtrl, RCtrl));
+pub static ALT: Lazy<Any> = Lazy::new(|| any!(LAlt, RAlt));
+pub static META: Lazy<Any> = Lazy::new(|| any!(LMeta, RMeta));

@@ -6,8 +6,8 @@ mod hook;
 mod register;
 
 pub use button::{
-    All, Any, ButtonInput, ButtonSet, ButtonState, ButtonWithState, EmulateButtonInput,
-    EmulateButtonState, ToButtonWithState, ALT, CTRL, META, SHIFT,
+    All, Any, ButtonInput, ButtonState, ButtonWithState, EmulateButtonInput, EmulateButtonState,
+    ToButtonWithState, ALT, CTRL, META, SHIFT,
 };
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
