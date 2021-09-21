@@ -1,7 +1,7 @@
 use super::interruption::INTERRUPTION_EVENT;
 use crate::{
     handler::{ButtonFetcher, Handler, MouseFetcher, Storage},
-    Hook,
+    interface::Hook,
 };
 use hookmap_core::{
     ButtonAction, ButtonEvent, EventBlock, EventCallback, InputHandler, MouseCursorEvent,

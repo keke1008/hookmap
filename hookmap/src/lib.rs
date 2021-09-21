@@ -9,9 +9,10 @@
 //! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod button;
+pub mod macros;
+
 mod handler;
 mod interface;
-pub mod macros;
 mod runtime;
 mod utils;
 

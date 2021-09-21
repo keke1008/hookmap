@@ -1,6 +1,7 @@
-use crate::{button::EmulateButtonInput, *};
-use button::ToButtonSet;
-use hookmap_core::Button;
+use crate::{
+    button::{EmulateButtonInput, ToButtonSet},
+    *,
+};
 use once_cell::sync::Lazy;
 use std::sync::atomic::{AtomicBool, Ordering};
 

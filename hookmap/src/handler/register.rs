@@ -1,5 +1,8 @@
 use super::{storage::ButtonStorage, Callback, Handler, Storage};
-use crate::{button::All, interface::Conditions, ButtonSet, ButtonState};
+use crate::{
+    button::{All, ButtonSet, ButtonState},
+    interface::Conditions,
+};
 use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{cell::RefCell, sync::Arc};
 
