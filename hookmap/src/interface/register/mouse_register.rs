@@ -23,8 +23,8 @@ impl MouseCursorRegister {
         }
     }
 
-    fn register_handler(&self, callback: Callback<MouseCursorEvent>) {
-        let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
+    fn register_handler(&self, callback: Callback<MouseCursorEvent>, event_block: EventBlock) {
+        let handler = Handler::new(callback, Arc::clone(&self.conditions), event_block);
         self.handler_register
             .upgrade()
             .unwrap()
@@ -49,7 +49,7 @@ impl MouseCursorRegister {
     where
         F: Fn(MouseCursorEvent) + Send + Sync + 'static,
     {
-        self.register_handler(Arc::new(callback));
+        self.register_handler(Arc::new(callback), self.event_block);
     }
 
     /// Disables and blocks mouse move events.
@@ -62,23 +62,8 @@ impl MouseCursorRegister {
     /// hook.bind_mouse_cursor().disable();
     /// ```
     ///
-    pub fn disable(&mut self) {
-        let tmp_event_block = self.event_block;
-        self.event_block = EventBlock::Block;
-        self.register_handler(Arc::new(|_| {}));
-        self.event_block = tmp_event_block;
-    }
-}
-
-impl MouseCursorRegister {
-    pub fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
-    }
-
-    pub fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
+    pub fn disable(&self) {
+        self.register_handler(Arc::new(|_| {}), EventBlock::Block);
     }
 }
 
@@ -111,8 +96,8 @@ impl MouseWheelRegister {
         }
     }
 
-    fn register_handler(&self, callback: Callback<MouseWheelEvent>) {
-        let handler = Handler::new(callback, Arc::clone(&self.conditions), self.event_block);
+    fn register_handler(&self, callback: Callback<MouseWheelEvent>, event_block: EventBlock) {
+        let handler = Handler::new(callback, Arc::clone(&self.conditions), event_block);
         self.handler_register
             .upgrade()
             .unwrap()
@@ -139,7 +124,7 @@ impl MouseWheelRegister {
     where
         F: Fn(MouseWheelEvent) + Send + Sync + 'static,
     {
-        self.register_handler(Arc::new(callback));
+        self.register_handler(Arc::new(callback), self.event_block);
     }
 
     /// Disables and blocks mouse wheel events.
@@ -153,19 +138,7 @@ impl MouseWheelRegister {
     /// ```
     ///
     pub fn disable(&self) {
-        self.register_handler(Arc::new(|_| {}));
-    }
-}
-
-impl MouseWheelRegister {
-    pub fn block(mut self) -> Self {
-        self.event_block = EventBlock::Block;
-        self
-    }
-
-    pub fn unblock(mut self) -> Self {
-        self.event_block = EventBlock::Unblock;
-        self
+        self.register_handler(Arc::new(|_| {}), EventBlock::Block);
     }
 }
 
