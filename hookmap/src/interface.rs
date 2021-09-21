@@ -1,4 +1,3 @@
-mod button;
 mod cond;
 
 mod button_event_handler_entry;
@@ -6,10 +5,7 @@ mod conditional_hook;
 mod hook;
 mod mouse_event_handler_entry;
 
-pub use button::{
-    All, Any, ButtonInput, ButtonSet, ButtonState, EmulateButtonInput, EmulateButtonState,
-    ToButtonSet, ALT, CTRL, META, SHIFT,
-};
+use crate::button::ToButtonSet;
 pub use button_event_handler_entry::ButtonEventHandlerEntry;
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;

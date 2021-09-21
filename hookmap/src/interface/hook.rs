@@ -1,12 +1,11 @@
 use super::{
-    button::ToButtonSet,
     button_event_handler_entry::ButtonEventHandlerEntry,
     cond::{Cond, Conditions},
     conditional_hook::ConditionalHook,
     mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::{handler::Register, runtime::HookInstaller};
+use crate::{button::ToButtonSet, handler::Register, runtime::HookInstaller};
 use hookmap_core::EventBlock;
 use std::{fmt::Debug, rc::Rc, sync::Arc};
 

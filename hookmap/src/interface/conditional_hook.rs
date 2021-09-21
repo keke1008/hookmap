@@ -1,11 +1,10 @@
 use super::{
-    button::ToButtonSet,
     button_event_handler_entry::ButtonEventHandlerEntry,
     cond::{Cond, Conditions},
     mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::handler::Register;
+use crate::{button::ToButtonSet, handler::Register};
 use hookmap_core::EventBlock;
 use std::{
     borrow::Borrow,

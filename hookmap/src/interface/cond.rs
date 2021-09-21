@@ -1,4 +1,4 @@
-use super::button::{ButtonSet, ButtonState, ToButtonSet};
+use crate::button::{ButtonSet, ButtonState, ToButtonSet};
 use std::borrow::Borrow;
 use std::{fmt::Debug, sync::Arc};
 

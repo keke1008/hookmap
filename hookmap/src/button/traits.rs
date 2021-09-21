@@ -1,5 +1,4 @@
-use super::{All, Any};
-use crate::interface::button::ButtonSet;
+use super::{All, Any, ButtonSet};
 use hookmap_core::{Button, ButtonOperation};
 use once_cell::sync::Lazy;
 

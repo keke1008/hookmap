@@ -1,7 +1,5 @@
-use super::{
-    button::{ButtonInput, ButtonSet, ToButtonSet},
-    cond::Conditions,
-};
+use super::cond::Conditions;
+use crate::button::{ButtonInput, ButtonSet, ToButtonSet};
 use crate::handler::{Callback, Register as HandlerRegister};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
