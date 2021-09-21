@@ -54,7 +54,7 @@ impl Register {
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {
-        let callback = Self::generate_callback(callback, &button, All::is_pressed);
+        let callback = Self::generate_callback(callback, button, All::is_pressed);
         let handler = Handler::new(callback, conditions, event_block);
         let storage = &mut self.storage.borrow_mut().button_on_press;
         Self::register_button_handler(button, handler, storage);
@@ -67,7 +67,7 @@ impl Register {
         conditions: Arc<Conditions>,
         event_block: EventBlock,
     ) {
-        let callback = Self::generate_callback(callback, &button, All::is_released);
+        let callback = Self::generate_callback(callback, button, All::is_released);
         let handler = Handler::new(callback, conditions, event_block);
         let storage = &mut self.storage.borrow_mut().button_on_release;
         Self::register_button_handler(button, handler, storage);

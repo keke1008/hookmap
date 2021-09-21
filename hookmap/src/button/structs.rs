@@ -74,7 +74,7 @@ pub enum ButtonSet {
 impl ButtonSet {
     pub(crate) fn iter_buttons(&self) -> impl Iterator<Item = &Button> + '_ {
         match self {
-            ButtonSet::Single(button) => Iter::Once(Some(&button)),
+            ButtonSet::Single(button) => Iter::Once(Some(button)),
             ButtonSet::Any(any) => Iter::Set(any.0.iter()),
             ButtonSet::All(all) => Iter::Set(all.0.iter()),
         }

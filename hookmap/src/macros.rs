@@ -12,6 +12,9 @@
 /// assert_eq!(Button::A, button_name!([button_a]));
 /// ```
 ///
+// Using `#[rustfmt_skip]` instead, the following error is generated.
+// error: macro-expanded `macro_export` macros from the current crate cannot be referred to by absolute paths
+#[allow(clippy::deprecated_cfg_attr)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[macro_export]
 macro_rules! button_name {
