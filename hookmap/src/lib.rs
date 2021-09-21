@@ -27,7 +27,9 @@ pub mod button {
 }
 
 pub mod register {
-    pub use super::interface::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
+    pub use super::interface::{
+        ButtonEventHandlerEntry, MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry,
+    };
 }
 
 pub mod interruption {

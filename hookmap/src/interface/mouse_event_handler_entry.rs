@@ -1,16 +1,16 @@
-use super::super::cond::Conditions;
+use super::cond::Conditions;
 use crate::handler::{Callback, Handler, Register as HandlerRegister};
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::{fmt::Debug, rc::Weak, sync::Arc};
 
 /// A struct for registering handlers for the mouse cursor.
-pub struct MouseCursorRegister {
+pub struct MouseCursorEventHandlerEntry {
     handler_register: Weak<HandlerRegister>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
 
-impl MouseCursorRegister {
+impl MouseCursorEventHandlerEntry {
     pub(crate) fn new(
         handler_register: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
@@ -67,7 +67,7 @@ impl MouseCursorRegister {
     }
 }
 
-impl Debug for MouseCursorRegister {
+impl Debug for MouseCursorEventHandlerEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MouseCursorRegister")
             .field("conditions", &*self.conditions)
@@ -77,13 +77,13 @@ impl Debug for MouseCursorRegister {
 }
 
 /// A struct for registering handlers for the mouse wheel.
-pub struct MouseWheelRegister {
+pub struct MouseWheelEventHandlerEntry {
     handler_register: Weak<HandlerRegister>,
     conditions: Arc<Conditions>,
     event_block: EventBlock,
 }
 
-impl MouseWheelRegister {
+impl MouseWheelEventHandlerEntry {
     pub(crate) fn new(
         handler: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
@@ -142,7 +142,7 @@ impl MouseWheelRegister {
     }
 }
 
-impl Debug for MouseWheelRegister {
+impl Debug for MouseWheelEventHandlerEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("MouseWheelRegister")
             .field("conditions", &*self.conditions)

@@ -1,18 +1,20 @@
 mod button;
 mod cond;
 
+mod button_event_handler_entry;
 mod conditional_hook;
 mod hook;
-mod register;
+mod mouse_event_handler_entry;
 
 pub use button::{
     All, Any, ButtonInput, ButtonSet, ButtonState, EmulateButtonInput, EmulateButtonState,
     ToButtonSet, ALT, CTRL, META, SHIFT,
 };
+pub use button_event_handler_entry::ButtonEventHandlerEntry;
 pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
-pub use register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister};
+pub use mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry};
 
 pub(crate) use cond::Conditions;
 
@@ -20,7 +22,7 @@ use std::borrow::Borrow;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
-    /// Returns a [`ButtonRegister`] for registering a hook to the button.
+    /// Returns a [`ButtonEventHandlerEntry`] for registering a hook to the button.
     ///
     /// # Example
     ///
@@ -31,9 +33,9 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonRegister;
+    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonEventHandlerEntry;
 
-    /// Returns a [`MouseWheelRegister`] for registering a hook to the mouse wheel.
+    /// Returns a [`MouseWheelEventHandlerEntry`] for registering a hook to the mouse wheel.
     ///
     /// # Example
     ///
@@ -44,9 +46,9 @@ pub trait SelectHandleTarget {
     ///     .on_rotate(|e| println!("The mouse wheel rotated."));
     /// ```
     ///
-    fn bind_mouse_wheel(&self) -> MouseWheelRegister;
+    fn bind_mouse_wheel(&self) -> MouseWheelEventHandlerEntry;
 
-    /// Returns a [`MouseCursorRegister`] for registering a hook to the mouse wheel.
+    /// Returns a [`MouseCursorEventHandlerEntry`] for registering a hook to the mouse wheel.
     ///
     /// # Example
     ///
@@ -57,7 +59,7 @@ pub trait SelectHandleTarget {
     ///     .on_move(|_| println!("The mouse cursor has moved"));
     /// ```
     ///
-    fn bind_mouse_cursor(&self) -> MouseCursorRegister;
+    fn bind_mouse_cursor(&self) -> MouseCursorEventHandlerEntry;
 
     /// Returns a new instance of [`ConditionalHook`].
     /// The hooks assigned through this instance will be activated only when the given conditions are met.

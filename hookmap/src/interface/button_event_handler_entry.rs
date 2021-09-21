@@ -1,4 +1,4 @@
-use super::super::{
+use super::{
     button::{ButtonInput, ButtonSet, ToButtonSet},
     cond::Conditions,
 };
@@ -6,13 +6,13 @@ use crate::handler::{Callback, Register as HandlerRegister};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
 
-pub struct ButtonRegisterInner {
+pub struct ButtonEventHandlerEntryInner {
     handler_register: Weak<HandlerRegister>,
     conditions: Arc<Conditions>,
     button: ButtonSet,
 }
 
-impl ButtonRegisterInner {
+impl ButtonEventHandlerEntryInner {
     fn new(
         handler_register: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
@@ -47,12 +47,12 @@ impl ButtonRegisterInner {
 }
 
 /// A struct for registering handlers for the buttons.
-pub struct ButtonRegister {
-    inner: ButtonRegisterInner,
+pub struct ButtonEventHandlerEntry {
+    inner: ButtonEventHandlerEntryInner,
     event_block: EventBlock,
 }
 
-impl ButtonRegister {
+impl ButtonEventHandlerEntry {
     pub(crate) fn new(
         handler: Weak<HandlerRegister>,
         conditions: Arc<Conditions>,
@@ -61,7 +61,7 @@ impl ButtonRegister {
     ) -> Self {
         let button = button.to_button_set();
         Self {
-            inner: ButtonRegisterInner::new(handler, conditions, button),
+            inner: ButtonEventHandlerEntryInner::new(handler, conditions, button),
             event_block,
         }
     }
@@ -179,7 +179,7 @@ impl ButtonRegister {
     }
 }
 
-impl Debug for ButtonRegister {
+impl Debug for ButtonEventHandlerEntry {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ButtonRegister")
             .field("button", &self.inner.button)

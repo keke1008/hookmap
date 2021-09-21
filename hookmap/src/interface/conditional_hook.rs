@@ -1,7 +1,8 @@
 use super::{
     button::ToButtonSet,
+    button_event_handler_entry::ButtonEventHandlerEntry,
     cond::{Cond, Conditions},
-    register::{ButtonRegister, MouseCursorRegister, MouseWheelRegister},
+    mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry},
     SelectHandleTarget, SetEventBlock,
 };
 use crate::handler::Register;
@@ -46,8 +47,8 @@ impl ConditionalHook {
 }
 
 impl SelectHandleTarget for ConditionalHook {
-    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonRegister {
-        ButtonRegister::new(
+    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonEventHandlerEntry {
+        ButtonEventHandlerEntry::new(
             Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             button,
@@ -55,16 +56,16 @@ impl SelectHandleTarget for ConditionalHook {
         )
     }
 
-    fn bind_mouse_wheel(&self) -> MouseWheelRegister {
-        MouseWheelRegister::new(
+    fn bind_mouse_wheel(&self) -> MouseWheelEventHandlerEntry {
+        MouseWheelEventHandlerEntry::new(
             Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             self.event_block,
         )
     }
 
-    fn bind_mouse_cursor(&self) -> MouseCursorRegister {
-        MouseCursorRegister::new(
+    fn bind_mouse_cursor(&self) -> MouseCursorEventHandlerEntry {
+        MouseCursorEventHandlerEntry::new(
             Rc::downgrade(&self.handler.upgrade().unwrap()),
             Arc::clone(&self.conditions),
             self.event_block,
