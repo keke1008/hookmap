@@ -54,9 +54,59 @@ pub enum Event {
     MouseCursor(MouseCursorEvent),
 }
 
-pub(crate) struct EventMessage {
-    pub(crate) event: Event,
-    pub(crate) event_block_sender: Sender<EventBlock>,
+pub struct EventMessage {
+    pub event: Event,
+    pub(crate) event_block_sender: Option<Sender<EventBlock>>,
+}
+
+impl EventMessage {
+    fn new(event: Event, event_block_sender: Sender<EventBlock>) -> Self {
+        Self {
+            event,
+            event_block_sender: Some(event_block_sender),
+        }
+    }
+
+    /// Sends whether to block this event or not.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap_core::*;
+    /// let mut message = HookHandler::install_hook().recv().unwrap();
+    /// message.send_event_block(EventBlock::Block);
+    /// ```
+    ///
+    pub fn send_event_block(&mut self, event_block: EventBlock) {
+        self.event_block_sender
+            .take()
+            .expect("EventBlock has already been sent.")
+            .send(event_block)
+            .unwrap();
+    }
+
+    /// Sends the default value of `EventBlock`.
+    /// The feature flag `block-input-event` can set the default value of `EventBlock`.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap_core::*;
+    /// let mut message = HookHandler::install_hook().recv().unwrap();
+    /// message.send_default_event_block();
+    /// ```
+    ///
+    pub fn send_default_event_block(&mut self) {
+        self.send_event_block(EventBlock::default());
+    }
+}
+
+impl Drop for EventMessage {
+    fn drop(&mut self) {
+        if self.event_block_sender.is_some() {
+            self.send_default_event_block();
+        }
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -69,10 +119,7 @@ impl EventMessageSender {
 
     pub(crate) fn send(&self, event: Event) -> EventBlock {
         let (tx, rx) = mpsc::channel::<EventBlock>();
-        let event_message = EventMessage {
-            event,
-            event_block_sender: tx,
-        };
+        let event_message = EventMessage::new(event, tx);
         self.0.send(event_message).unwrap();
         rx.recv().unwrap()
     }
