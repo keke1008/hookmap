@@ -1,34 +1,36 @@
-use super::cond::Conditions;
-use crate::handler::{Callback, Handler, Register as HandlerRegister};
+use crate::hotkey::Action;
+use crate::hotkey::PartialHotkeyUsedHook;
+use crate::storage::Register;
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
-use std::{fmt::Debug, rc::Weak, sync::Arc};
+use std::rc::Weak;
 
 /// A struct for registering handlers for the mouse cursor.
-pub struct MouseCursorEventHandlerEntry {
-    handler_register: Weak<HandlerRegister>,
-    conditions: Arc<Conditions>,
-    event_block: EventBlock,
+pub struct MouseCursorHotKeyEntry {
+    register: Weak<Register>,
+    partial_event_handler: PartialHotkeyUsedHook,
 }
 
-impl MouseCursorEventHandlerEntry {
+impl MouseCursorHotKeyEntry {
     pub(crate) fn new(
-        handler_register: Weak<HandlerRegister>,
-        conditions: Arc<Conditions>,
-        event_block: EventBlock,
+        handler_register: Weak<Register>,
+        partial_event_handler: PartialHotkeyUsedHook,
     ) -> Self {
         Self {
-            handler_register,
-            conditions,
-            event_block,
+            register: handler_register,
+            partial_event_handler,
         }
     }
 
-    fn register_handler(&self, callback: Callback<MouseCursorEvent>, event_block: EventBlock) {
-        let handler = Handler::new(callback, Arc::clone(&self.conditions), event_block);
-        self.handler_register
+    fn register_handler(
+        &self,
+        callback: Action<MouseCursorEvent>,
+        partial_event_handler: PartialHotkeyUsedHook,
+    ) {
+        let handler = partial_event_handler.build_mouse_hotkey(callback);
+        self.register
             .upgrade()
             .unwrap()
-            .register_mouse_cursor(Arc::new(handler));
+            .register_cursor_event_handler(handler);
     }
 
     /// Registers a handler called when the mouse cursor is moved.
@@ -49,7 +51,7 @@ impl MouseCursorEventHandlerEntry {
     where
         F: Fn(MouseCursorEvent) + Send + Sync + 'static,
     {
-        self.register_handler(Arc::new(callback), self.event_block);
+        self.register_handler(callback.into(), self.partial_event_handler.clone());
     }
 
     /// Disables and blocks mouse move events.
@@ -63,45 +65,38 @@ impl MouseCursorEventHandlerEntry {
     /// ```
     ///
     pub fn disable(&self) {
-        self.register_handler(Arc::new(|_| {}), EventBlock::Block);
-    }
-}
-
-impl Debug for MouseCursorEventHandlerEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MouseCursorRegister")
-            .field("conditions", &*self.conditions)
-            .field("event_block", &self.event_block)
-            .finish()
+        let mut partial_event_handler = self.partial_event_handler.clone();
+        partial_event_handler.event_block = EventBlock::Block;
+        self.register_handler((|_| {}).into(), partial_event_handler);
     }
 }
 
 /// A struct for registering handlers for the mouse wheel.
-pub struct MouseWheelEventHandlerEntry {
-    handler_register: Weak<HandlerRegister>,
-    conditions: Arc<Conditions>,
-    event_block: EventBlock,
+pub struct MouseWheelHotkeyEntry {
+    register: Weak<Register>,
+    partial_event_handler: PartialHotkeyUsedHook,
 }
 
-impl MouseWheelEventHandlerEntry {
+impl MouseWheelHotkeyEntry {
     pub(crate) fn new(
-        handler: Weak<HandlerRegister>,
-        conditions: Arc<Conditions>,
-        event_block: EventBlock,
+        handler: Weak<Register>,
+        partial_event_handler: PartialHotkeyUsedHook,
     ) -> Self {
         Self {
-            handler_register: handler,
-            conditions,
-            event_block,
+            register: handler,
+            partial_event_handler,
         }
     }
 
-    fn register_handler(&self, callback: Callback<MouseWheelEvent>, event_block: EventBlock) {
-        let handler = Handler::new(callback, Arc::clone(&self.conditions), event_block);
-        self.handler_register
+    fn register_handler(
+        &self,
+        callback: Action<MouseWheelEvent>,
+        partial_event_handler: PartialHotkeyUsedHook,
+    ) {
+        self.register
             .upgrade()
             .unwrap()
-            .register_mouse_wheel(Arc::new(handler));
+            .register_wheel_event_event_handler(partial_event_handler.build_mouse_hotkey(callback));
     }
 
     /// Registers a handler called when the mouse wheel is rotated.
@@ -124,7 +119,7 @@ impl MouseWheelEventHandlerEntry {
     where
         F: Fn(MouseWheelEvent) + Send + Sync + 'static,
     {
-        self.register_handler(Arc::new(callback), self.event_block);
+        self.register_handler(callback.into(), self.partial_event_handler.clone());
     }
 
     /// Disables and blocks mouse wheel events.
@@ -138,15 +133,8 @@ impl MouseWheelEventHandlerEntry {
     /// ```
     ///
     pub fn disable(&self) {
-        self.register_handler(Arc::new(|_| {}), EventBlock::Block);
-    }
-}
-
-impl Debug for MouseWheelEventHandlerEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("MouseWheelRegister")
-            .field("conditions", &*self.conditions)
-            .field("event_block", &self.event_block)
-            .finish()
+        let mut partial_event_handler = self.partial_event_handler.clone();
+        partial_event_handler.event_block = EventBlock::Block;
+        self.register_handler((|_| {}).into(), partial_event_handler);
     }
 }

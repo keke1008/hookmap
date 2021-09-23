@@ -1,66 +1,20 @@
-use super::cond::Conditions;
-use crate::button::{ButtonInput, ButtonSet, ToButtonSet};
-use crate::handler::{Callback, Register as HandlerRegister};
+use crate::button::ButtonInput;
+use crate::hotkey::{PartialHotkeyUsedEntry, TriggerAction};
+use crate::storage::Register;
 use hookmap_core::{ButtonEvent, EventBlock};
-use std::{borrow::Borrow, fmt::Debug, rc::Weak, sync::Arc};
-
-pub struct ButtonEventHandlerEntryInner {
-    handler_register: Weak<HandlerRegister>,
-    conditions: Arc<Conditions>,
-    button: ButtonSet,
-}
-
-impl ButtonEventHandlerEntryInner {
-    fn new(
-        handler_register: Weak<HandlerRegister>,
-        conditions: Arc<Conditions>,
-        button: ButtonSet,
-    ) -> Self {
-        Self {
-            handler_register,
-            conditions,
-            button,
-        }
-    }
-
-    fn on_press(&self, callback: Callback<ButtonEvent>, event_block: EventBlock) {
-        let handler_register = self.handler_register.upgrade().unwrap();
-        handler_register.register_button_on_press(
-            &self.button,
-            callback,
-            self.conditions.clone(),
-            event_block,
-        );
-    }
-
-    fn on_release(&self, callback: Callback<ButtonEvent>, event_block: EventBlock) {
-        let handler_register = self.handler_register.upgrade().unwrap();
-        handler_register.register_button_on_release(
-            &self.button,
-            callback,
-            self.conditions.clone(),
-            event_block,
-        );
-    }
-}
+use std::{borrow::Borrow, rc::Weak};
 
 /// A struct for registering handlers for the buttons.
 pub struct ButtonEventHandlerEntry {
-    inner: ButtonEventHandlerEntryInner,
-    event_block: EventBlock,
+    register: Weak<Register>,
+    partial_hotkey: PartialHotkeyUsedEntry,
 }
 
 impl ButtonEventHandlerEntry {
-    pub(crate) fn new(
-        handler: Weak<HandlerRegister>,
-        conditions: Arc<Conditions>,
-        button: impl ToButtonSet,
-        event_block: EventBlock,
-    ) -> Self {
-        let button = button.to_button_set();
+    pub(crate) fn new(register: Weak<Register>, partial_hotkey: PartialHotkeyUsedEntry) -> Self {
         Self {
-            inner: ButtonEventHandlerEntryInner::new(handler, conditions, button),
-            event_block,
+            register,
+            partial_hotkey,
         }
     }
 
@@ -82,7 +36,11 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        self.inner.on_press(Arc::new(callback), self.event_block);
+        let hotkey = self
+            .partial_hotkey
+            .clone()
+            .build_hotkey(TriggerAction::Press, callback.into());
+        self.register.upgrade().unwrap().register_hotkey(hotkey);
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -107,9 +65,11 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let callback: Callback<ButtonEvent> = Arc::new(callback);
-        self.inner.on_press(Arc::clone(&callback), self.event_block);
-        self.inner.on_release(callback, self.event_block);
+        let hotkey = self
+            .partial_hotkey
+            .clone()
+            .build_hotkey(TriggerAction::PressOrRelease, callback.into());
+        self.register.upgrade().unwrap().register_hotkey(hotkey);
     }
 
     /// Registers a handler called when the specified button is released.
@@ -126,12 +86,15 @@ impl ButtonEventHandlerEntry {
     /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
-    pub fn on_release<F>(self, callback: F) -> Self
+    pub fn on_release<F>(&self, callback: F)
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        self.inner.on_release(Arc::new(callback), self.event_block);
-        self
+        let hotkey = self
+            .partial_hotkey
+            .clone()
+            .build_hotkey(TriggerAction::Release, callback.into());
+        self.register.upgrade().unwrap().register_hotkey(hotkey);
     }
 
     /// When the specified button is pressed, the key passed in the argument will be pressed.
@@ -145,19 +108,26 @@ impl ButtonEventHandlerEntry {
     /// hook.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like<B, R>(self, button: B)
+    pub fn like<B, R>(&self, button: B)
     where
         B: Borrow<R>,
         R: ButtonInput + Clone + Send + Sync + 'static,
     {
-        let button = button.borrow().clone();
+        let register = self.register.upgrade().unwrap();
+        let mut partial_hotkey = self.partial_hotkey.clone();
+        partial_hotkey.event_block = EventBlock::Block;
         {
-            let button = button.clone();
-            self.inner
-                .on_press(Arc::new(move |_| button.press()), EventBlock::Block);
+            let button = button.borrow().clone();
+            register.register_hotkey(
+                partial_hotkey
+                    .clone()
+                    .build_hotkey(TriggerAction::Press, (move |_| button.press()).into()),
+            );
         }
-        self.inner
-            .on_release(Arc::new(move |_| button.release()), EventBlock::Block);
+        let button = button.borrow().clone();
+        register.register_hotkey(
+            partial_hotkey.build_hotkey(TriggerAction::Release, (move |_| button.release()).into()),
+        );
     }
 
     /// Disables the button and blocks the event.
@@ -170,19 +140,10 @@ impl ButtonEventHandlerEntry {
     /// hook.bind(Button::A).disable();
     /// ```
     pub fn disable(&self) {
-        let callback: Callback<ButtonEvent> = Arc::new(|_| {});
-        self.inner
-            .on_press(Arc::clone(&callback), EventBlock::Block);
-        self.inner.on_release(callback, EventBlock::Block);
-    }
-}
-
-impl Debug for ButtonEventHandlerEntry {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ButtonRegister")
-            .field("button", &self.inner.button)
-            .field("conditions", &self.inner.conditions)
-            .field("event_block", &self.event_block)
-            .finish()
+        let mut partial_hotkey = self.partial_hotkey.clone();
+        partial_hotkey.event_block = EventBlock::Block;
+        self.register.upgrade().unwrap().register_hotkey(
+            partial_hotkey.build_hotkey(TriggerAction::PressOrRelease, (|_| {}).into()),
+        );
     }
 }

@@ -9,22 +9,24 @@
 //! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod button;
+pub mod hotkey;
 pub mod macros;
 
-mod handler;
 mod interface;
 mod runtime;
+mod storage;
 mod utils;
 
 pub use button::{ButtonInput, ButtonSet, ButtonState, ALT, CTRL, META, SHIFT};
 pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
-pub use interface::{Cond, ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
+pub use hotkey::ConditionUnit;
+pub use interface::{ConditionalHook, Hook, SelectHandleTarget, SetEventBlock};
 pub use runtime::interruption::Interruption;
 pub use utils::Utils;
 
 pub mod register {
     pub use super::interface::{
-        ButtonEventHandlerEntry, MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry,
+        ButtonEventHandlerEntry, MouseCursorHotKeyEntry, MouseWheelHotkeyEntry,
     };
 }
 

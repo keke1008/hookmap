@@ -1,19 +1,14 @@
-mod cond;
-
 mod button_event_handler_entry;
 mod conditional_hook;
 mod hook;
 mod mouse_event_handler_entry;
 
-use crate::button::ToButtonSet;
 pub use button_event_handler_entry::ButtonEventHandlerEntry;
-pub use cond::Cond;
 pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
-pub use mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry};
+pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
-pub(crate) use cond::Conditions;
-
+use crate::{button::ToButtonSet, hotkey::ConditionUnit};
 use std::borrow::Borrow;
 
 /// Selecting the target of the hook.
@@ -42,7 +37,7 @@ pub trait SelectHandleTarget {
     ///     .on_rotate(|e| println!("The mouse wheel rotated."));
     /// ```
     ///
-    fn bind_mouse_wheel(&self) -> MouseWheelEventHandlerEntry;
+    fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry;
 
     /// Returns a [`MouseCursorEventHandlerEntry`] for registering a hook to the mouse wheel.
     ///
@@ -55,7 +50,7 @@ pub trait SelectHandleTarget {
     ///     .on_move(|_| println!("The mouse cursor has moved"));
     /// ```
     ///
-    fn bind_mouse_cursor(&self) -> MouseCursorEventHandlerEntry;
+    fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry;
 
     /// Returns a new instance of [`ConditionalHook`].
     /// The hooks assigned through this instance will be activated only when the given conditions are met.
@@ -65,13 +60,13 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let modifier_space = hook.cond(Cond::pressed(Button::Space));
+    /// let modifier_space = hook.cond(ConditionUnit::Pressed(Button::Space));
     /// modifier_space
     ///     .bind(Button::A)
     ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
     /// ```
     ///
-    fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook;
+    fn cond<T: ToButtonSet>(&self, cond: ConditionUnit<T>) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

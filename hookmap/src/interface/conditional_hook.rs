@@ -1,14 +1,13 @@
 use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
-    cond::{Cond, Conditions},
-    mouse_event_handler_entry::{MouseCursorEventHandlerEntry, MouseWheelEventHandlerEntry},
+    mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::{button::ToButtonSet, handler::Register};
+use crate::{button::ToButtonSet, hotkey::ConditionUnit};
+use crate::{hotkey::PartialHotkeyUsedHook, storage::Register};
 use hookmap_core::EventBlock;
 use std::{
     borrow::Borrow,
-    fmt::Debug,
     rc::{Rc, Weak},
     sync::Arc,
 };
@@ -20,27 +19,21 @@ use std::{
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
-/// let mod_ctrl = hook.cond(Cond::pressed(Button::LCtrl));
+/// let mod_ctrl = hook.cond(ConditionUnit::Pressed(Button::LCtrl));
 /// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
 /// ```
 ///
 pub struct ConditionalHook {
-    handler: Weak<Register>,
-    conditions: Arc<Conditions>,
-    event_block: EventBlock,
+    register: Weak<Register>,
+    partial_hotkey: PartialHotkeyUsedHook,
 }
 
 impl ConditionalHook {
     /// Creates a new instance of `ConditionalHook`.
-    pub(crate) fn new(
-        handler: Weak<Register>,
-        conditions: Arc<Conditions>,
-        event_block: EventBlock,
-    ) -> Self {
+    pub(crate) fn new(register: Weak<Register>, partial_hotkey: PartialHotkeyUsedHook) -> Self {
         Self {
-            handler,
-            conditions,
-            event_block,
+            register,
+            partial_hotkey,
         }
     }
 }
@@ -48,34 +41,34 @@ impl ConditionalHook {
 impl SelectHandleTarget for ConditionalHook {
     fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap()),
-            Arc::clone(&self.conditions),
-            button,
-            self.event_block,
+            Rc::downgrade(&self.register.upgrade().unwrap()),
+            self.partial_hotkey
+                .clone()
+                .build_partial_hotkey_used_entry(button.to_button_set()),
         )
     }
 
-    fn bind_mouse_wheel(&self) -> MouseWheelEventHandlerEntry {
-        MouseWheelEventHandlerEntry::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap()),
-            Arc::clone(&self.conditions),
-            self.event_block,
+    fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {
+        MouseWheelHotkeyEntry::new(
+            Rc::downgrade(&self.register.upgrade().unwrap()),
+            self.partial_hotkey.clone(),
         )
     }
 
-    fn bind_mouse_cursor(&self) -> MouseCursorEventHandlerEntry {
-        MouseCursorEventHandlerEntry::new(
-            Rc::downgrade(&self.handler.upgrade().unwrap()),
-            Arc::clone(&self.conditions),
-            self.event_block,
+    fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry {
+        MouseCursorHotKeyEntry::new(
+            Rc::downgrade(&self.register.upgrade().unwrap()),
+            self.partial_hotkey.clone(),
         )
     }
 
-    fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook {
+    fn cond<T: ToButtonSet>(&self, cond: ConditionUnit<T>) -> ConditionalHook {
         ConditionalHook::new(
-            Weak::clone(&self.handler),
-            Arc::new(self.conditions.add(cond.borrow().clone())),
-            self.event_block,
+            Weak::clone(&self.register),
+            PartialHotkeyUsedHook {
+                condition: Arc::new(self.partial_hotkey.condition.add(cond)),
+                ..self.partial_hotkey.clone()
+            },
         )
     }
 }
@@ -83,26 +76,21 @@ impl SelectHandleTarget for ConditionalHook {
 impl SetEventBlock for ConditionalHook {
     fn block(&self) -> Self {
         ConditionalHook::new(
-            Weak::clone(&self.handler),
-            Arc::clone(&self.conditions),
-            EventBlock::Block,
+            Weak::clone(&self.register),
+            PartialHotkeyUsedHook {
+                event_block: EventBlock::Block,
+                ..self.partial_hotkey.clone()
+            },
         )
     }
 
     fn unblock(&self) -> Self {
         ConditionalHook::new(
-            Weak::clone(&self.handler),
-            Arc::clone(&self.conditions),
-            EventBlock::Unblock,
+            Weak::clone(&self.register),
+            PartialHotkeyUsedHook {
+                event_block: EventBlock::Unblock,
+                ..self.partial_hotkey.clone()
+            },
         )
-    }
-}
-
-impl Debug for ConditionalHook {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ConditionalHook")
-            .field("conditions", &*self.conditions)
-            .field("event_block", &self.event_block)
-            .finish()
     }
 }

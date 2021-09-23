@@ -144,13 +144,12 @@ macro_rules! button_name {
 ///
 /// * pressed - Checks whether the specified buttons have been pressed or not.
 /// * released - Checks whether the specified buttons have been released or not.
-/// * callback - Checks if the callback function returns true. Do not forget the semicolon at end.
 ///
 /// ```
 /// use hookmap::*;
 /// let hook = Hook::new();
 /// hotkey!(hook => {
-///     if (pressed LCtrl && released LAlt && callback || true;) {
+///     if ( pressed LCtrl && released LAlt ) {
 ///         bind A => B;
 ///     }
 /// })
@@ -264,21 +263,15 @@ macro_rules! hotkey {
 
     };
 
-    // Matches `callback` in if condition.
-    (@cond $hook:ident callback $callback:expr; $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond(Cond::callback($callback));
-        $(hotkey!(@cond $hook $($rest)+))?
-    };
-
     // Matches `pressed` in if condition.
     (@cond $hook:ident pressed $button:tt $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond(Cond::pressed(button_name!($button)));
+        let $hook = $hook.cond($crate::hotkey::ConditionUnit::Pressed(button_name!($button)));
         $(hotkey!(@cond $hook $($rest)+))?
     };
 
     // Matches `released` in if condition`
     (@cond $hook:ident released $button:tt $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond(Cond::released(button_name!($button)));
+        let $hook = $hook.cond($crate::hotkey::ConditionUnit::Released(button_name!($button)));
         $(hotkey!(@cond $hook $($rest)+))?
     };
 

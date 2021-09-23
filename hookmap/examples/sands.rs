@@ -24,14 +24,18 @@ where
             move |_| is_alone.store(true, Ordering::SeqCst)
         };
 
-        if (callback {
+        on_release [&space] => {
             let is_alone = Arc::clone(&is_alone);
-            move || is_alone.load(Ordering::SeqCst)
-        };) {
-            on_release [&space] => move |_| space.click();
-        }
+            move |_| if is_alone.load(Ordering::SeqCst) { space.click() }
+        };
     });
 
+    // if (callback {
+    //     let is_alone = Arc::clone(&is_alone);
+    //     move || is_alone.load(Ordering::SeqCst)
+    // };) {
+    //     on_release [&space] => move |_| space.click();
+    // }
     thread::spawn(move || loop {
         Interruption::unblock()
             .keyboard()
