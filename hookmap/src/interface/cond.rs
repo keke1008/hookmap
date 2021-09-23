@@ -1,5 +1,6 @@
 use crate::button::{ButtonSet, ButtonState, ToButtonSet};
 use std::borrow::Borrow;
+use std::sync::atomic::AtomicBool;
 use std::{fmt::Debug, sync::Arc};
 
 /// An enum that represents the conditions under which hooks are enabled.
@@ -36,6 +37,7 @@ pub enum Cond {
     Pressed(ButtonSet),
     Released(ButtonSet),
     Callback(Arc<dyn Fn() -> bool + Send + Sync>),
+    Modifier(ButtonSet),
 }
 
 impl Cond {
@@ -95,6 +97,22 @@ impl Cond {
     pub fn callback<F: 'static + Fn() -> bool + Send + Sync>(callback: F) -> Self {
         Self::Callback(Arc::new(callback))
     }
+
+    /// Creates a new `Cond` that is conditional on the button of the modifier.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// let cond = Cond::released(Button::A);
+    /// hook.cond(cond)
+    ///     .bind(Button::B)
+    ///     .on_press(|_| assert!(!Button::A.is_pressed()));
+    /// ```
+    pub fn modifier<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
+        Self::Modifier(button.to_button_set())
+    }
 }
 
 impl Debug for Cond {
@@ -104,15 +122,17 @@ impl Debug for Cond {
             Cond::Pressed(button) => f.write_fmt(format_args!("Pressed({:?})", button)),
             Cond::Released(button) => f.write_fmt(format_args!("Released({:?})", button)),
             Cond::Callback(_) => f.write_str("callback"),
+            Cond::Modifier(button) => f.write_fmt(format_args!("Modifier({:?})", button)),
         }
     }
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub(crate) struct Conditions {
-    pressed: Vec<ButtonSet>,
-    released: Vec<ButtonSet>,
-    callback: Vec<Arc<dyn Fn() -> bool + Send + Sync>>,
+    pub(crate) pressed: Vec<ButtonSet>,
+    pub(crate) released: Vec<ButtonSet>,
+    pub(crate) callback: Vec<Arc<dyn Fn() -> bool + Send + Sync>>,
+    pub(crate) modifier: (Vec<ButtonSet>, Arc<AtomicBool>),
 }
 
 impl Conditions {
@@ -122,12 +142,35 @@ impl Conditions {
             && self.callback.iter().all(|callback| (callback)())
     }
 
-    pub(crate) fn add(&mut self, cond: Cond) {
-        match cond {
-            Cond::Pressed(button) => self.pressed.push(button),
-            Cond::Released(button) => self.released.push(button),
-            Cond::Callback(callback) => self.callback.push(callback),
+    fn clone(&self) -> Self {
+        Self {
+            pressed: self.pressed.clone(),
+            released: self.released.clone(),
+            callback: self.callback.clone(),
+            modifier: (self.modifier.0.clone(), Arc::clone(&self.modifier.1)),
         }
+    }
+
+    fn clone_expect_modifier(&self) -> Self {
+        Self {
+            modifier: (self.modifier.0.clone(), Arc::default()),
+            ..self.clone()
+        }
+    }
+
+    pub(crate) fn add(&self, cond: Cond) -> Self {
+        let mut this = if let Cond::Modifier(_) = cond {
+            self.clone_expect_modifier()
+        } else {
+            self.clone()
+        };
+        match cond {
+            Cond::Pressed(button) => this.pressed.push(button),
+            Cond::Released(button) => this.released.push(button),
+            Cond::Callback(callback) => this.callback.push(callback),
+            Cond::Modifier(button) => this.modifier.0.push(button),
+        }
+        this
     }
 }
 

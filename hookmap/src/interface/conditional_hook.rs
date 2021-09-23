@@ -72,11 +72,9 @@ impl SelectHandleTarget for ConditionalHook {
     }
 
     fn cond(&self, cond: impl Borrow<Cond>) -> ConditionalHook {
-        let mut conditions = (*self.conditions).clone();
-        conditions.add(cond.borrow().clone());
         ConditionalHook::new(
             Weak::clone(&self.handler),
-            Arc::new(conditions),
+            Arc::new(self.conditions.add(cond.borrow().clone())),
             self.event_block,
         )
     }
@@ -84,19 +82,17 @@ impl SelectHandleTarget for ConditionalHook {
 
 impl SetEventBlock for ConditionalHook {
     fn block(&self) -> Self {
-        let conditions = (*self.conditions).clone();
         ConditionalHook::new(
             Weak::clone(&self.handler),
-            Arc::new(conditions),
+            Arc::clone(&self.conditions),
             EventBlock::Block,
         )
     }
 
     fn unblock(&self) -> Self {
-        let conditions = (*self.conditions).clone();
         ConditionalHook::new(
             Weak::clone(&self.handler),
-            Arc::new(conditions),
+            Arc::clone(&self.conditions),
             EventBlock::Unblock,
         )
     }

@@ -79,11 +79,9 @@ impl SelectHandleTarget for Hook {
     }
 
     fn cond(&self, cond: impl std::borrow::Borrow<Cond>) -> ConditionalHook {
-        let mut conditions = (*self.conditions).clone();
-        conditions.add(cond.borrow().clone());
         ConditionalHook::new(
             Rc::downgrade(&self.register),
-            Arc::new(conditions),
+            Arc::new(self.conditions.add(cond.borrow().clone())),
             EventBlock::default(),
         )
     }
@@ -92,14 +90,12 @@ impl SelectHandleTarget for Hook {
 impl SetEventBlock for Hook {
     fn block(&self) -> ConditionalHook {
         let register = Rc::downgrade(&self.register);
-        let conditions = (*self.conditions).clone();
-        ConditionalHook::new(register, Arc::new(conditions), EventBlock::Block)
+        ConditionalHook::new(register, Arc::clone(&self.conditions), EventBlock::Block)
     }
 
     fn unblock(&self) -> ConditionalHook {
         let register = Rc::downgrade(&self.register);
-        let conditions = (*self.conditions).clone();
-        ConditionalHook::new(register, Arc::new(conditions), EventBlock::Unblock)
+        ConditionalHook::new(register, Arc::clone(&self.conditions), EventBlock::Unblock)
     }
 }
 
