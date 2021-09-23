@@ -1,6 +1,6 @@
 use crate::button::ButtonInput;
 use crate::hotkey::{PartialHotkeyUsedEntry, TriggerAction};
-use crate::storage::Register;
+use crate::runtime::Register;
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{borrow::Borrow, rc::Weak};
 

@@ -1,8 +1,6 @@
 use super::interruption::{EventSenderVec, INTERRUPTION_EVENT};
-use crate::{
-    interface::Hook,
-    storage::{ButtonFetcher, MouseFetcher, Storage},
-};
+use super::storage::{ButtonFetcher, MouseFetcher, Storage};
+use crate::interface::Hook;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
 use std::{fmt::Debug, rc::Rc, sync::Mutex};
 

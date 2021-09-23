@@ -14,7 +14,6 @@ pub mod macros;
 
 mod interface;
 mod runtime;
-mod storage;
 mod utils;
 
 pub use button::{ButtonInput, ButtonSet, ButtonState, ALT, CTRL, META, SHIFT};

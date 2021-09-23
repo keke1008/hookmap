@@ -3,8 +3,10 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::{button::ToButtonSet, hotkey::ConditionUnit};
-use crate::{hotkey::PartialHotkeyUsedHook, storage::Register};
+use crate::button::ToButtonSet;
+use crate::hotkey::ConditionUnit;
+use crate::hotkey::PartialHotkeyUsedHook;
+use crate::runtime::Register;
 use hookmap_core::EventBlock;
 use std::{
     borrow::Borrow,

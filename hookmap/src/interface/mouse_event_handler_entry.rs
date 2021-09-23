@@ -1,6 +1,6 @@
 use crate::hotkey::Action;
 use crate::hotkey::PartialHotkeyUsedHook;
-use crate::storage::Register;
+use crate::runtime::Register;
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::rc::Weak;
 

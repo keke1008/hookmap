@@ -1,4 +1,7 @@
 mod hook_installer;
-pub mod interruption;
 
+pub(crate) mod storage;
 pub(crate) use hook_installer::HookInstaller;
+pub(crate) use storage::Register;
+
+pub mod interruption;

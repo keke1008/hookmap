@@ -5,7 +5,7 @@ use super::{
     SelectHandleTarget, SetEventBlock,
 };
 use crate::hotkey::{Condition, ConditionUnit, PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
-use crate::storage::Register;
+use crate::runtime::Register;
 use crate::{button::ToButtonSet, runtime::HookInstaller};
 use hookmap_core::EventBlock;
 use std::{fmt::Debug, rc::Rc, sync::Arc};
