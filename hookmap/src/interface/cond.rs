@@ -33,20 +33,12 @@ use std::{fmt::Debug, sync::Arc};
 ///
 #[derive(Clone)]
 pub enum Cond {
-    Pressed(Arc<ButtonSet>),
-    Released(Arc<ButtonSet>),
+    Pressed(ButtonSet),
+    Released(ButtonSet),
     Callback(Arc<dyn Fn() -> bool + Send + Sync>),
 }
 
 impl Cond {
-    pub(crate) fn is_satisfied(&self) -> bool {
-        match self {
-            Cond::Pressed(button) => button.is_pressed(),
-            Cond::Released(button) => button.is_released(),
-            Cond::Callback(callback) => callback(),
-        }
-    }
-
     /// Creates a new `Cond` that is conditional on the button being pressed.
     ///
     /// # Example
@@ -61,7 +53,7 @@ impl Cond {
     /// ```
     ///
     pub fn pressed<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self::Pressed(Arc::new(button.to_button_set()))
+        Self::Pressed(button.to_button_set())
     }
 
     /// Creates a new `Cond` that is conditional on the button being released.
@@ -77,7 +69,7 @@ impl Cond {
     ///     .on_press(|_| assert!(!Button::A.is_pressed()));
     /// ```
     pub fn released<B: Borrow<B> + ToButtonSet>(button: B) -> Self {
-        Self::Released(Arc::new(button.to_button_set()))
+        Self::Released(button.to_button_set())
     }
 
     /// Creates a new `Cond` that is conditioned on the callback function.
@@ -117,20 +109,34 @@ impl Debug for Cond {
 }
 
 #[derive(Default, Clone)]
-pub(crate) struct Conditions(Vec<Cond>);
+pub(crate) struct Conditions {
+    pressed: Vec<ButtonSet>,
+    released: Vec<ButtonSet>,
+    callback: Vec<Arc<dyn Fn() -> bool + Send + Sync>>,
+}
 
 impl Conditions {
     pub(crate) fn is_satisfied(&self) -> bool {
-        self.0.iter().all(Cond::is_satisfied)
+        self.pressed.iter().all(ButtonSet::is_pressed)
+            && self.released.iter().all(ButtonSet::is_released)
+            && self.callback.iter().all(|callback| (callback)())
     }
 
     pub(crate) fn add(&mut self, cond: Cond) {
-        self.0.push(cond);
+        match cond {
+            Cond::Pressed(button) => self.pressed.push(button),
+            Cond::Released(button) => self.released.push(button),
+            Cond::Callback(callback) => self.callback.push(callback),
+        }
     }
 }
 
 impl Debug for Conditions {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_list().entries(self.0.iter()).finish()
+        f.debug_struct("Conditions")
+            .field("pressed", &self.pressed)
+            .field("released", &self.released)
+            .field("callback", &format!("len: {}", self.callback.len()))
+            .finish()
     }
 }

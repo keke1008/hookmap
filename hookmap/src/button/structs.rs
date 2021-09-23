@@ -65,6 +65,7 @@ impl_any_or_all!(Any);
 pub struct All(pub(super) HashSet<Button>);
 impl_any_or_all!(All);
 
+#[derive(Clone)]
 pub enum ButtonSet {
     Single(Button),
     Any(Any),
