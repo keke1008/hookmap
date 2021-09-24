@@ -1,6 +1,4 @@
-use super::{All, Any, ButtonSet};
 use hookmap_core::{Button, ButtonOperation};
-use once_cell::sync::Lazy;
 
 pub trait ButtonInput {
     /// Emulates a button press operation.
@@ -48,24 +46,6 @@ impl ButtonInput for Button {
     }
 }
 
-impl ButtonInput for All {
-    fn press(&self) {
-        self.0.iter().for_each(Button::press);
-    }
-
-    fn release(&self) {
-        self.0.iter().for_each(Button::release);
-    }
-
-    fn press_recursive(&self) {
-        self.0.iter().for_each(Button::press_recursive);
-    }
-
-    fn release_recursive(&self) {
-        self.0.iter().for_each(Button::release_recursive);
-    }
-}
-
 pub trait ButtonState {
     /// Returns `true` if the button is pressed.
     fn is_pressed(&self) -> bool;
@@ -81,64 +61,3 @@ impl ButtonState for Button {
         self.read_is_pressed()
     }
 }
-
-impl ButtonState for Any {
-    fn is_pressed(&self) -> bool {
-        self.0.iter().any(Button::is_pressed)
-    }
-
-    fn is_released(&self) -> bool {
-        self.0.iter().any(Button::is_released)
-    }
-}
-
-impl ButtonState for All {
-    fn is_pressed(&self) -> bool {
-        self.0.iter().all(Button::is_pressed)
-    }
-
-    fn is_released(&self) -> bool {
-        self.0.iter().all(Button::is_released)
-    }
-}
-
-/// Convert to [`ButtonSet`]
-pub trait ToButtonSet: Send + Sync {
-    fn to_button_set(&self) -> ButtonSet;
-}
-
-impl<T: ToButtonSet> ToButtonSet for &T {
-    fn to_button_set(&self) -> ButtonSet {
-        (*self).to_button_set()
-    }
-}
-
-impl ToButtonSet for Button {
-    fn to_button_set(&self) -> ButtonSet {
-        ButtonSet::Single(*self)
-    }
-}
-
-impl ToButtonSet for Any {
-    fn to_button_set(&self) -> ButtonSet {
-        ButtonSet::Any(self.clone())
-    }
-}
-
-impl ToButtonSet for All {
-    fn to_button_set(&self) -> ButtonSet {
-        ButtonSet::All(self.clone())
-    }
-}
-
-impl<T: ToButtonSet> ToButtonSet for Lazy<T> {
-    fn to_button_set(&self) -> ButtonSet {
-        (**self).to_button_set()
-    }
-}
-
-pub trait EmulateButtonInput: ButtonInput + Send + Sync + Clone + 'static {}
-pub trait EmulateButtonState: ToButtonSet + Clone + 'static {}
-
-impl<T: ButtonInput + Send + Sync + Clone + 'static> EmulateButtonInput for T {}
-impl<T: ToButtonSet + Clone + 'static> EmulateButtonState for T {}

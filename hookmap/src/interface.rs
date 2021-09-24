@@ -8,8 +8,7 @@ pub use conditional_hook::ConditionalHook;
 pub use hook::Hook;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
-use crate::{button::ToButtonSet, hotkey::ConditionUnit};
-use std::borrow::Borrow;
+use hookmap_core::Button;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
@@ -24,7 +23,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind<B: Borrow<B> + ToButtonSet + Clone>(&self, button: B) -> ButtonEventHandlerEntry;
+    fn bind(&self, button: Button) -> ButtonEventHandlerEntry;
 
     /// Returns a [`MouseWheelEventHandlerEntry`] for registering a hook to the mouse wheel.
     ///
@@ -51,22 +50,6 @@ pub trait SelectHandleTarget {
     /// ```
     ///
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry;
-
-    /// Returns a new instance of [`ConditionalHook`].
-    /// The hooks assigned through this instance will be activated only when the given conditions are met.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// let modifier_space = hook.cond(ConditionUnit::Pressed(Button::Space));
-    /// modifier_space
-    ///     .bind(Button::A)
-    ///     .on_press(|_| println!("The A key is pressed while the Space key is pressed"));
-    /// ```
-    ///
-    fn cond<T: ToButtonSet>(&self, cond: ConditionUnit<T>) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

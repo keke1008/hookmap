@@ -71,13 +71,11 @@ impl Register {
     pub(crate) fn register_hotkey(&self, hotkey: Hotkey) {
         let mut storage = self.storage.borrow_mut();
         let hotkey = Arc::new(hotkey);
-        for trigger in hotkey.trigger.iter_buttons() {
-            storage
-                .button
-                .entry(*trigger)
-                .or_default()
-                .push(Arc::clone(&hotkey))
-        }
+        storage
+            .button
+            .entry(hotkey.trigger)
+            .or_default()
+            .push(Arc::clone(&hotkey));
     }
 
     pub(crate) fn register_cursor_event_handler(&self, handler: MouseHotkey<MouseCursorEvent>) {

@@ -253,28 +253,6 @@ macro_rules! hotkey {
         hotkey!($hook $($rest)*)
     };
 
-    // Matches `if`.
-    ($hook:ident if ($($cond:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
-        {
-            hotkey!(@cond $hook $($cond)*);
-            hotkey!($hook $($cmd)*);
-        }
-        hotkey!($hook $($rest)*)
-
-    };
-
-    // Matches `pressed` in if condition.
-    (@cond $hook:ident pressed $button:tt $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond($crate::hotkey::ConditionUnit::Pressed(button_name!($button)));
-        $(hotkey!(@cond $hook $($rest)+))?
-    };
-
-    // Matches `released` in if condition`
-    (@cond $hook:ident released $button:tt $(&& $($rest:tt)+)?) => {
-        let $hook = $hook.cond($crate::hotkey::ConditionUnit::Released(button_name!($button)));
-        $(hotkey!(@cond $hook $($rest)+))?
-    };
-
     // Matches `block_event`.
     ($hook:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
         {

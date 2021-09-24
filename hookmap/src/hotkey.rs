@@ -1,5 +1,5 @@
-use crate::button::{ButtonSet, ButtonState, ToButtonSet};
-use hookmap_core::{ButtonAction, ButtonEvent, EventBlock};
+use crate::button::ButtonState;
+use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
 use std::{fmt::Debug, sync::Arc};
 
 #[derive(Clone, Copy, Debug)]
@@ -71,7 +71,7 @@ impl<E> Debug for Action<E> {
 
 #[derive(Debug)]
 pub(crate) struct Hotkey {
-    pub(crate) trigger: ButtonSet,
+    pub(crate) trigger: Button,
     pub(crate) trigger_action: TriggerAction,
     pub(crate) condition: Arc<Condition>,
     pub(crate) event_block: EventBlock,
@@ -86,7 +86,7 @@ impl Hotkey {
 
 #[derive(Clone, Debug)]
 pub(crate) struct PartialHotkeyUsedEntry {
-    pub(crate) trigger: ButtonSet,
+    pub(crate) trigger: Button,
     pub(crate) condition: Arc<Condition>,
     pub(crate) event_block: EventBlock,
 }
@@ -114,10 +114,7 @@ pub(crate) struct PartialHotkeyUsedHook {
 }
 
 impl PartialHotkeyUsedHook {
-    pub(crate) fn build_partial_hotkey_used_entry(
-        self,
-        trigger: ButtonSet,
-    ) -> PartialHotkeyUsedEntry {
+    pub(crate) fn build_partial_hotkey_used_entry(self, trigger: Button) -> PartialHotkeyUsedEntry {
         PartialHotkeyUsedEntry {
             trigger,
             condition: self.condition,

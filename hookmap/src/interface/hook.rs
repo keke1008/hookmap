@@ -4,10 +4,10 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::{Condition, ConditionUnit, PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
+use crate::hotkey::{PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
+use crate::runtime::HookInstaller;
 use crate::runtime::Register;
-use crate::{button::ToButtonSet, runtime::HookInstaller};
-use hookmap_core::EventBlock;
+use hookmap_core::{Button, EventBlock};
 use std::{fmt::Debug, rc::Rc, sync::Arc};
 
 /// A struct for selecting the target of the hook.
@@ -50,14 +50,11 @@ impl Hook {
 }
 
 impl SelectHandleTarget for Hook {
-    fn bind<B: std::borrow::Borrow<B> + ToButtonSet + Clone>(
-        &self,
-        button: B,
-    ) -> ButtonEventHandlerEntry {
+    fn bind(&self, button: Button) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
             Rc::downgrade(&self.register),
             PartialHotkeyUsedEntry {
-                trigger: button.to_button_set(),
+                trigger: button,
                 condition: Arc::default(),
                 event_block: EventBlock::default(),
             },
@@ -75,16 +72,6 @@ impl SelectHandleTarget for Hook {
         MouseCursorHotKeyEntry::new(
             Rc::downgrade(&self.register),
             PartialHotkeyUsedHook::default(),
-        )
-    }
-
-    fn cond<T: ToButtonSet>(&self, cond: ConditionUnit<T>) -> ConditionalHook {
-        ConditionalHook::new(
-            Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook {
-                condition: Arc::new(Condition::default().add(cond)),
-                ..PartialHotkeyUsedHook::default()
-            },
         )
     }
 }
