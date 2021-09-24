@@ -1,3 +1,3 @@
 pub mod traits;
 
-pub use traits::{ButtonInput, ButtonState, };
+pub use traits::{ButtonInput, ButtonState};

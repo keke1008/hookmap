@@ -8,7 +8,7 @@ use crate::hotkey::{PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
 use crate::runtime::HookInstaller;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
-use std::{fmt::Debug, rc::Rc, sync::Arc};
+use std::{fmt::Debug, rc::Rc};
 
 /// A struct for selecting the target of the hook.
 ///
@@ -55,7 +55,7 @@ impl SelectHandleTarget for Hook {
             Rc::downgrade(&self.register),
             PartialHotkeyUsedEntry {
                 trigger: button,
-                condition: Arc::default(),
+                modifier: None,
                 event_block: EventBlock::default(),
             },
         )

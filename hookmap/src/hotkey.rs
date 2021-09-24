@@ -1,4 +1,3 @@
-use crate::button::ButtonState;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
 use std::{fmt::Debug, sync::Arc};
 
@@ -16,41 +15,6 @@ impl TriggerAction {
             TriggerAction::Press => action == ButtonAction::Press,
             TriggerAction::Release => action == ButtonAction::Release,
         }
-    }
-}
-
-#[derive(Debug)]
-pub enum ConditionUnit<T: ToButtonSet> {
-    Pressed(T),
-    Released(T),
-}
-
-#[derive(Debug, Default)]
-pub(crate) struct Condition {
-    pressed: Vec<ButtonSet>,
-    released: Vec<ButtonSet>,
-}
-
-impl Condition {
-    fn is_satisfied(&self) -> bool {
-        self.pressed.iter().all(ButtonSet::is_pressed)
-            && self.released.iter().all(ButtonSet::is_released)
-    }
-
-    fn clone(&self) -> Self {
-        Self {
-            pressed: self.pressed.clone(),
-            released: self.released.clone(),
-        }
-    }
-
-    pub(crate) fn add<T: ToButtonSet>(&self, condition_unit: ConditionUnit<T>) -> Self {
-        let mut this = self.clone();
-        match condition_unit {
-            ConditionUnit::Pressed(button) => this.pressed.push(button.to_button_set()),
-            ConditionUnit::Released(button) => this.released.push(button.to_button_set()),
-        }
-        this
     }
 }
 
@@ -73,21 +37,15 @@ impl<E> Debug for Action<E> {
 pub(crate) struct Hotkey {
     pub(crate) trigger: Button,
     pub(crate) trigger_action: TriggerAction,
-    pub(crate) condition: Arc<Condition>,
+    pub(crate) modifier: Option<Button>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<ButtonEvent>,
-}
-
-impl Hotkey {
-    pub(crate) fn is_satisfied(&self, event: &ButtonEvent) -> bool {
-        self.trigger_action.is_satisfied(event.action) && self.condition.is_satisfied()
-    }
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct PartialHotkeyUsedEntry {
     pub(crate) trigger: Button,
-    pub(crate) condition: Arc<Condition>,
+    pub(crate) modifier: Option<Button>,
     pub(crate) event_block: EventBlock,
 }
 
@@ -100,7 +58,7 @@ impl PartialHotkeyUsedEntry {
         Hotkey {
             trigger: self.trigger,
             trigger_action,
-            condition: self.condition,
+            modifier: self.modifier,
             event_block: self.event_block,
             action,
         }
@@ -109,7 +67,7 @@ impl PartialHotkeyUsedEntry {
 
 #[derive(Clone, Default, Debug)]
 pub(crate) struct PartialHotkeyUsedHook {
-    pub(crate) condition: Arc<Condition>,
+    pub(crate) modifier: Option<Button>,
     pub(crate) event_block: EventBlock,
 }
 
@@ -117,14 +75,14 @@ impl PartialHotkeyUsedHook {
     pub(crate) fn build_partial_hotkey_used_entry(self, trigger: Button) -> PartialHotkeyUsedEntry {
         PartialHotkeyUsedEntry {
             trigger,
-            condition: self.condition,
+            modifier: self.modifier,
             event_block: self.event_block,
         }
     }
 
     pub(crate) fn build_mouse_hotkey<E>(self, action: Action<E>) -> MouseHotkey<E> {
         MouseHotkey {
-            condition: self.condition,
+            modifier: self.modifier,
             event_block: self.event_block,
             action,
         }
@@ -133,13 +91,7 @@ impl PartialHotkeyUsedHook {
 
 #[derive(Clone, Debug)]
 pub(crate) struct MouseHotkey<E> {
-    pub(crate) condition: Arc<Condition>,
+    pub(crate) modifier: Option<Button>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<E>,
-}
-
-impl<E> MouseHotkey<E> {
-    pub(crate) fn is_satisfied(&self) -> bool {
-        self.condition.is_satisfied()
-    }
 }
