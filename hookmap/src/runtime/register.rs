@@ -19,8 +19,6 @@ struct ModifierHook {
 pub(crate) struct Register {
     storage: Storage,
     modifier: HashMap<Arc<Modifier>, HashMap<Button, ModifierHook>>,
-    mouse_cursor: Vec<MouseEventHandler<MouseCursorEvent>>,
-    mouse_wheel: Vec<MouseEventHandler<MouseWheelEvent>>,
 }
 
 impl<E: Copy + 'static> From<Vec<Action<E>>> for Action<E> {
@@ -52,10 +50,10 @@ impl Register {
                     action: Action::from(actions),
                     event_block: compute_event_block(&event_blocks),
                     kind: HookKind::Release {
-                        activated: Arc::clone(&activation_flag),
+                        activated: activation_flag,
                     },
                 });
-                for modifier in modifier.iter() {
+                for modifier in modifier.iter().chain(Some(trigger).iter()) {
                     let hook = Arc::clone(&hook);
                     self.storage.button.entry(*modifier).or_default().push(hook);
                 }
