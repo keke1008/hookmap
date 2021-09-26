@@ -4,11 +4,11 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::{PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
+use crate::hotkey::{Modifier, PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
 use crate::runtime::HookInstaller;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
-use std::{fmt::Debug, rc::Rc};
+use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 
 /// A struct for selecting the target of the hook.
 ///
@@ -23,7 +23,7 @@ use std::{fmt::Debug, rc::Rc};
 ///
 #[derive(Default)]
 pub struct Hook {
-    pub(crate) register: Rc<Register>,
+    pub(crate) register: Rc<RefCell<Register>>,
 }
 
 impl Hook {
@@ -55,7 +55,7 @@ impl SelectHandleTarget for Hook {
             Rc::downgrade(&self.register),
             PartialHotkeyUsedEntry {
                 trigger: button,
-                modifier: None,
+                modifier: Arc::default(),
                 event_block: EventBlock::default(),
             },
         )
@@ -72,6 +72,16 @@ impl SelectHandleTarget for Hook {
         MouseCursorHotKeyEntry::new(
             Rc::downgrade(&self.register),
             PartialHotkeyUsedHook::default(),
+        )
+    }
+
+    fn add_modifier(&self, modifier: Button) -> ConditionalHook {
+        ConditionalHook::new(
+            Rc::downgrade(&self.register),
+            PartialHotkeyUsedHook {
+                modifier: Arc::new(Modifier::new(vec![modifier])),
+                ..PartialHotkeyUsedHook::default()
+            },
         )
     }
 }

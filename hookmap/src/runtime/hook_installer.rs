@@ -1,5 +1,6 @@
+use super::fetcher::{ButtonFetcher, FetchResult, MouseFetcher};
 use super::interruption::{EventSenderVec, INTERRUPTION_EVENT};
-use super::storage::{ButtonFetcher, MouseFetcher, Storage};
+use super::storage::Storage;
 use crate::interface::Hook;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
 use std::{fmt::Debug, rc::Rc, sync::Mutex};
@@ -9,15 +10,6 @@ pub(crate) struct HookInstaller {
 }
 
 impl HookInstaller {
-    fn get_event_block(mut handlers: impl Iterator<Item = EventBlock>) -> EventBlock {
-        let is_contains_block = handlers.any(|event_block| event_block == EventBlock::Block);
-        if is_contains_block {
-            EventBlock::Block
-        } else {
-            EventBlock::Unblock
-        }
-    }
-
     fn handle_mouse_event<T: Debug + Copy>(
         interruption: &Mutex<EventSenderVec<T>>,
         fetcher: &MouseFetcher<T>,
@@ -28,13 +20,12 @@ impl HookInstaller {
         if event_block == EventBlock::Block {
             event_message.send_event_block(EventBlock::Block)
         } else {
-            let handlers = fetcher.fetch();
-            event_message.send_event_block(HookInstaller::get_event_block(
-                handlers.iter().map(|handler| handler.event_block),
-            ));
-            handlers
-                .iter()
-                .for_each(|handler| (handler.action.0)(event));
+            let FetchResult {
+                actions,
+                event_block,
+            } = fetcher.fetch();
+            event_message.send_event_block(event_block);
+            actions.iter().for_each(|action| (action.0)(event));
         }
     }
 
@@ -50,13 +41,12 @@ impl HookInstaller {
                     if INTERRUPTION_EVENT.send_button_event(event) == EventBlock::Block {
                         event_message.send_event_block(EventBlock::Block);
                     } else {
-                        let handlers = button_fetcher.fetch(&event);
-                        event_message.send_event_block(HookInstaller::get_event_block(
-                            handlers.iter().map(|handler| handler.event_block),
-                        ));
-                        handlers
-                            .iter()
-                            .for_each(|handler| (handler.action.0)(event));
+                        let FetchResult {
+                            actions,
+                            event_block,
+                        } = button_fetcher.fetch(&event);
+                        event_message.send_event_block(event_block);
+                        actions.iter().for_each(|action| action.0(event));
                     }
                 }
                 Event::MouseCursor(event) => {
@@ -83,7 +73,10 @@ impl HookInstaller {
 impl From<Hook> for HookInstaller {
     fn from(hook: Hook) -> Self {
         Self {
-            storage: Rc::try_unwrap(hook.register).unwrap().into_inner(),
+            storage: Rc::try_unwrap(hook.register)
+                .unwrap()
+                .into_inner()
+                .into_inner(),
         }
     }
 }

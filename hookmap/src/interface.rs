@@ -50,6 +50,19 @@ pub trait SelectHandleTarget {
     /// ```
     ///
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry;
+
+    /// Add a modifier button to the hotkey to be registered.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hook = Hook::new();
+    /// let modifier_shift = hook.add_modifier(Button::LShift);
+    /// modifier_shift.bind(Button::A)
+    ///     .on_press(|_| println!("The Shift key and A key was pressed"));
+    /// ```
+    fn add_modifier(&self, modifier: Button) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

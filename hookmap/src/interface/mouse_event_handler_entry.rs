@@ -2,17 +2,18 @@ use crate::hotkey::Action;
 use crate::hotkey::PartialHotkeyUsedHook;
 use crate::runtime::Register;
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
+use std::cell::RefCell;
 use std::rc::Weak;
 
 /// A struct for registering handlers for the mouse cursor.
 pub struct MouseCursorHotKeyEntry {
-    register: Weak<Register>,
+    register: Weak<RefCell<Register>>,
     partial_event_handler: PartialHotkeyUsedHook,
 }
 
 impl MouseCursorHotKeyEntry {
     pub(crate) fn new(
-        handler_register: Weak<Register>,
+        handler_register: Weak<RefCell<Register>>,
         partial_event_handler: PartialHotkeyUsedHook,
     ) -> Self {
         Self {
@@ -30,6 +31,7 @@ impl MouseCursorHotKeyEntry {
         self.register
             .upgrade()
             .unwrap()
+            .borrow_mut()
             .register_cursor_event_handler(handler);
     }
 
@@ -73,13 +75,13 @@ impl MouseCursorHotKeyEntry {
 
 /// A struct for registering handlers for the mouse wheel.
 pub struct MouseWheelHotkeyEntry {
-    register: Weak<Register>,
+    register: Weak<RefCell<Register>>,
     partial_event_handler: PartialHotkeyUsedHook,
 }
 
 impl MouseWheelHotkeyEntry {
     pub(crate) fn new(
-        handler: Weak<Register>,
+        handler: Weak<RefCell<Register>>,
         partial_event_handler: PartialHotkeyUsedHook,
     ) -> Self {
         Self {
@@ -96,6 +98,7 @@ impl MouseWheelHotkeyEntry {
         self.register
             .upgrade()
             .unwrap()
+            .borrow_mut()
             .register_wheel_event_event_handler(partial_event_handler.build_mouse_hotkey(callback));
     }
 

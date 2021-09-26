@@ -2,16 +2,20 @@ use crate::button::ButtonInput;
 use crate::hotkey::{PartialHotkeyUsedEntry, TriggerAction};
 use crate::runtime::Register;
 use hookmap_core::{ButtonEvent, EventBlock};
+use std::cell::RefCell;
 use std::{borrow::Borrow, rc::Weak};
 
 /// A struct for registering handlers for the buttons.
 pub struct ButtonEventHandlerEntry {
-    register: Weak<Register>,
+    register: Weak<RefCell<Register>>,
     partial_hotkey: PartialHotkeyUsedEntry,
 }
 
 impl ButtonEventHandlerEntry {
-    pub(crate) fn new(register: Weak<Register>, partial_hotkey: PartialHotkeyUsedEntry) -> Self {
+    pub(crate) fn new(
+        register: Weak<RefCell<Register>>,
+        partial_hotkey: PartialHotkeyUsedEntry,
+    ) -> Self {
         Self {
             register,
             partial_hotkey,
@@ -40,7 +44,11 @@ impl ButtonEventHandlerEntry {
             .partial_hotkey
             .clone()
             .build_hotkey(TriggerAction::Press, callback.into());
-        self.register.upgrade().unwrap().register_hotkey(hotkey);
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(hotkey);
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -69,7 +77,11 @@ impl ButtonEventHandlerEntry {
             .partial_hotkey
             .clone()
             .build_hotkey(TriggerAction::PressOrRelease, callback.into());
-        self.register.upgrade().unwrap().register_hotkey(hotkey);
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(hotkey);
     }
 
     /// Registers a handler called when the specified button is released.
@@ -94,7 +106,11 @@ impl ButtonEventHandlerEntry {
             .partial_hotkey
             .clone()
             .build_hotkey(TriggerAction::Release, callback.into());
-        self.register.upgrade().unwrap().register_hotkey(hotkey);
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(hotkey);
     }
 
     /// When the specified button is pressed, the key passed in the argument will be pressed.
@@ -118,14 +134,14 @@ impl ButtonEventHandlerEntry {
         partial_hotkey.event_block = EventBlock::Block;
         {
             let button = button.borrow().clone();
-            register.register_hotkey(
+            register.borrow_mut().register_hotkey(
                 partial_hotkey
                     .clone()
                     .build_hotkey(TriggerAction::Press, (move |_| button.press()).into()),
             );
         }
         let button = button.borrow().clone();
-        register.register_hotkey(
+        register.borrow_mut().register_hotkey(
             partial_hotkey.build_hotkey(TriggerAction::Release, (move |_| button.release()).into()),
         );
     }
@@ -142,8 +158,12 @@ impl ButtonEventHandlerEntry {
     pub fn disable(&self) {
         let mut partial_hotkey = self.partial_hotkey.clone();
         partial_hotkey.event_block = EventBlock::Block;
-        self.register.upgrade().unwrap().register_hotkey(
-            partial_hotkey.build_hotkey(TriggerAction::PressOrRelease, (|_| {}).into()),
-        );
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(
+                partial_hotkey.build_hotkey(TriggerAction::PressOrRelease, (|_| {}).into()),
+            );
     }
 }

@@ -6,7 +6,7 @@ use super::{
 use crate::hotkey::PartialHotkeyUsedHook;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
-use std::rc::{Rc, Weak};
+use std::{cell::RefCell, rc::Weak, sync::Arc};
 
 /// A struct for selecting the target of the conditional hook.
 ///
@@ -20,13 +20,16 @@ use std::rc::{Rc, Weak};
 /// ```
 ///
 pub struct ConditionalHook {
-    register: Weak<Register>,
+    register: Weak<RefCell<Register>>,
     partial_hotkey: PartialHotkeyUsedHook,
 }
 
 impl ConditionalHook {
     /// Creates a new instance of `ConditionalHook`.
-    pub(crate) fn new(register: Weak<Register>, partial_hotkey: PartialHotkeyUsedHook) -> Self {
+    pub(crate) fn new(
+        register: Weak<RefCell<Register>>,
+        partial_hotkey: PartialHotkeyUsedHook,
+    ) -> Self {
         Self {
             register,
             partial_hotkey,
@@ -37,7 +40,7 @@ impl ConditionalHook {
 impl SelectHandleTarget for ConditionalHook {
     fn bind(&self, button: Button) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
-            Rc::downgrade(&self.register.upgrade().unwrap()),
+            Weak::clone(&self.register),
             self.partial_hotkey
                 .clone()
                 .build_partial_hotkey_used_entry(button),
@@ -45,16 +48,20 @@ impl SelectHandleTarget for ConditionalHook {
     }
 
     fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {
-        MouseWheelHotkeyEntry::new(
-            Rc::downgrade(&self.register.upgrade().unwrap()),
-            self.partial_hotkey.clone(),
-        )
+        MouseWheelHotkeyEntry::new(Weak::clone(&self.register), self.partial_hotkey.clone())
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry {
-        MouseCursorHotKeyEntry::new(
-            Rc::downgrade(&self.register.upgrade().unwrap()),
-            self.partial_hotkey.clone(),
+        MouseCursorHotKeyEntry::new(Weak::clone(&self.register), self.partial_hotkey.clone())
+    }
+
+    fn add_modifier(&self, modifier: Button) -> ConditionalHook {
+        ConditionalHook::new(
+            Weak::clone(&self.register),
+            PartialHotkeyUsedHook {
+                modifier: Arc::new(self.partial_hotkey.modifier.add(modifier)),
+                ..self.partial_hotkey.clone()
+            },
         )
     }
 }
