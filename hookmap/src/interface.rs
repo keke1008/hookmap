@@ -59,11 +59,11 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::*;
     /// let hook = Hook::new();
-    /// let modifier_shift = hook.add_modifier(Button::LShift);
+    /// let modifier_shift = hook.add_modifiers(&[Button::LShift]);
     /// modifier_shift.bind(Button::A)
     ///     .on_press(|_| println!("The Shift key and A key was pressed"));
     /// ```
-    fn add_modifier(&self, modifier: Button) -> ConditionalHook;
+    fn add_modifiers(&self, modifier: &[Button]) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

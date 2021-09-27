@@ -76,11 +76,11 @@ impl SelectHandleTarget for Hotkey {
         )
     }
 
-    fn add_modifier(&self, modifier: Button) -> ConditionalHook {
+    fn add_modifiers(&self, modifier: &[Button]) -> ConditionalHook {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
-                modifier: Arc::new(Modifier::new(vec![modifier])),
+                modifier: Arc::new(Modifier::new(modifier)),
                 ..ConditionalHotkeyInfo::default()
             },
         )

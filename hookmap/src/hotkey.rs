@@ -73,13 +73,17 @@ impl<E> Debug for Action<E> {
 pub(crate) struct Modifier(Vec<Button>);
 
 impl Modifier {
-    pub(crate) fn new(modifier: Vec<Button>) -> Self {
-        Self(modifier)
+    pub(crate) fn new(modifier: &[Button]) -> Self {
+        Self(modifier.into())
     }
 
-    pub(crate) fn add(&self, modifier: Button) -> Self {
-        let mut inner = self.0.clone();
-        inner.push(modifier);
+    pub(crate) fn add(&self, modifier: &[Button]) -> Self {
+        let inner = self
+            .0
+            .iter()
+            .cloned()
+            .chain(modifier.iter().cloned())
+            .collect();
         Self(inner)
     }
 
