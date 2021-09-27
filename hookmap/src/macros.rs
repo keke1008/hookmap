@@ -140,12 +140,13 @@ macro_rules! button_name {
 /// ## modifier (modifier, ...) { ... }
 ///
 /// Adds modifier keys to hotkeys defined enclosed in Curly brackets.
+/// The "!" in front of the button indicates that the button is released.
 ///
 /// ```
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     modifier (LShift, RCtrl) {
+///     modifier (LShift, !RCtrl) {
 ///         bind A => B;
 ///     }
 /// })
@@ -190,90 +191,105 @@ macro_rules! hotkey {
         }
     } => {{
         let hotkey = &$hotkey;
-        hotkey!(hotkey $($cmd)*);
+        hotkey!(@command hotkey $($cmd)*);
     }};
 
-    ($hotkey:ident) => {};
+    (@command $hotkey:ident) => {};
 
     // Matches `bind`.
-    ($hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
+    (@command $hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
         $hotkey.bind(button_name!($lhs)).like(button_name!($rhs));
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
-    ($hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+    (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind(button_name!($lhs)).on_press($rhs);
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
-    ($hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+    (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind(button_name!($lhs)).on_release($rhs);
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_press_or_release`.
-    ($hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+    (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind(button_name!($lhs)).on_press_or_release($rhs);
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable MouseMove`.
-    ($hotkey:ident disable MouseMove; $($rest:tt)*) => {
+    (@command $hotkey:ident disable MouseMove; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().disable();
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable MouseWheel`.
-    ($hotkey:ident disable MouseWheel; $($rest:tt)*) => {
+    (@command $hotkey:ident disable MouseWheel; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().disable();
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable $button`.
-    ($hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
+    (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
         $hotkey.bind(button_name!($lhs)).disable();
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `mouse_cursor`.
-    ($hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
+    (@command $hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().on_move($lhs);
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `modifier`.
-    ($hotkey:ident modifier ($($modifier:tt),*) { $($cmd:tt)* } $($rest:tt)*) => {
+    (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let $hotkey = $hotkey.add_modifiers(&[$(button_name!($modifier)),*]);
-            hotkey!($hotkey $($cmd)*);
+            let $hotkey = $hotkey.add_modifiers(hotkey!(@modifier ([], []) $($button)*));
+            hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!($hotkey $($rest)*);
+        hotkey!(@command $hotkey $($rest)*);
+    };
+
+    // Matches `modifier(...)`
+    (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
+        (&[$($pressed),*], &[$($released),*])
+    };
+
+    // Matches `modifier(...)`
+    (@modifier ([$($pressed:tt),*], [$($released:tt),*]) !$button:tt $(, $($rest:tt)*)?) => {
+        hotkey!(@modifier ([$($pressed),*], [$($released,)* (button_name!($button))]) $($($rest)*)?)
+    };
+
+    // Matches `modifier(...)`
+    (@modifier ([$($pressed:tt),*], [$($released:tt),*]) $button:tt $(,)? $(, $($rest:tt)*)?) => {
+        hotkey!(@modifier ([$($pressed,)* (button_name!($button))], [$($released),*]) $($($rest)*)?)
     };
 
     // Matches `mouse_wheel`.
-    ($hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
+    (@command $hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().on_rotate($lhs);
-        hotkey!($hotkey $($rest)*)
+        hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `block_event`.
-    ($hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
+    (@command $hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
             let $hotkey = $hotkey.block();
-            hotkey!($hotkey $($cmd)*);
+            hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!($hotkey $($rest)*);
+        hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `unblock_event`.
-    ($hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
+    (@command $hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
             let $hotkey = $hotkey.unblock();
-            hotkey!($hotkey $($cmd)*);
+            hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!($hotkey $($rest)*);
+        hotkey!(@command $hotkey $($rest)*);
     }
 }
 
