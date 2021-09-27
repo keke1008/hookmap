@@ -357,17 +357,3 @@ macro_rules! send {
         $button.release()
     };
 }
-
-#[macro_export]
-macro_rules! any {
-    ($($button:tt),* $(,)?) => {
-        $crate::button::Any::new([$($crate::button_name!($button)),*])
-    };
-}
-
-#[macro_export]
-macro_rules! all {
-    ($($button:tt),* $(,)?) => {
-        $crate::button::All::new([$(button_name!($button)),*])
-    };
-}
