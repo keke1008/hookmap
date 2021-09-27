@@ -47,7 +47,7 @@ macro_rules! button_name {
 /// * disable
 /// * mouse_cursor
 /// * mouse_wheel
-/// * if
+/// * modifier
 /// * block_event
 /// * unblock_event
 ///
@@ -137,19 +137,15 @@ macro_rules! button_name {
 /// });
 /// ```
 ///
-/// ## if
+/// ## modifier (modifier, ...) { ... }
 ///
-/// Adds conditions to the hotkeys defined in this statement.
-/// The Following commands can be used in the condition statement.
-///
-/// * pressed - Checks whether the specified buttons have been pressed or not.
-/// * released - Checks whether the specified buttons have been released or not.
+/// Adds modifier keys to hotkeys defined enclosed in Curly brackets.
 ///
 /// ```
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     if ( pressed LCtrl && released LAlt ) {
+///     modifier (LShift, RCtrl) {
 ///         bind A => B;
 ///     }
 /// })
@@ -245,6 +241,15 @@ macro_rules! hotkey {
     ($hook:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
         $hook.bind_mouse_cursor().on_move($lhs);
         hotkey!($hook $($rest)*)
+    };
+
+    // Matches `modifier`.
+    ($hook:ident modifier ($($modifier:tt),*) { $($cmd:tt)* } $($rest:tt)*) => {
+        {
+            let $hook = $hook.add_modifiers(&[$(button_name!($modifier)),*]);
+            hotkey!($hook $($cmd)*);
+        }
+        hotkey!($hook $($rest)*);
     };
 
     // Matches `mouse_wheel`.
