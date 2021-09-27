@@ -1,6 +1,6 @@
 use crate::ButtonState;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
-use std::{fmt::Debug, sync::Arc};
+use std::{fmt::Debug, iter, sync::Arc};
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) enum TriggerAction {
@@ -19,12 +19,47 @@ impl TriggerAction {
     }
 }
 
+type ActionFn<E> = Arc<dyn Fn(E) + Send + Sync>;
+
 #[derive(Clone)]
-pub(crate) struct Action<E>(pub(crate) Arc<dyn Fn(E) + Send + Sync>);
+pub(crate) enum Action<E> {
+    Single(ActionFn<E>),
+    Vec(Vec<ActionFn<E>>),
+    Noop,
+}
+
+impl<E: Copy> Action<E> {
+    fn iter(&self) -> Box<dyn Iterator<Item = ActionFn<E>> + '_> {
+        match self {
+            Action::Single(callback) => Box::new(iter::once(Arc::clone(callback))),
+            Action::Vec(callbacks) => Box::new(callbacks.iter().cloned()),
+            Action::Noop => Box::new(iter::empty()),
+        }
+    }
+
+    pub(super) fn call(&self, event: E) {
+        match self {
+            Action::Single(callback) => callback(event),
+            Action::Vec(callbacks) => callbacks.iter().for_each(move |f| f(event)),
+            Action::Noop => {}
+        }
+    }
+}
 
 impl<E, T: Fn(E) + Send + Sync + 'static> From<T> for Action<E> {
     fn from(callback: T) -> Self {
-        Action(Arc::new(callback))
+        Action::Single(Arc::new(callback))
+    }
+}
+
+impl<E: Copy> From<Vec<Action<E>>> for Action<E> {
+    fn from(actions: Vec<Action<E>>) -> Self {
+        let actions = actions
+            .iter()
+            .map(Action::iter)
+            .flatten()
+            .collect::<Vec<_>>();
+        Action::Vec(actions)
     }
 }
 

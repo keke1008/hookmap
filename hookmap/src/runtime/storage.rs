@@ -1,25 +1,21 @@
-use crate::hotkey::{Action, Modifier, MouseEventHandler, TriggerAction};
-use hookmap_core::{
-    Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
-};
+use crate::hotkey::{Action, Modifier, MouseEventHandler};
+use hookmap_core::{Button, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 #[derive(Debug)]
 pub(super) enum HookKind {
-    Press {
+    ActivateModifier {
         modifier: Arc<Modifier>,
         activated: Arc<AtomicBool>,
     },
 
-    Release {
+    InactivateModifier {
         activated: Arc<AtomicBool>,
     },
 
-    Solo {
-        trigger_action: TriggerAction,
-    },
+    Solo,
 }
 
 #[derive(Debug)]
@@ -30,18 +26,18 @@ pub(crate) struct Hook {
 }
 
 impl Hook {
-    pub(super) fn is_satisfied(&self, event: &ButtonEvent) -> bool {
+    pub(super) fn is_satisfied(&self) -> bool {
         match &self.kind {
-            HookKind::Solo { trigger_action } => trigger_action.is_satisfied(event.action),
-            HookKind::Release { activated, .. } => {
-                event.action == ButtonAction::Release && activated.swap(false, Ordering::SeqCst)
+            HookKind::Solo => true,
+            HookKind::InactivateModifier { activated, .. } => {
+                activated.swap(false, Ordering::SeqCst)
             }
-            HookKind::Press {
+            HookKind::ActivateModifier {
                 modifier,
                 activated,
                 ..
             } => {
-                event.action == ButtonAction::Press && modifier.is_all_pressed() && {
+                modifier.is_all_pressed() && {
                     activated.store(true, Ordering::SeqCst);
                     true
                 }
@@ -64,7 +60,8 @@ pub(super) type MouseWheelStorage = MouseStorage<MouseWheelEvent>;
 
 #[derive(Default, Debug)]
 pub(super) struct Storage {
-    pub(super) button: ButtonStorage,
+    pub(super) on_press: ButtonStorage,
+    pub(super) on_release: ButtonStorage,
     pub(super) mouse_cursor: MouseCursorStorage,
     pub(super) mouse_wheel: MouseWheelStorage,
 }

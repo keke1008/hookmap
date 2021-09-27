@@ -28,7 +28,7 @@ impl ButtonFetcher {
             .storage
             .get(&event.target)?
             .iter()
-            .filter(|hook| hook.is_satisfied(event))
+            .filter(|hook| hook.is_satisfied())
             .map(|hook| (hook.action.clone(), hook.event_block))
             .unzip();
 

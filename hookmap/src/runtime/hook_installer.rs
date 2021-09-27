@@ -2,6 +2,7 @@ use super::fetcher::{ButtonFetcher, FetchResult, MouseFetcher};
 use super::interruption::{EventSenderVec, INTERRUPTION_EVENT};
 use super::storage::Storage;
 use crate::interface::Hook;
+use hookmap_core::ButtonAction;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
 use std::{fmt::Debug, rc::Rc, sync::Mutex};
 
@@ -25,12 +26,13 @@ impl HookInstaller {
                 event_block,
             } = fetcher.fetch();
             event_message.send_event_block(event_block);
-            actions.iter().for_each(|action| (action.0)(event));
+            actions.iter().for_each(|action| action.call(event));
         }
     }
 
     pub(crate) fn install_hook(self) {
-        let button_fetcher = ButtonFetcher::new(self.storage.button);
+        let on_press_fetcher = ButtonFetcher::new(self.storage.on_press);
+        let on_release_fetcher = ButtonFetcher::new(self.storage.on_release);
         let mouse_cursor_fetcher = MouseFetcher::new(self.storage.mouse_cursor);
         let mouse_wheel_fetcher = MouseFetcher::new(self.storage.mouse_wheel);
 
@@ -44,9 +46,12 @@ impl HookInstaller {
                         let FetchResult {
                             actions,
                             event_block,
-                        } = button_fetcher.fetch(&event);
+                        } = match event.action {
+                            ButtonAction::Press => on_press_fetcher.fetch(&event),
+                            ButtonAction::Release => on_release_fetcher.fetch(&event),
+                        };
                         event_message.send_event_block(event_block);
-                        actions.iter().for_each(|action| action.0(event));
+                        actions.iter().for_each(|action| action.call(event));
                     }
                 }
                 Event::MouseCursor(event) => {
