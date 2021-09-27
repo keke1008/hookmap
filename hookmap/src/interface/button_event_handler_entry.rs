@@ -1,5 +1,6 @@
+use super::hotkey_info::PartialHotkeyInfo;
 use crate::button::ButtonInput;
-use crate::hotkey::{PartialHotkeyUsedEntry, TriggerAction};
+use crate::hotkey::TriggerAction;
 use crate::runtime::Register;
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::cell::RefCell;
@@ -8,13 +9,13 @@ use std::{borrow::Borrow, rc::Weak};
 /// A struct for registering handlers for the buttons.
 pub struct ButtonEventHandlerEntry {
     register: Weak<RefCell<Register>>,
-    partial_hotkey: PartialHotkeyUsedEntry,
+    partial_hotkey: PartialHotkeyInfo,
 }
 
 impl ButtonEventHandlerEntry {
-    pub(crate) fn new(
+    pub(super) fn new(
         register: Weak<RefCell<Register>>,
-        partial_hotkey: PartialHotkeyUsedEntry,
+        partial_hotkey: PartialHotkeyInfo,
     ) -> Self {
         Self {
             register,
@@ -43,7 +44,7 @@ impl ButtonEventHandlerEntry {
         let hotkey = self
             .partial_hotkey
             .clone()
-            .build_hotkey(TriggerAction::Press, callback.into());
+            .build_hotkey_info(TriggerAction::Press, callback.into());
         self.register
             .upgrade()
             .unwrap()
@@ -76,7 +77,7 @@ impl ButtonEventHandlerEntry {
         let hotkey = self
             .partial_hotkey
             .clone()
-            .build_hotkey(TriggerAction::PressOrRelease, callback.into());
+            .build_hotkey_info(TriggerAction::PressOrRelease, callback.into());
         self.register
             .upgrade()
             .unwrap()
@@ -105,7 +106,7 @@ impl ButtonEventHandlerEntry {
         let hotkey = self
             .partial_hotkey
             .clone()
-            .build_hotkey(TriggerAction::Release, callback.into());
+            .build_hotkey_info(TriggerAction::Release, callback.into());
         self.register
             .upgrade()
             .unwrap()
@@ -137,12 +138,13 @@ impl ButtonEventHandlerEntry {
             register.borrow_mut().register_hotkey(
                 partial_hotkey
                     .clone()
-                    .build_hotkey(TriggerAction::Press, (move |_| button.press()).into()),
+                    .build_hotkey_info(TriggerAction::Press, (move |_| button.press()).into()),
             );
         }
         let button = button.borrow().clone();
         register.borrow_mut().register_hotkey(
-            partial_hotkey.build_hotkey(TriggerAction::Release, (move |_| button.release()).into()),
+            partial_hotkey
+                .build_hotkey_info(TriggerAction::Release, (move |_| button.release()).into()),
         );
     }
 
@@ -163,7 +165,7 @@ impl ButtonEventHandlerEntry {
             .unwrap()
             .borrow_mut()
             .register_hotkey(
-                partial_hotkey.build_hotkey(TriggerAction::PressOrRelease, (|_| {}).into()),
+                partial_hotkey.build_hotkey_info(TriggerAction::PressOrRelease, (|_| {}).into()),
             );
     }
 }

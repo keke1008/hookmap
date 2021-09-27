@@ -97,59 +97,12 @@ impl Modifier {
 }
 
 #[derive(Debug)]
-pub(crate) struct Hotkey {
+pub(crate) struct HotkeyInfo {
     pub(crate) trigger: Button,
     pub(crate) trigger_action: TriggerAction,
     pub(crate) modifier: Arc<Modifier>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<ButtonEvent>,
-}
-
-#[derive(Clone, Debug)]
-pub(crate) struct PartialHotkeyUsedEntry {
-    pub(crate) trigger: Button,
-    pub(crate) modifier: Arc<Modifier>,
-    pub(crate) event_block: EventBlock,
-}
-
-impl PartialHotkeyUsedEntry {
-    pub(crate) fn build_hotkey(
-        self,
-        trigger_action: TriggerAction,
-        action: Action<ButtonEvent>,
-    ) -> Hotkey {
-        Hotkey {
-            trigger: self.trigger,
-            trigger_action,
-            modifier: self.modifier,
-            event_block: self.event_block,
-            action,
-        }
-    }
-}
-
-#[derive(Clone, Default, Debug)]
-pub(crate) struct PartialHotkeyUsedHook {
-    pub(crate) modifier: Arc<Modifier>,
-    pub(crate) event_block: EventBlock,
-}
-
-impl PartialHotkeyUsedHook {
-    pub(crate) fn build_partial_hotkey_used_entry(self, trigger: Button) -> PartialHotkeyUsedEntry {
-        PartialHotkeyUsedEntry {
-            trigger,
-            modifier: self.modifier,
-            event_block: self.event_block,
-        }
-    }
-
-    pub(crate) fn build_mouse_hotkey<E>(self, action: Action<E>) -> MouseEventHandler<E> {
-        MouseEventHandler {
-            modifier: self.modifier,
-            event_block: self.event_block,
-            action,
-        }
-    }
 }
 
 #[derive(Clone, Debug)]

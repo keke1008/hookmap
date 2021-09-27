@@ -1,5 +1,5 @@
+use super::hotkey_info::ConditionalHotkeyInfo;
 use crate::hotkey::Action;
-use crate::hotkey::PartialHotkeyUsedHook;
 use crate::runtime::Register;
 use hookmap_core::{EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::cell::RefCell;
@@ -8,13 +8,13 @@ use std::rc::Weak;
 /// A struct for registering handlers for the mouse cursor.
 pub struct MouseCursorHotKeyEntry {
     register: Weak<RefCell<Register>>,
-    partial_event_handler: PartialHotkeyUsedHook,
+    partial_event_handler: ConditionalHotkeyInfo,
 }
 
 impl MouseCursorHotKeyEntry {
-    pub(crate) fn new(
+    pub(super) fn new(
         handler_register: Weak<RefCell<Register>>,
-        partial_event_handler: PartialHotkeyUsedHook,
+        partial_event_handler: ConditionalHotkeyInfo,
     ) -> Self {
         Self {
             register: handler_register,
@@ -24,10 +24,10 @@ impl MouseCursorHotKeyEntry {
 
     fn register_handler(
         &self,
-        callback: Action<MouseCursorEvent>,
-        partial_event_handler: PartialHotkeyUsedHook,
+        action: Action<MouseCursorEvent>,
+        partial_event_handler: ConditionalHotkeyInfo,
     ) {
-        let handler = partial_event_handler.build_mouse_hotkey(callback);
+        let handler = partial_event_handler.build_mouse_event_handler(action);
         self.register
             .upgrade()
             .unwrap()
@@ -76,13 +76,13 @@ impl MouseCursorHotKeyEntry {
 /// A struct for registering handlers for the mouse wheel.
 pub struct MouseWheelHotkeyEntry {
     register: Weak<RefCell<Register>>,
-    partial_event_handler: PartialHotkeyUsedHook,
+    partial_event_handler: ConditionalHotkeyInfo,
 }
 
 impl MouseWheelHotkeyEntry {
-    pub(crate) fn new(
+    pub(super) fn new(
         handler: Weak<RefCell<Register>>,
-        partial_event_handler: PartialHotkeyUsedHook,
+        partial_event_handler: ConditionalHotkeyInfo,
     ) -> Self {
         Self {
             register: handler,
@@ -92,14 +92,16 @@ impl MouseWheelHotkeyEntry {
 
     fn register_handler(
         &self,
-        callback: Action<MouseWheelEvent>,
-        partial_event_handler: PartialHotkeyUsedHook,
+        action: Action<MouseWheelEvent>,
+        partial_event_handler: ConditionalHotkeyInfo,
     ) {
         self.register
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .register_wheel_event_event_handler(partial_event_handler.build_mouse_hotkey(callback));
+            .register_wheel_event_event_handler(
+                partial_event_handler.build_mouse_event_handler(action),
+            );
     }
 
     /// Registers a handler called when the mouse wheel is rotated.

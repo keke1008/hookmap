@@ -1,10 +1,11 @@
 use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
     conditional_hook::ConditionalHook,
+    hotkey_info::{ConditionalHotkeyInfo, PartialHotkeyInfo},
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::{Modifier, PartialHotkeyUsedEntry, PartialHotkeyUsedHook};
+use crate::hotkey::Modifier;
 use crate::runtime::HookInstaller;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
@@ -22,11 +23,11 @@ use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 /// ```
 ///
 #[derive(Default)]
-pub struct Hook {
+pub struct Hotkey {
     pub(crate) register: Rc<RefCell<Register>>,
 }
 
-impl Hook {
+impl Hotkey {
     /// Creates a new instance of `Hook`.
     pub fn new() -> Self {
         Self::default()
@@ -49,11 +50,11 @@ impl Hook {
     }
 }
 
-impl SelectHandleTarget for Hook {
+impl SelectHandleTarget for Hotkey {
     fn bind(&self, button: Button) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedEntry {
+            PartialHotkeyInfo {
                 trigger: button,
                 modifier: Arc::default(),
                 event_block: EventBlock::default(),
@@ -64,35 +65,35 @@ impl SelectHandleTarget for Hook {
     fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {
         MouseWheelHotkeyEntry::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook::default(),
+            ConditionalHotkeyInfo::default(),
         )
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry {
         MouseCursorHotKeyEntry::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook::default(),
+            ConditionalHotkeyInfo::default(),
         )
     }
 
     fn add_modifier(&self, modifier: Button) -> ConditionalHook {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook {
+            ConditionalHotkeyInfo {
                 modifier: Arc::new(Modifier::new(vec![modifier])),
-                ..PartialHotkeyUsedHook::default()
+                ..ConditionalHotkeyInfo::default()
             },
         )
     }
 }
 
-impl SetEventBlock for Hook {
+impl SetEventBlock for Hotkey {
     fn block(&self) -> ConditionalHook {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook {
+            ConditionalHotkeyInfo {
                 event_block: EventBlock::Block,
-                ..PartialHotkeyUsedHook::default()
+                ..ConditionalHotkeyInfo::default()
             },
         )
     }
@@ -100,15 +101,15 @@ impl SetEventBlock for Hook {
     fn unblock(&self) -> ConditionalHook {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
-            PartialHotkeyUsedHook {
+            ConditionalHotkeyInfo {
                 event_block: EventBlock::Unblock,
-                ..PartialHotkeyUsedHook::default()
+                ..ConditionalHotkeyInfo::default()
             },
         )
     }
 }
 
-impl Debug for Hook {
+impl Debug for Hotkey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Hook")
             .field("event_block", &EventBlock::default())

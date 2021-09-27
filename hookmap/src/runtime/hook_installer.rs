@@ -1,7 +1,7 @@
 use super::fetcher::{ButtonFetcher, FetchResult, MouseFetcher};
 use super::interruption::{EventSenderVec, INTERRUPTION_EVENT};
 use super::storage::Storage;
-use crate::interface::Hook;
+use crate::interface::Hotkey;
 use hookmap_core::ButtonAction;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
 use std::{fmt::Debug, rc::Rc, sync::Mutex};
@@ -75,8 +75,8 @@ impl HookInstaller {
     }
 }
 
-impl From<Hook> for HookInstaller {
-    fn from(hook: Hook) -> Self {
+impl From<Hotkey> for HookInstaller {
+    fn from(hook: Hotkey) -> Self {
         Self {
             storage: Rc::try_unwrap(hook.register)
                 .unwrap()

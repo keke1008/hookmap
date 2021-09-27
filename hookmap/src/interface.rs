@@ -1,11 +1,12 @@
 mod button_event_handler_entry;
 mod conditional_hook;
-mod hook;
+mod hotkey;
+mod hotkey_info;
 mod mouse_event_handler_entry;
 
 pub use button_event_handler_entry::ButtonEventHandlerEntry;
 pub use conditional_hook::ConditionalHook;
-pub use hook::Hook;
+pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
 use hookmap_core::Button;

@@ -2,7 +2,7 @@ use super::{
     compute_event_block,
     storage::{ButtonStorage, Hook, HookKind, Storage},
 };
-use crate::hotkey::{Action, Hotkey, Modifier, MouseEventHandler};
+use crate::hotkey::{Action, HotkeyInfo, Modifier, MouseEventHandler};
 use hookmap_core::{
     Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
 };
@@ -87,7 +87,7 @@ impl Register {
         self.storage
     }
 
-    pub(crate) fn register_hotkey(&mut self, hotkey: Hotkey) {
+    pub(crate) fn register_hotkey(&mut self, hotkey: HotkeyInfo) {
         if hotkey.modifier.is_empty() {
             if hotkey.trigger_action.is_satisfied(ButtonAction::Press) {
                 self.solo_on_press
