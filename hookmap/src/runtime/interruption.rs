@@ -70,8 +70,8 @@ impl EventSender {
 ///
 /// ```no_run
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hook.bind(Button::A).on_press(|_| {
+/// let hotkey = Hotkey::new();
+/// hotkey.bind(Button::A).on_press(|_| {
 ///     let event = Interruption::unblock().keyboard().recv();
 ///     println!("button: {:?}", event.target);
 ///     println!("action: {:?}", event.action);

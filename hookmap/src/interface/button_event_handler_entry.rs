@@ -32,9 +32,9 @@ impl ButtonEventHandlerEntry {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).on_press(|_| println!("The A key is pressed"));
     /// ```
     ///
     pub fn on_press<F>(&self, callback: F)
@@ -60,9 +60,9 @@ impl ButtonEventHandlerEntry {
     ///
     /// # Example
     /// ```
-    /// use hookmap::{ButtonAction, Button, Hook, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press_or_release(|event| {
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).on_press_or_release(|event| {
     ///     match event.action {
     ///         ButtonAction::Press => println!("The A key is pressed"),
     ///         ButtonAction::Release => println!("The A key is released"),
@@ -94,9 +94,9 @@ impl ButtonEventHandlerEntry {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_release(|_| println!("The A key is released"));
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).on_release(|_| println!("The A key is released"));
     /// ```
     ///
     pub fn on_release<F>(&self, callback: F)
@@ -120,9 +120,9 @@ impl ButtonEventHandlerEntry {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::H).like(Button::LeftArrow);
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
     pub fn like<B, R>(&self, button: B)
@@ -153,9 +153,9 @@ impl ButtonEventHandlerEntry {
     /// # Example
     ///
     /// ```
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A).disable();
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).disable();
     /// ```
     pub fn disable(&self) {
         let mut partial_hotkey = self.partial_hotkey.clone();

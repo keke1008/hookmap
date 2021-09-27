@@ -43,9 +43,9 @@ impl MouseCursorHotKeyEntry {
     ///
     /// # Example
     /// ```
-    /// use hookmap::{Hook, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor().on_move(|event| {
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_mouse_cursor().on_move(|event| {
     ///     println!("Current mouse cursor position(x, y): {:?}", event);
     /// });
     /// ```
@@ -62,8 +62,8 @@ impl MouseCursorHotKeyEntry {
     ///
     /// ```
     /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_cursor().disable();
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_mouse_cursor().disable();
     /// ```
     ///
     pub fn disable(&self) {
@@ -113,9 +113,9 @@ impl MouseWheelHotkeyEntry {
     ///
     /// # Example
     /// ```
-    /// use hookmap::{Hook, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_wheel().on_rotate(|event| {
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_mouse_wheel().on_rotate(|event| {
     ///     println!("Mouse wheel rotation speed: {}", event);
     /// });
     /// ```
@@ -133,8 +133,8 @@ impl MouseWheelHotkeyEntry {
     ///
     /// ```
     /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// hook.bind_mouse_wheel().disable();
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_mouse_wheel().disable();
     /// ```
     ///
     pub fn disable(&self) {

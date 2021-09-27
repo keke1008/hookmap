@@ -14,8 +14,8 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// let mod_ctrl = hook.cond(ConditionUnit::Pressed(Button::LCtrl));
+/// let hotkey = Hotkey::new();
+/// let mod_ctrl = hotkey.add_modifiers((&[Button::LCtrl], &[]));
 /// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
 /// ```
 ///

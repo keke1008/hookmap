@@ -17,8 +17,8 @@ use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hook.bind(Button::A)
+/// let hotkey = Hotkey::new();
+/// hotkey.bind(Button::A)
 ///     .on_press(|e| println!("{:?}", e));
 /// ```
 ///
@@ -38,10 +38,10 @@ impl Hotkey {
     /// # Example
     ///
     /// ```no_run
-    /// use hookmap::{Hook, Button, SelectHandleTarget};
-    /// let hook = Hook::new();
-    /// hook.bind(Button::A).on_press(|_| println!("The A key is pressed"));
-    /// hook.handle_input(); // Blocking the current thread.
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).on_press(|_| println!("The A key is pressed"));
+    /// hotkey.handle_input(); // Blocking the current thread.
     /// ```
     ///
     pub fn handle_input(self) {
