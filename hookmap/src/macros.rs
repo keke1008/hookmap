@@ -57,8 +57,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     bind A => B;
 /// });
 /// ```
@@ -69,8 +69,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     on_press A => |event| {};
 /// });
 /// ```
@@ -81,8 +81,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     on_release A => |event| {};
 /// });
 /// ```
@@ -93,8 +93,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     on_press_or_release A => |event| {};
 /// });
 /// ```
@@ -105,8 +105,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     disable A;
 ///     disable MouseMove;
 ///     disable MouseWheel;
@@ -119,8 +119,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     mouse_cursor => |(x, y)| {};
 /// })
 /// ```
@@ -131,8 +131,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     mouse_wheel => |speed| {};
 /// });
 /// ```
@@ -147,8 +147,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     if ( pressed LCtrl && released LAlt ) {
 ///         bind A => B;
 ///     }
@@ -161,8 +161,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     block_event {
 ///         on_press A => |_| {};
 ///     }
@@ -178,8 +178,8 @@ macro_rules! button_name {
 ///
 /// ```
 /// use hookmap::*;
-/// let hook = Hook::new();
-/// hotkey!(hook => {
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
 ///     unblock_event {
 ///         on_press A => |_| {};
 ///     }
@@ -193,8 +193,8 @@ macro_rules! hotkey {
             $($cmd:tt)*
         }
     } => {{
-        let hook = &$hook;
-        hotkey!(hook $($cmd)*);
+        let hotkey = &$hook;
+        hotkey!(hotkey $($cmd)*);
     }};
 
     ($hook:ident) => {};
