@@ -55,11 +55,11 @@ impl SelectHandleTarget for ConditionalHook {
         MouseCursorHotKeyEntry::new(Weak::clone(&self.register), self.conditional_hotkey.clone())
     }
 
-    fn add_modifiers(&self, modifier: &[Button]) -> ConditionalHook {
+    fn add_modifiers(&self, (pressed, released): (&[Button], &[Button])) -> ConditionalHook {
         ConditionalHook::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
-                modifier: Arc::new(self.conditional_hotkey.modifier.add(modifier)),
+                modifier: Arc::new(self.conditional_hotkey.modifier.add(pressed, released)),
                 ..self.conditional_hotkey.clone()
             },
         )

@@ -37,7 +37,7 @@ impl Hook {
                 activated,
                 ..
             } => {
-                modifier.is_all_pressed() && {
+                modifier.satisfies_condition() && {
                     activated.store(true, Ordering::SeqCst);
                     true
                 }

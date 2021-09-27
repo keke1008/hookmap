@@ -70,33 +70,41 @@ impl<E> Debug for Action<E> {
 }
 
 #[derive(Debug, Default, Hash, PartialEq, Eq)]
-pub(crate) struct Modifier(Vec<Button>);
+pub(crate) struct Modifier {
+    pressed: Vec<Button>,
+    released: Vec<Button>,
+}
 
 impl Modifier {
-    pub(crate) fn new(modifier: &[Button]) -> Self {
-        Self(modifier.into())
+    pub(crate) fn new(pressed: &[Button], released: &[Button]) -> Self {
+        Self::default().add(pressed, released)
     }
 
-    pub(crate) fn add(&self, modifier: &[Button]) -> Self {
-        let inner = self
-            .0
+    pub(crate) fn add(&self, pressed: &[Button], released: &[Button]) -> Self {
+        let pressed = pressed
             .iter()
             .cloned()
-            .chain(modifier.iter().cloned())
+            .chain(self.pressed.iter().cloned())
             .collect();
-        Self(inner)
+        let released = released
+            .iter()
+            .cloned()
+            .chain(self.released.iter().cloned())
+            .collect();
+        Self { pressed, released }
     }
 
-    pub(crate) fn is_all_pressed(&self) -> bool {
-        self.0.iter().all(|button| button.is_pressed())
+    pub(crate) fn satisfies_condition(&self) -> bool {
+        self.pressed.iter().all(ButtonState::is_pressed)
+            && self.released.iter().all(ButtonState::is_released)
     }
 
     pub(crate) fn is_empty(&self) -> bool {
-        self.0.is_empty()
+        self.pressed.is_empty() && self.released.is_empty()
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
-        self.0.iter()
+        self.pressed.iter().chain(self.released.iter())
     }
 }
 

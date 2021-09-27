@@ -63,7 +63,7 @@ pub trait SelectHandleTarget {
     /// modifier_shift.bind(Button::A)
     ///     .on_press(|_| println!("The Shift key and A key was pressed"));
     /// ```
-    fn add_modifiers(&self, modifier: &[Button]) -> ConditionalHook;
+    fn add_modifiers(&self, pressed: &[Button], released: &[Button]) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

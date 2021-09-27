@@ -2,7 +2,6 @@ use super::{
     compute_event_block,
     storage::{ButtonStorage, MouseStorage},
 };
-use crate::button::ButtonState;
 use crate::hotkey::Action;
 use hookmap_core::{ButtonEvent, EventBlock};
 use smart_default::SmartDefault;
@@ -56,7 +55,7 @@ impl<E: Clone> MouseFetcher<E> {
         let (actions, event_blocks): (Vec<_>, Vec<_>) = self
             .storage
             .iter()
-            .filter(|hook| hook.modifier.iter().all(|button| button.is_pressed()))
+            .filter(|hook| hook.modifier.satisfies_condition())
             .map(|hook| (hook.action.clone(), hook.event_block))
             .unzip();
 
