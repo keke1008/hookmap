@@ -6,12 +6,12 @@ use std::sync::Arc;
 
 #[derive(Debug)]
 pub(super) enum HookKind {
-    ActivateModifier {
+    OnModifierPressed {
         modifier: Arc<Modifier>,
         activated: Arc<AtomicBool>,
     },
 
-    InactivateModifier {
+    OnModifierReleased {
         activated: Arc<AtomicBool>,
     },
 
@@ -29,10 +29,10 @@ impl Hook {
     pub(super) fn is_satisfied(&self) -> bool {
         match &self.kind {
             HookKind::Solo => true,
-            HookKind::InactivateModifier { activated, .. } => {
+            HookKind::OnModifierReleased { activated, .. } => {
                 activated.swap(false, Ordering::SeqCst)
             }
-            HookKind::ActivateModifier {
+            HookKind::OnModifierPressed {
                 modifier,
                 activated,
                 ..

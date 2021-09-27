@@ -37,7 +37,7 @@ impl Register {
                 let hook = Arc::new(Hook {
                     action: Action::from(actions),
                     event_block: compute_event_block(&event_blocks),
-                    kind: HookKind::ActivateModifier {
+                    kind: HookKind::OnModifierPressed {
                         modifier: modifier.clone(),
                         activated: Arc::clone(&activation_flag),
                     },
@@ -50,15 +50,15 @@ impl Register {
                 let hook = Arc::new(Hook {
                     action: Action::from(actions),
                     event_block: compute_event_block(&event_blocks),
-                    kind: HookKind::InactivateModifier {
+                    kind: HookKind::OnModifierReleased {
                         activated: activation_flag,
                     },
                 });
-                let register_on_release = |storage: &mut ButtonStorage, trigger| {
+                let register_in_storage = |storage: &mut ButtonStorage, trigger| {
                     storage.entry(trigger).or_default().push(Arc::clone(&hook));
                 };
 
-                let register_block = |storage: &mut SoloHookBuffer, trigger| {
+                let disable_key = |storage: &mut SoloHookBuffer, trigger| {
                     storage
                         .entry(trigger)
                         .or_default()
@@ -66,12 +66,12 @@ impl Register {
                 };
 
                 for modifier in modifier.iter() {
-                    register_on_release(&mut self.storage.on_release, *modifier);
+                    register_in_storage(&mut self.storage.on_release, *modifier);
                     // Disables modifier keys.
-                    register_block(&mut self.solo_on_press, *modifier);
-                    register_block(&mut self.solo_on_release, *modifier);
+                    disable_key(&mut self.solo_on_press, *modifier);
+                    disable_key(&mut self.solo_on_release, *modifier);
                 }
-                register_on_release(&mut self.storage.on_release, trigger);
+                register_in_storage(&mut self.storage.on_release, trigger);
             }
         }
 
