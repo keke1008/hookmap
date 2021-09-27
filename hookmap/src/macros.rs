@@ -185,95 +185,95 @@ macro_rules! button_name {
 #[macro_export]
 macro_rules! hotkey {
     {
-        $hook:expr => {
+        $hotkey:expr => {
             $($cmd:tt)*
         }
     } => {{
-        let hotkey = &$hook;
+        let hotkey = &$hotkey;
         hotkey!(hotkey $($cmd)*);
     }};
 
-    ($hook:ident) => {};
+    ($hotkey:ident) => {};
 
     // Matches `bind`.
-    ($hook:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $hook.bind(button_name!($lhs)).like(button_name!($rhs));
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
+        $hotkey.bind(button_name!($lhs)).like(button_name!($rhs));
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
-    ($hook:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hook.bind(button_name!($lhs)).on_press($rhs);
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+        $hotkey.bind(button_name!($lhs)).on_press($rhs);
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `on_release`.
-    ($hook:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hook.bind(button_name!($lhs)).on_release($rhs);
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+        $hotkey.bind(button_name!($lhs)).on_release($rhs);
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `on_press_or_release`.
-    ($hook:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hook.bind(button_name!($lhs)).on_press_or_release($rhs);
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
+        $hotkey.bind(button_name!($lhs)).on_press_or_release($rhs);
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `disable MouseMove`.
-    ($hook:ident disable MouseMove; $($rest:tt)*) => {
-        $hook.bind_mouse_cursor().disable();
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident disable MouseMove; $($rest:tt)*) => {
+        $hotkey.bind_mouse_cursor().disable();
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `disable MouseWheel`.
-    ($hook:ident disable MouseWheel; $($rest:tt)*) => {
-        $hook.bind_mouse_wheel().disable();
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident disable MouseWheel; $($rest:tt)*) => {
+        $hotkey.bind_mouse_wheel().disable();
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `disable $button`.
-    ($hook:ident disable $lhs:tt; $($rest:tt)*) => {
-        $hook.bind(button_name!($lhs)).disable();
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
+        $hotkey.bind(button_name!($lhs)).disable();
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `mouse_cursor`.
-    ($hook:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
-        $hook.bind_mouse_cursor().on_move($lhs);
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
+        $hotkey.bind_mouse_cursor().on_move($lhs);
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `modifier`.
-    ($hook:ident modifier ($($modifier:tt),*) { $($cmd:tt)* } $($rest:tt)*) => {
+    ($hotkey:ident modifier ($($modifier:tt),*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let $hook = $hook.add_modifiers(&[$(button_name!($modifier)),*]);
-            hotkey!($hook $($cmd)*);
+            let $hotkey = $hotkey.add_modifiers(&[$(button_name!($modifier)),*]);
+            hotkey!($hotkey $($cmd)*);
         }
-        hotkey!($hook $($rest)*);
+        hotkey!($hotkey $($rest)*);
     };
 
     // Matches `mouse_wheel`.
-    ($hook:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
-        $hook.bind_mouse_wheel().on_rotate($lhs);
-        hotkey!($hook $($rest)*)
+    ($hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
+        $hotkey.bind_mouse_wheel().on_rotate($lhs);
+        hotkey!($hotkey $($rest)*)
     };
 
     // Matches `block_event`.
-    ($hook:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
+    ($hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let $hook = $hook.block();
-            hotkey!($hook $($cmd)*);
+            let $hotkey = $hotkey.block();
+            hotkey!($hotkey $($cmd)*);
         }
-        hotkey!($hook $($rest)*);
+        hotkey!($hotkey $($rest)*);
     };
 
     // Matches `unblock_event`.
-    ($hook:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
+    ($hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let $hook = $hook.unblock();
-            hotkey!($hook $($cmd)*);
+            let $hotkey = $hotkey.unblock();
+            hotkey!($hotkey $($cmd)*);
         }
-        hotkey!($hook $($rest)*);
+        hotkey!($hotkey $($rest)*);
     }
 }
 
