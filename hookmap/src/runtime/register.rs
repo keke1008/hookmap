@@ -27,8 +27,10 @@ pub(crate) struct Register {
 
 impl Register {
     pub(super) fn into_inner(mut self) -> Storage {
+        // Registers hooks that have modifier keys.
         for (modifier, hooks) in self.modifier {
             for (trigger, modifier_hook) in hooks {
+                // Register a hook for when the trigger key is pressed.
                 let (actions, event_blocks): (Vec<_>, Vec<_>) =
                     modifier_hook.on_press.into_iter().unzip();
                 let activation_flag = Arc::default();
@@ -42,6 +44,7 @@ impl Register {
                 });
                 self.storage.on_press.entry(trigger).or_default().push(hook);
 
+                // Register a hook for when the trigger key is released.
                 let (actions, event_blocks): (Vec<_>, Vec<_>) =
                     modifier_hook.on_release.into_iter().unzip();
                 let hook = Arc::new(Hook {
@@ -64,6 +67,7 @@ impl Register {
 
                 for modifier in modifier.iter() {
                     register_on_release(&mut self.storage.on_release, *modifier);
+                    // Disables modifier keys.
                     register_block(&mut self.solo_on_press, *modifier);
                     register_block(&mut self.solo_on_release, *modifier);
                 }
@@ -71,6 +75,7 @@ impl Register {
             }
         }
 
+        // Registers hooks with no modifier key.
         let register_solo = |solo_buffer: SoloHookBuffer, storage: &mut ButtonStorage| {
             for (trigger, hooks) in solo_buffer {
                 let (actions, event_blocks): (Vec<_>, Vec<_>) = hooks.into_iter().unzip();
