@@ -141,7 +141,6 @@ impl Register {
                 .entry(TriggerButtonKind::Single(*modifier))
                 .or_default();
             buffer.on_press.1.push(EventBlock::Block);
-            buffer.on_release.1.push(EventBlock::Block);
         });
     }
 
