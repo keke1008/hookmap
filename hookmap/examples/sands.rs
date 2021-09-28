@@ -1,7 +1,4 @@
-use hookmap::{
-    button::{EmulateButtonInput, ToButtonSet},
-    *,
-};
+use hookmap::*;
 use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
@@ -12,7 +9,7 @@ use std::thread;
 fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
 where
     T: SelectHandleTarget,
-    U: EmulateButtonInput + ToButtonSet,
+    U: ButtonInput + Into<ButtonSet> + Clone + Send + Sync + 'static,
 {
     let is_alone = Arc::new(AtomicBool::new(true));
 
@@ -30,12 +27,6 @@ where
         };
     });
 
-    // if (callback {
-    //     let is_alone = Arc::clone(&is_alone);
-    //     move || is_alone.load(Ordering::SeqCst)
-    // };) {
-    //     on_release [&space] => move |_| space.click();
-    // }
     thread::spawn(move || loop {
         Interruption::unblock()
             .keyboard()
@@ -46,7 +37,7 @@ where
 }
 
 fn main() {
-    let hook = Hook::new();
+    let hotkey = Hotkey::new();
     let ignore = [
         Button::Space,
         Button::LShift,
@@ -62,7 +53,7 @@ fn main() {
     .copied()
     .collect();
 
-    emulate_sands(&hook, Button::Space, ignore);
+    emulate_sands(&hotkey, Button::Space, ignore);
 
-    hook.handle_input();
+    hotkey.handle_input();
 }

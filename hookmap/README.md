@@ -12,34 +12,37 @@ Register hotkeys and simulate keyboard and mosue input.
 use hookmap::*;
 
 fn main() {
-    let hook = Hook::new();
+    let hotkey = Hotkey::new();
 
-    hotkey!(hook => {
+    hotkey!(hotkey => {
+
         // Binds the H,J,K,L keys as in vim.
         bind H => LeftArrow;
         bind J => DownArrow;
         bind K => UpArrow;
         bind L => RightArrow;
 
-        if (pressed [&CTRL]) {
-            // Disables the Mouse cursor movement while the Shift key is held down.
+
+        // if left ctrl is pressed and right shift is not pressed.
+        modifier(LCtrl, !RShift) {
+
+            // Disables the Mouse cursor movement.
             disable MouseMove;
 
-
-            // Blocks default button/mouse event;
+            // Disable the event so that it does not reach other processes.
             block_event {
 
                 // Send Ctrl+A when the Shift and the Space key are pressed.
                 on_press Space => |_| send!(LCtrl down, A, LCtrl up);
 
                 // Sends an uppercase A or B when the A or B key is pressed.
-                on_press [button_set!(A, B).any()] => |event| {
+                on_release [any!(A, B)] => |event| {
                     send!(LShift down, [event.target], LShift up)
                 };
             }
         }
     });
 
-    hook.handle_input();
+    hotkey.handle_input();
 }
 ```
