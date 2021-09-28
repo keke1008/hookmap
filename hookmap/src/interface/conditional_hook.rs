@@ -4,7 +4,7 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::runtime::Register;
+use crate::{hotkey::ButtonSet, runtime::Register};
 use hookmap_core::{Button, EventBlock};
 use std::{cell::RefCell, rc::Weak, sync::Arc};
 
@@ -38,12 +38,12 @@ impl ConditionalHook {
 }
 
 impl SelectHandleTarget for ConditionalHook {
-    fn bind(&self, button: Button) -> ButtonEventHandlerEntry {
+    fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
             Weak::clone(&self.register),
             self.conditional_hotkey
                 .clone()
-                .build_partial_hotkey_info(button),
+                .build_partial_hotkey_info(button.into()),
         )
     }
 

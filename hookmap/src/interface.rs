@@ -9,6 +9,7 @@ pub use conditional_hook::ConditionalHook;
 pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
+use crate::hotkey::ButtonSet;
 use hookmap_core::Button;
 
 /// Selecting the target of the hook.
@@ -24,7 +25,7 @@ pub trait SelectHandleTarget {
     ///     .on_press(|_| println!("The A key has been pressed"));
     /// ```
     ///
-    fn bind(&self, button: Button) -> ButtonEventHandlerEntry;
+    fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry;
 
     /// Returns a [`MouseWheelHotkeyEntry`] for registering a hook to the mouse wheel.
     ///

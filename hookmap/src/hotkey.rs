@@ -108,9 +108,22 @@ impl Modifier {
     }
 }
 
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub enum ButtonSet {
+    Single(Button),
+    Any(Vec<Button>),
+    All(Vec<Button>),
+}
+
+impl From<Button> for ButtonSet {
+    fn from(button: Button) -> Self {
+        Self::Single(button)
+    }
+}
+
 #[derive(Debug)]
 pub(crate) struct HotkeyInfo {
-    pub(crate) trigger: Button,
+    pub(crate) trigger: ButtonSet,
     pub(crate) trigger_action: TriggerAction,
     pub(crate) modifier: Arc<Modifier>,
     pub(crate) event_block: EventBlock,

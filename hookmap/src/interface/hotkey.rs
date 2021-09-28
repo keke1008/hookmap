@@ -5,7 +5,7 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::Modifier;
+use crate::hotkey::{ButtonSet, Modifier};
 use crate::runtime::HookInstaller;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
@@ -51,11 +51,11 @@ impl Hotkey {
 }
 
 impl SelectHandleTarget for Hotkey {
-    fn bind(&self, button: Button) -> ButtonEventHandlerEntry {
+    fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
             Rc::downgrade(&self.register),
             PartialHotkeyInfo {
-                trigger: button,
+                trigger: button.into(),
                 modifier: Arc::default(),
                 event_block: EventBlock::default(),
             },
