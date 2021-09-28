@@ -8,26 +8,36 @@ use std::sync::Arc;
 pub(super) struct OnPressHook {
     pub(super) action: Action<ButtonEvent>,
     pub(super) modifier_keys: Arc<ModifierKeys>,
-    pub(super) activated: Arc<AtomicBool>,
     pub(super) event_block: EventBlock,
+    activated: Arc<AtomicBool>,
 }
 
 impl OnPressHook {
     pub(super) fn new(
         action: impl Into<Action<ButtonEvent>>,
         modifier_keys: Arc<ModifierKeys>,
+        event_block: EventBlock,
         activated: Arc<AtomicBool>,
-        event_block: impl Into<EventBlock>,
     ) -> Self {
         Self {
             action: action.into(),
             modifier_keys,
             activated,
-            event_block: event_block.into(),
+            event_block,
         }
     }
+}
 
-    pub(super) fn satisfies_condition(&self) -> bool {
+impl ButtonHook for OnPressHook {
+    fn action(&self) -> &Action<ButtonEvent> {
+        &self.action
+    }
+
+    fn event_block(&self) -> EventBlock {
+        self.event_block
+    }
+
+    fn satisfies_condition(&self) -> bool {
         self.modifier_keys.satisfies_condition() && {
             self.activated.store(true, Ordering::SeqCst);
             true
@@ -38,15 +48,15 @@ impl OnPressHook {
 #[derive(Debug)]
 pub(super) struct OnReleaseHook {
     pub(super) action: Action<ButtonEvent>,
-    pub(super) activated: Arc<AtomicBool>,
     pub(super) event_block: EventBlock,
+    activated: Arc<AtomicBool>,
 }
 
 impl OnReleaseHook {
     pub(super) fn new(
         action: impl Into<Action<ButtonEvent>>,
-        activated: Arc<AtomicBool>,
         event_block: impl Into<EventBlock>,
+        activated: Arc<AtomicBool>,
     ) -> Self {
         Self {
             action: action.into(),
@@ -54,10 +64,26 @@ impl OnReleaseHook {
             event_block: event_block.into(),
         }
     }
+}
 
-    pub(super) fn satisfies_condition(&self) -> bool {
+impl ButtonHook for OnReleaseHook {
+    fn action(&self) -> &Action<ButtonEvent> {
+        &self.action
+    }
+
+    fn event_block(&self) -> EventBlock {
+        self.event_block
+    }
+
+    fn satisfies_condition(&self) -> bool {
         self.activated.swap(false, Ordering::SeqCst)
     }
+}
+
+pub(crate) trait ButtonHook {
+    fn action(&self) -> &Action<ButtonEvent>;
+    fn event_block(&self) -> EventBlock;
+    fn satisfies_condition(&self) -> bool;
 }
 
 #[derive(Debug)]
