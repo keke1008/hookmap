@@ -191,66 +191,66 @@ macro_rules! hotkey {
         }
     } => {{
         let hotkey = &$hotkey;
-        hotkey!(@command hotkey $($cmd)*);
+        $crate::hotkey!(@command hotkey $($cmd)*);
     }};
 
     (@command $hotkey:ident) => {};
 
     // Matches `bind`.
     (@command $hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.bind(button_name!($lhs)).like(button_name!($rhs));
-        hotkey!(@command $hotkey $($rest)*)
+        $hotkey.bind($crate::button_name!($lhs)).like($crate::button_name!($rhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
     (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind(button_name!($lhs)).on_press($rhs);
-        hotkey!(@command $hotkey $($rest)*)
+        $hotkey.bind($crate::button_name!($lhs)).on_press($rhs);
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
     (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind(button_name!($lhs)).on_release($rhs);
-        hotkey!(@command $hotkey $($rest)*)
+        $hotkey.bind($crate::button_name!($lhs)).on_release($rhs);
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_press_or_release`.
     (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind(button_name!($lhs)).on_press_or_release($rhs);
-        hotkey!(@command $hotkey $($rest)*)
+        $hotkey.bind($crate::button_name!($lhs)).on_press_or_release($rhs);
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable MouseMove`.
     (@command $hotkey:ident disable MouseMove; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().disable();
-        hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable MouseWheel`.
     (@command $hotkey:ident disable MouseWheel; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().disable();
-        hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable $button`.
     (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
-        $hotkey.bind(button_name!($lhs)).disable();
-        hotkey!(@command $hotkey $($rest)*)
+        $hotkey.bind($crate::button_name!($lhs)).disable();
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `mouse_cursor`.
     (@command $hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().on_move($lhs);
-        hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `modifier`.
     (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let $hotkey = $hotkey.add_modifiers(hotkey!(@modifier ([], []) $($button)*));
-            hotkey!(@command $hotkey $($cmd)*);
+            let $hotkey = $hotkey.add_modifiers($crate::hotkey!(@modifier ([], []) $($button)*));
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `modifier(...)`
@@ -260,36 +260,36 @@ macro_rules! hotkey {
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*]) !$button:tt $(, $($rest:tt)*)?) => {
-        hotkey!(@modifier ([$($pressed),*], [$($released,)* (button_name!($button))]) $($($rest)*)?)
+        $crate::hotkey!(@modifier ([$($pressed),*], [$($released,)* ($crate::button_name!($button))]) $($($rest)*)?)
     };
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*]) $button:tt $(,)? $(, $($rest:tt)*)?) => {
-        hotkey!(@modifier ([$($pressed,)* (button_name!($button))], [$($released),*]) $($($rest)*)?)
+        $crate::hotkey!(@modifier ([$($pressed,)* ($crate::button_name!($button))], [$($released),*]) $($($rest)*)?)
     };
 
     // Matches `mouse_wheel`.
     (@command $hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().on_rotate($lhs);
-        hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `block_event`.
     (@command $hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
             let $hotkey = $hotkey.block();
-            hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `unblock_event`.
     (@command $hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
             let $hotkey = $hotkey.unblock();
-            hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     }
 }
 
@@ -339,7 +339,7 @@ macro_rules! send {
             .collect::<Vec<_>>();
         pressed_modifiers.iter().for_each(|button| button.release());
         $(
-            send!(@single button_name!($button) $(, $modifier)?);
+            send!(@single $crate::button_name!($button) $(, $modifier)?);
         )*
         pressed_modifiers.iter().for_each(|button| button.press());
 
@@ -374,7 +374,9 @@ macro_rules! send {
 #[macro_export]
 macro_rules! any {
     ($($button:tt),* $(,)?) => {
-        $crate::ButtonSet::Any(vec![$(button_name!($button)),*])
+        $crate::ButtonSet::Any(
+            vec![$($crate::button_name!($button)),*]
+        )
     };
 }
 
@@ -392,6 +394,8 @@ macro_rules! any {
 #[macro_export]
 macro_rules! all {
     ($($button:tt),* $(,)?) => {
-        $crate::ButtonSet::All(vec![$(button_name!($button)),*])
+        $crate::ButtonSet::All(
+            vec![$($crate::button_name!($button)),*]
+        )
     };
 }
