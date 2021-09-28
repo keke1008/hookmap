@@ -86,9 +86,9 @@ impl Buffer {
             ButtonSet::Single(button) => Box::new(iter::once(TriggerButtonKind::Single(button))),
             ButtonSet::Any(buttons) => Box::new(iter::once(TriggerButtonKind::Any(buttons))),
         };
-        triggers
-            .into_iter()
-            .for_each(|trigger| self.register_modifier(modifier_keys.clone(), trigger, &hotkey));
+        triggers.into_iter().for_each(|trigger| {
+            self.register_modifier(Arc::clone(&modifier_keys), trigger, &hotkey)
+        });
     }
 }
 
