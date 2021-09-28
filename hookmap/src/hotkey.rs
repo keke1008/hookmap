@@ -95,10 +95,6 @@ impl ModifierKeysInner {
             && self.released.iter().all(ButtonState::is_released)
     }
 
-    pub(crate) fn is_empty(&self) -> bool {
-        self.pressed.is_empty() && self.released.is_empty()
-    }
-
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
         self.pressed.iter().chain(self.released.iter())
     }
@@ -125,13 +121,6 @@ impl ModifierKeys {
         self.0
             .as_ref()
             .map(ModifierKeysInner::satisfies_condition)
-            .unwrap_or(true)
-    }
-
-    pub(crate) fn is_empty(&self) -> bool {
-        self.0
-            .as_ref()
-            .map(ModifierKeysInner::is_empty)
             .unwrap_or(true)
     }
 
