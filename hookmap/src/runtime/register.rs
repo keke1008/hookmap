@@ -2,7 +2,7 @@ use super::{
     compute_event_block,
     storage::{Hook, HookKind, Storage},
 };
-use crate::hotkey::{Action, ButtonSet, HotkeyInfo, Modifier, MouseEventHandler};
+use crate::hotkey::{Action, ButtonSet, HotkeyInfo, ModifierKeys, MouseEventHandler};
 use hookmap_core::{
     Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
 };
@@ -47,7 +47,7 @@ struct ModifierHook {
 }
 
 type SoloHookBuffer = HashMap<HookTrigger, (Vec<Action<ButtonEvent>>, Vec<EventBlock>)>;
-type ModifierHookBuffer = HashMap<Arc<Modifier>, HashMap<HookTrigger, ModifierHook>>;
+type ModifierHookBuffer = HashMap<Arc<ModifierKeys>, HashMap<HookTrigger, ModifierHook>>;
 
 #[derive(Debug, Default)]
 struct Buffer {
@@ -72,13 +72,13 @@ impl Buffer {
 
     fn register_modifier(
         &mut self,
-        modifier: Arc<Modifier>,
+        modifier_keys: Arc<ModifierKeys>,
         trigger: HookTrigger,
         hotkey: &HotkeyInfo,
     ) {
         let modifier_buffers = self
             .modifier
-            .entry(modifier)
+            .entry(modifier_keys)
             .or_default()
             .entry(trigger)
             .or_default();
@@ -125,7 +125,7 @@ pub(crate) struct Register {
 impl Register {
     fn generate_modifier_pressed_hook(
         hook_info: ModifierHookInfo,
-        modifier: Arc<Modifier>,
+        modifier_keys: Arc<ModifierKeys>,
         activated: Arc<AtomicBool>,
     ) -> Arc<Hook> {
         let (actions, event_blocks) = hook_info;
@@ -133,7 +133,7 @@ impl Register {
             action: Action::from(actions),
             event_block: compute_event_block(&event_blocks),
             kind: HookKind::OnModifierPressed {
-                modifier,
+                modifier_keys,
                 activated,
             },
         })
@@ -179,12 +179,12 @@ impl Register {
     }
 
     pub(super) fn into_inner(mut self) -> Storage {
-        for (modifier, hook_info) in self.buffer.modifier {
+        for (modifier_keys, hook_info) in self.buffer.modifier {
             for (triggers, modifier_hook) in hook_info {
                 let activated = Arc::default();
                 let hook = Self::generate_modifier_pressed_hook(
                     modifier_hook.on_press,
-                    Arc::clone(&modifier),
+                    Arc::clone(&modifier_keys),
                     Arc::clone(&activated),
                 );
                 let storage = &mut self.storage;
@@ -200,12 +200,12 @@ impl Register {
                 let storage = &mut self.storage;
                 triggers
                     .iter()
-                    .chain(modifier.iter())
+                    .chain(modifier_keys.iter())
                     .zip(iter::repeat(hook))
                     .for_each(|(&trigger, hook)| {
                         storage.on_release.entry(trigger).or_default().push(hook);
                     });
-                for modifier in modifier.iter() {
+                for modifier in modifier_keys.iter() {
                     Self::disable_modifier_key(*modifier, &mut self.buffer.solo_on_press);
                     Self::disable_modifier_key(*modifier, &mut self.buffer.solo_on_release);
                 }

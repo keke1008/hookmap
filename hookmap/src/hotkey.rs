@@ -69,29 +69,25 @@ impl<E> Debug for Action<E> {
     }
 }
 
-#[derive(Debug, Default, Hash, PartialEq, Eq)]
-pub(crate) struct Modifier {
+#[derive(Clone, Debug, Default, Hash, PartialEq, Eq)]
+struct ModifierKeysInner {
     pressed: Vec<Button>,
     released: Vec<Button>,
 }
 
-impl Modifier {
+impl ModifierKeysInner {
     pub(crate) fn new(pressed: &[Button], released: &[Button]) -> Self {
-        Self::default().add(pressed, released)
+        Self {
+            pressed: pressed.into(),
+            released: released.into(),
+        }
     }
 
     pub(crate) fn add(&self, pressed: &[Button], released: &[Button]) -> Self {
-        let pressed = pressed
-            .iter()
-            .cloned()
-            .chain(self.pressed.iter().cloned())
-            .collect();
-        let released = released
-            .iter()
-            .cloned()
-            .chain(self.released.iter().cloned())
-            .collect();
-        Self { pressed, released }
+        let mut result = self.clone();
+        result.pressed.extend_from_slice(pressed);
+        result.released.extend_from_slice(released);
+        result
     }
 
     pub(crate) fn satisfies_condition(&self) -> bool {
@@ -105,6 +101,46 @@ impl Modifier {
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
         self.pressed.iter().chain(self.released.iter())
+    }
+}
+
+#[derive(Debug, Default, Hash, PartialEq, Eq)]
+pub(crate) struct ModifierKeys(Option<ModifierKeysInner>);
+
+impl ModifierKeys {
+    pub(crate) fn new(pressed: &[Button], released: &[Button]) -> Self {
+        Self::default().add(pressed, released)
+    }
+
+    pub(crate) fn add(&self, pressed: &[Button], released: &[Button]) -> Self {
+        let inner = self
+            .0
+            .as_ref()
+            .map(|inner| inner.add(pressed, released))
+            .unwrap_or_else(|| ModifierKeysInner::new(pressed, released));
+        Self(Some(inner))
+    }
+
+    pub(crate) fn satisfies_condition(&self) -> bool {
+        self.0
+            .as_ref()
+            .map(ModifierKeysInner::satisfies_condition)
+            .unwrap_or(true)
+    }
+
+    pub(crate) fn is_empty(&self) -> bool {
+        self.0
+            .as_ref()
+            .map(ModifierKeysInner::is_empty)
+            .unwrap_or(true)
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
+        self.0
+            .as_ref()
+            .map(ModifierKeysInner::iter)
+            .into_iter()
+            .flatten()
     }
 }
 
@@ -125,14 +161,14 @@ impl From<Button> for ButtonSet {
 pub(crate) struct HotkeyInfo {
     pub(crate) trigger: ButtonSet,
     pub(crate) trigger_action: TriggerAction,
-    pub(crate) modifier: Arc<Modifier>,
+    pub(crate) modifier: Arc<ModifierKeys>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<ButtonEvent>,
 }
 
 #[derive(Clone, Debug)]
 pub(crate) struct MouseEventHandler<E> {
-    pub(crate) modifier: Arc<Modifier>,
+    pub(crate) modifier: Arc<ModifierKeys>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<E>,
 }

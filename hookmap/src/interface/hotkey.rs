@@ -5,7 +5,7 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::{ButtonSet, Modifier};
+use crate::hotkey::{ButtonSet, ModifierKeys};
 use crate::runtime::HookInstaller;
 use crate::runtime::Register;
 use hookmap_core::{Button, EventBlock};
@@ -80,7 +80,7 @@ impl SelectHandleTarget for Hotkey {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
-                modifier: Arc::new(Modifier::new(pressed, released)),
+                modifier: Arc::new(ModifierKeys::new(pressed, released)),
                 ..ConditionalHotkeyInfo::default()
             },
         )

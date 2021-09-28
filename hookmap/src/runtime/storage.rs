@@ -1,4 +1,4 @@
-use crate::hotkey::{Action, Modifier, MouseEventHandler};
+use crate::hotkey::{Action, ModifierKeys, MouseEventHandler};
 use hookmap_core::{Button, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -7,7 +7,7 @@ use std::sync::Arc;
 #[derive(Debug)]
 pub(super) enum HookKind {
     OnModifierPressed {
-        modifier: Arc<Modifier>,
+        modifier_keys: Arc<ModifierKeys>,
         activated: Arc<AtomicBool>,
     },
 
@@ -33,7 +33,7 @@ impl Hook {
                 activated.swap(false, Ordering::SeqCst)
             }
             HookKind::OnModifierPressed {
-                modifier,
+                modifier_keys: modifier,
                 activated,
                 ..
             } => {
@@ -48,7 +48,7 @@ impl Hook {
 
 #[derive(Debug)]
 pub struct MouseHook<E> {
-    pub(super) modifier: Arc<Modifier>,
+    pub(super) modifier: Arc<ModifierKeys>,
     pub(super) action: Action<E>,
     pub(super) event_block: EventBlock,
 }

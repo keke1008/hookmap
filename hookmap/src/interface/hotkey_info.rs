@@ -1,10 +1,12 @@
-use crate::hotkey::{Action, ButtonSet, HotkeyInfo, Modifier, MouseEventHandler, TriggerAction};
+use crate::hotkey::{
+    Action, ButtonSet, HotkeyInfo, ModifierKeys, MouseEventHandler, TriggerAction,
+};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
 pub(super) struct ConditionalHotkeyInfo {
-    pub(super) modifier: Arc<Modifier>,
+    pub(super) modifier: Arc<ModifierKeys>,
     pub(super) event_block: EventBlock,
 }
 
@@ -29,7 +31,7 @@ impl ConditionalHotkeyInfo {
 #[derive(Clone, Debug)]
 pub(super) struct PartialHotkeyInfo {
     pub(super) trigger: ButtonSet,
-    pub(super) modifier: Arc<Modifier>,
+    pub(super) modifier: Arc<ModifierKeys>,
     pub(super) event_block: EventBlock,
 }
 
