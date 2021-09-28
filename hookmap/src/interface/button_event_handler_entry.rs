@@ -1,6 +1,6 @@
 use super::hotkey_info::PartialHotkeyInfo;
 use crate::button::ButtonInput;
-use crate::hotkey::TriggerAction;
+use crate::hotkey::{Action, TriggerAction};
 use crate::runtime::Register;
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::cell::RefCell;
@@ -165,7 +165,7 @@ impl ButtonEventHandlerEntry {
             .unwrap()
             .borrow_mut()
             .register_hotkey(
-                partial_hotkey.build_hotkey_info(TriggerAction::PressOrRelease, (|_| {}).into()),
+                partial_hotkey.build_hotkey_info(TriggerAction::PressOrRelease, Action::Noop),
             );
     }
 }

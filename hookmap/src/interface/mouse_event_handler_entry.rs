@@ -69,7 +69,7 @@ impl MouseCursorHotKeyEntry {
     pub fn disable(&self) {
         let mut partial_event_handler = self.partial_event_handler.clone();
         partial_event_handler.event_block = EventBlock::Block;
-        self.register_handler((|_| {}).into(), partial_event_handler);
+        self.register_handler(Action::Noop, partial_event_handler);
     }
 }
 
@@ -140,6 +140,6 @@ impl MouseWheelHotkeyEntry {
     pub fn disable(&self) {
         let mut partial_event_handler = self.partial_event_handler.clone();
         partial_event_handler.event_block = EventBlock::Block;
-        self.register_handler((|_| {}).into(), partial_event_handler);
+        self.register_handler(Action::Noop, partial_event_handler);
     }
 }
