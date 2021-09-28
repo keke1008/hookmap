@@ -1,3 +1,4 @@
+use super::ButtonSet;
 use hookmap_core::{Button, ButtonOperation};
 
 pub trait ButtonInput {
@@ -46,6 +47,48 @@ impl ButtonInput for Button {
     }
 }
 
+impl ButtonInput for ButtonSet {
+    fn press(&self) {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().for_each(Button::press),
+            ButtonSet::Any(buttons) => {
+                buttons.iter().next().map(Button::press);
+            }
+            ButtonSet::Single(button) => button.press(),
+        }
+    }
+
+    fn release(&self) {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().for_each(Button::release),
+            ButtonSet::Any(buttons) => {
+                buttons.iter().next().map(Button::release);
+            }
+            ButtonSet::Single(button) => button.release(),
+        }
+    }
+
+    fn press_recursive(&self) {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().for_each(Button::press_recursive),
+            ButtonSet::Any(buttons) => {
+                buttons.iter().next().map(Button::press_recursive);
+            }
+            ButtonSet::Single(button) => button.press_recursive(),
+        }
+    }
+
+    fn release_recursive(&self) {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().for_each(Button::release_recursive),
+            ButtonSet::Any(buttons) => {
+                buttons.iter().next().map(Button::release_recursive);
+            }
+            ButtonSet::Single(button) => button.release_recursive(),
+        }
+    }
+}
+
 pub trait ButtonState {
     /// Returns `true` if the button is pressed.
     fn is_pressed(&self) -> bool;
@@ -59,5 +102,23 @@ pub trait ButtonState {
 impl ButtonState for Button {
     fn is_pressed(&self) -> bool {
         self.read_is_pressed()
+    }
+}
+
+impl ButtonState for ButtonSet {
+    fn is_pressed(&self) -> bool {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().all(Button::is_pressed),
+            ButtonSet::Any(buttons) => buttons.iter().any(Button::is_pressed),
+            ButtonSet::Single(button) => button.is_pressed(),
+        }
+    }
+
+    fn is_released(&self) -> bool {
+        match self {
+            ButtonSet::All(buttons) => buttons.iter().all(Button::is_released),
+            ButtonSet::Any(buttons) => buttons.iter().any(Button::is_released),
+            ButtonSet::Single(button) => button.is_released(),
+        }
     }
 }
