@@ -88,7 +88,7 @@ pub(crate) trait ButtonHook {
 
 #[derive(Debug)]
 pub struct MouseHook<E> {
-    pub(super) modifier: Arc<ModifierKeys>,
+    pub(super) modifier_keys: Arc<ModifierKeys>,
     pub(super) action: Action<E>,
     pub(super) event_block: EventBlock,
 }

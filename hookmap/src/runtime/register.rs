@@ -77,7 +77,7 @@ impl Buffer {
     }
 
     fn register_hotkey(&mut self, hotkey: HotkeyInfo) {
-        let modifier = match hotkey.trigger {
+        let modifier_keys = match hotkey.trigger {
             ButtonSet::All(ref buttons) => Arc::new(hotkey.modifier.add(buttons, &[])),
             _ => Arc::clone(&hotkey.modifier),
         };
@@ -88,7 +88,7 @@ impl Buffer {
         };
         triggers
             .into_iter()
-            .for_each(|trigger| self.register_modifier(modifier.clone(), trigger, &hotkey));
+            .for_each(|trigger| self.register_modifier(modifier_keys.clone(), trigger, &hotkey));
     }
 }
 
@@ -99,7 +99,7 @@ pub(crate) struct Register {
 }
 
 impl Register {
-    fn generate_modifier_pressed_hook(
+    fn generate_pressed_hook(
         hook_info: BufferedHookInfo,
         modifier_keys: Arc<ModifierKeys>,
         activated: Arc<AtomicBool>,
@@ -113,7 +113,7 @@ impl Register {
         ))
     }
 
-    fn generate_modifier_released_hook(
+    fn generate_released_hook(
         hook_info: BufferedHookInfo,
         activated: Arc<AtomicBool>,
     ) -> Arc<OnReleaseHook> {
@@ -148,25 +148,24 @@ impl Register {
         self.disable_modifier_keys();
 
         for (modifier_keys, hook_info) in self.buffer.0 {
-            for (triggers, modifier_hook) in hook_info {
+            for (trigger_buttons, buffered_hook) in hook_info {
                 let activated = Arc::default();
-                let hook = Self::generate_modifier_pressed_hook(
-                    modifier_hook.on_press,
+                let hook = Self::generate_pressed_hook(
+                    buffered_hook.on_press,
                     Arc::clone(&modifier_keys),
                     Arc::clone(&activated),
                 );
                 let storage = &mut self.storage;
-                triggers
+                trigger_buttons
                     .iter()
                     .zip(iter::repeat(hook))
                     .for_each(|(&trigger, hook)| {
                         storage.on_press.entry(trigger).or_default().push(hook);
                     });
 
-                let hook =
-                    Self::generate_modifier_released_hook(modifier_hook.on_release, activated);
+                let hook = Self::generate_released_hook(buffered_hook.on_release, activated);
                 let storage = &mut self.storage;
-                triggers
+                trigger_buttons
                     .iter()
                     .chain(modifier_keys.iter())
                     .zip(iter::repeat(hook))
