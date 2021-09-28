@@ -2,7 +2,8 @@ use super::{
     compute_event_block,
     storage::{OnPressHook, OnReleaseHook, Storage},
 };
-use crate::hotkey::{Action, ButtonSet, HotkeyInfo, ModifierKeys, MouseEventHandler};
+use crate::button::ButtonSet;
+use crate::hotkey::{Action, HotkeyInfo, ModifierKeys, MouseEventHandler};
 use hookmap_core::{
     Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
 };

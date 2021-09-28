@@ -1,6 +1,5 @@
-use crate::hotkey::{
-    Action, ButtonSet, HotkeyInfo, ModifierKeys, MouseEventHandler, TriggerAction,
-};
+use crate::button::ButtonSet;
+use crate::hotkey::{Action, HotkeyInfo, ModifierKeys, MouseEventHandler, TriggerAction};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::sync::Arc;
 

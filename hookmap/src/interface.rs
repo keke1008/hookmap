@@ -9,7 +9,7 @@ pub use conditional_hook::ConditionalHook;
 pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
-use crate::hotkey::ButtonSet;
+use crate::button::ButtonSet;
 use hookmap_core::Button;
 
 /// Selecting the target of the hook.

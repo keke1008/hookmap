@@ -1,3 +1,4 @@
+use crate::button::ButtonSet;
 use crate::ButtonState;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
 use std::{fmt::Debug, iter, sync::Arc};
@@ -130,19 +131,6 @@ impl ModifierKeys {
             .map(ModifierKeysInner::iter)
             .into_iter()
             .flatten()
-    }
-}
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum ButtonSet {
-    Single(Button),
-    Any(Vec<Button>),
-    All(Vec<Button>),
-}
-
-impl From<Button> for ButtonSet {
-    fn from(button: Button) -> Self {
-        Self::Single(button)
     }
 }
 

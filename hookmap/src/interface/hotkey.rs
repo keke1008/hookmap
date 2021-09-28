@@ -5,9 +5,9 @@ use super::{
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
 };
-use crate::hotkey::{ButtonSet, ModifierKeys};
-use crate::runtime::HookInstaller;
-use crate::runtime::Register;
+use crate::button::ButtonSet;
+use crate::hotkey::ModifierKeys;
+use crate::runtime::{HookInstaller, Register};
 use hookmap_core::{Button, EventBlock};
 use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 
