@@ -1,35 +1,7 @@
-use crate::{
-    button::{EmulateButtonInput, ToButtonSet},
-    *,
-};
-use once_cell::sync::Lazy;
+use crate::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 
-static IS_ALT_TAB_WORKING: Lazy<AtomicBool> = Lazy::new(|| AtomicBool::new(false));
-
-fn alt_tab<T, U, V>(hook: &T, alt: U, tab: U, tab_like: V)
-where
-    T: SelectHandleTarget,
-    U: ToButtonSet + Clone,
-    V: EmulateButtonInput,
-{
-    hotkey!(hook => {
-        disable [&alt];
-        on_release [&alt] => move |_| {
-            IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-            Button::LAlt.release();
-        };
-
-        if (pressed [alt]) {
-            on_press [&tab] => move |_| {
-                if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                    Button::LAlt.press();
-                }
-            };
-            bind [&tab] => [tab_like];
-        }
-    });
-}
+static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
 
 /// Utility function.
 pub trait Utils: SelectHandleTarget + Sized {
@@ -44,17 +16,31 @@ pub trait Utils: SelectHandleTarget + Sized {
     ///
     /// ```
     /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// hook.bind_alt_tab(&Button::A, &Button::T);
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_alt_tab(Button::A, Button::T);
     /// ```
     // fn bind_alt_tab<B: EmulateButtonState>(&self, alt: &B, tab: &B) {
     //     alt_tab(self, alt, tab, &Button::Tab);
     // }
-    fn bind_alt_tab<T>(&self, alt: T, tab: T)
+    fn bind_alt_tab<T>(&self, alt: T, tab: Button)
     where
-        T: ToButtonSet + Clone,
+        T: Into<ButtonSet> + Clone,
     {
-        alt_tab(self, alt, tab, Button::Tab);
+        hotkey!(self => {
+            on_release [alt] => move |_| {
+                IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
+                Button::LAlt.release();
+            };
+
+            modifier([tab]) {
+                on_press [tab] => move |_| {
+                    if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
+                        Button::LAlt.press();
+                    }
+                };
+                bind [tab] => Tab;
+            }
+        });
     }
 
     /// Shift-Alt-Tab hotkey.
@@ -68,15 +54,28 @@ pub trait Utils: SelectHandleTarget + Sized {
     ///
     /// ```
     /// use hookmap::*;
-    /// let hook = Hook::new();
-    /// hook.bind_shift_alt_tab(&Button::A, &Button::R);
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_shift_alt_tab(Button::A, Button::R);
     /// ```
-    fn bind_shift_alt_tab<T>(&self, alt: T, tab: T)
+    fn bind_shift_alt_tab<T>(&self, alt: T, tab: Button)
     where
-        T: ToButtonSet + Clone,
+        T: Into<ButtonSet> + Clone,
     {
-        let shift_tab = all!(Tab, LShift);
-        alt_tab(self, alt, tab, shift_tab);
+        hotkey!(self => {
+            on_release [alt] => move |_| {
+                IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
+                Button::LAlt.release();
+            };
+
+            modifier([tab]) {
+                on_press [tab] => move |_| {
+                    if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
+                        Button::LAlt.press();
+                    }
+                };
+                bind [tab] => [all!(LShift, Tab)];
+            }
+        });
     }
 }
 

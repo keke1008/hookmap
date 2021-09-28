@@ -13,8 +13,8 @@ impl From<Button> for ButtonSet {
     }
 }
 
-impl From<&ButtonSet> for ButtonSet {
-    fn from(button_set: &ButtonSet) -> Self {
-        button_set.clone()
+impl<T: Into<ButtonSet> + Clone> From<&T> for ButtonSet {
+    fn from(button: &T) -> Self {
+        <T as Into<ButtonSet>>::into(button.clone())
     }
 }
