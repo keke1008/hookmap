@@ -50,6 +50,7 @@ macro_rules! button_name {
 /// * modifier
 /// * block_event
 /// * unblock_event
+/// * call
 ///
 /// ## bind
 ///
@@ -183,6 +184,27 @@ macro_rules! button_name {
 /// });
 /// ```
 ///
+/// ## call
+///
+/// Calls associated functions of [`SelectHandleTarget`].
+///
+/// ```no_run
+/// use hookmap::*;
+/// trait BindAsTab: SelectHandleTarget {
+///     fn bind_as_tab(&self, target: Button) {
+///         hotkeys!(self => {
+///             bind [target] => Tab;
+///         });
+///     }
+/// }
+/// impl<T: SelectHandleTarget> BindAsTab for T {}
+///
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
+///     call bind_as_tab(A);
+/// });
+/// ```
+///
 #[macro_export]
 macro_rules! hotkey {
     {
@@ -294,7 +316,14 @@ macro_rules! hotkey {
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
         $crate::hotkey!(@command $hotkey $($rest)*);
-    }
+    };
+
+    // Matches `call`.
+    (@command $hotkey:ident call $name:ident($($arg:tt),*);) => {
+        $hotkey.$name(
+            $($crate::button_name!($arg)),*
+        );
+    };
 }
 
 /// Sends keyboard input.
