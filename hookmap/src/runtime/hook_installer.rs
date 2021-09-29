@@ -43,14 +43,18 @@ impl HookInstaller {
                     if INTERRUPTION_EVENT.send_button_event(event) == EventBlock::Block {
                         event_message.send_event_block(EventBlock::Block);
                     } else {
-                        let FetchResult {
-                            actions,
-                            event_block,
-                        } = match event.action {
-                            ButtonAction::Press => on_press_fetcher.fetch(&event),
-                            ButtonAction::Release => on_release_fetcher.fetch(&event),
+                        let actions = match event.action {
+                            ButtonAction::Press => {
+                                let result = on_press_fetcher.fetch(&event);
+                                event_message.send_event_block(result.event_block);
+                                result.actions
+                            }
+                            ButtonAction::Release => {
+                                // If the release event is not blocked, the button will remain pressed.
+                                event_message.send_event_block(EventBlock::Unblock);
+                                on_release_fetcher.fetch(&event).actions
+                            }
                         };
-                        event_message.send_event_block(event_block);
                         actions.iter().for_each(|action| action.call(event));
                     }
                 }
