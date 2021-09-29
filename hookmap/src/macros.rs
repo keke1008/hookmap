@@ -297,6 +297,61 @@ macro_rules! hotkey {
     }
 }
 
+/// Sends keyboard input.
+/// Unlike send!, seq! does not ignore modifier keys.
+///
+/// # Examples
+///
+/// ```no_run
+/// use hookmap::*;
+/// seq!(A, B);
+/// ```
+///
+/// Use `down` and `up` to press and release keys.
+///
+/// ```no_run
+/// use hookmap::*;
+/// seq!(LCtrl down, A, LCtrl up);
+/// ```
+///
+/// Use `with(...)` to specify the keys to hold down when sending.
+///
+/// ```no_run
+/// use hookmap::*;
+/// seq!(with(LShift, LCtrl), Tab);
+/// seq!(LShift down, LCtrl down, Tab, LShift up, LCtrl up); // equals to above
+/// ```
+///
+#[macro_export]
+macro_rules! seq {
+    // trailing comma case
+    (with($($modifier:tt)*) $(, $($button:tt $($action:ident)?),*)? ,) => {
+        $crate::seq!(with($($modifier)*) $(, $($button$($action)?),*)?)
+    };
+
+    (with($($modifier:tt),*) $(, $($rest:tt)*)?) => {
+        $crate::seq!($($modifier down,)* $($($rest)*,)? $($modifier up),*)
+    };
+
+    ($($button:tt $($action:ident)?),* $(,)?) => {
+        $(
+            $crate::seq!(@single $crate::button_name!($button) $(, $action)?);
+        )*
+    };
+
+    (@single $button:expr) => {
+        $button.click()
+    };
+
+    (@single $button:expr, down) => {
+        $button.press()
+    };
+
+    (@single $button:expr, up) => {
+        $button.release()
+    };
+}
+
 use hookmap_core::Button;
 
 pub static MODIFIER_LIST: [Button; 8] = [
@@ -312,19 +367,11 @@ pub static MODIFIER_LIST: [Button; 8] = [
 
 /// Ignores the modifier keys and sends the input events.
 ///
-/// # Example
+/// # Examples
 ///
 /// ```no_run
 /// use hookmap::*;
 /// send!(A, B, C);
-/// ```
-///
-/// Variables can be used by enclosing them in square brackets.
-///
-/// ```no_run
-/// use hookmap::*;
-/// let btn = Button::A;
-/// send!([btn]);
 /// ```
 ///
 /// Use `down` and `up` to press and release keys.
@@ -334,32 +381,25 @@ pub static MODIFIER_LIST: [Button; 8] = [
 /// send!(LCtrl down, A, LCtrl up);
 /// ```
 ///
+/// Use `with(...)` to specify the keys to hold down when sending.
+///
+/// ```no_run
+/// use hookmap::*;
+/// send!(with(LShift, LCtrl), Tab);
+/// send!(LShift down, LCtrl down, Tab, LShift up, LCtrl up); // equals to above
+/// ```
+///
 #[macro_export]
 macro_rules! send {
-    ($($button:tt $($modifier:ident)?),*) => {{
+    ($($input:tt)*) => {{
         let pressed_modifiers = $crate::macros::MODIFIER_LIST
             .iter()
             .filter(|button| button.is_pressed())
             .collect::<Vec<_>>();
         pressed_modifiers.iter().for_each(|button| button.release());
-        $(
-            send!(@single $crate::button_name!($button) $(, $modifier)?);
-        )*
+        $crate::seq!($($input)*);
         pressed_modifiers.iter().for_each(|button| button.press());
-
     }};
-
-    (@single $button:expr) => {
-        $button.click()
-    };
-
-    (@single $button:expr, down) => {
-        $button.press()
-    };
-
-    (@single $button:expr, up) => {
-        $button.release()
-    };
 }
 
 /// Creates ButtonSet::Any.
@@ -484,13 +524,49 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "This function sends keyboard input"]
+    fn seq_macro() {
+        seq!();
+        seq!(A, B);
+        seq!(A,);
+        seq!([Button::A], [Button::B]);
+        seq!([&CTRL], [&SHIFT]);
+        seq!(A up, B down, [&CTRL] up);
+        seq!(with(A));
+        seq!(with(A),);
+        seq!(with(A), C,);
+        seq!(with(A, B), C);
+        seq!(with([Button::A], [&SHIFT]), [&CTRL]);
+    }
+
+    #[test]
+    #[ignore = "This function sends keyboard input"]
+    fn send_macro() {
+        send!();
+        send!(A, B);
+        send!(A,);
+        send!([Button::A], [Button::B]);
+        send!([&CTRL], [&SHIFT]);
+        send!(A up, B down, [&CTRL] up);
+        send!(with(A));
+        send!(with(A),);
+        send!(with(A), C,);
+        send!(with(A, B), C);
+        send!(with([Button::A], [&SHIFT]), [&CTRL]);
+    }
+
+    #[test]
     fn any_macro() {
+        any!();
+        any!(A,);
         assert_eq!(any!(A, B), ButtonSet::Any(vec![Button::A, Button::B]));
         assert_eq!(any!([Button::LShift]), ButtonSet::Any(vec![Button::LShift]));
     }
 
     #[test]
     fn all_macro() {
+        all!();
+        all!(A,);
         assert_eq!(all!(A, B), ButtonSet::All(vec![Button::A, Button::B]));
         assert_eq!(all!([Button::LShift]), ButtonSet::All(vec![Button::LShift]));
     }
