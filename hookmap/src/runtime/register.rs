@@ -66,14 +66,12 @@ impl Buffer {
             .entry(trigger)
             .or_default();
         if hotkey.trigger_action.is_satisfied(ButtonAction::Press) {
-            let buffer = &mut modifier_buffers.on_press;
-            buffer.0.push(hotkey.action.clone());
-            buffer.1.push(hotkey.event_block);
+            modifier_buffers.on_press.0.push(hotkey.action.clone());
+            modifier_buffers.on_press.1.push(hotkey.event_block);
         }
         if hotkey.trigger_action.is_satisfied(ButtonAction::Release) {
-            let buffer = &mut modifier_buffers.on_release;
-            buffer.0.push(hotkey.action.clone());
-            buffer.1.push(hotkey.event_block);
+            modifier_buffers.on_release.0.push(hotkey.action.clone());
+            modifier_buffers.on_release.1.push(hotkey.event_block);
         }
     }
 
