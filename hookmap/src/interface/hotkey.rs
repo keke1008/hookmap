@@ -1,6 +1,6 @@
 use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
-    conditional_hook::ConditionalHook,
+    conditional_hook::ConditionalHotkey,
     hotkey_info::{ConditionalHotkeyInfo, PartialHotkeyInfo},
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     SelectHandleTarget, SetEventBlock,
@@ -76,8 +76,11 @@ impl SelectHandleTarget for Hotkey {
         )
     }
 
-    fn add_modifiers(&self, (pressed, released): (&[ButtonSet], &[ButtonSet])) -> ConditionalHook {
-        ConditionalHook::new(
+    fn add_modifiers(
+        &self,
+        (pressed, released): (&[ButtonSet], &[ButtonSet]),
+    ) -> ConditionalHotkey {
+        ConditionalHotkey::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
                 modifier: Arc::new(ModifierKeys::new(pressed, released)),
@@ -88,8 +91,8 @@ impl SelectHandleTarget for Hotkey {
 }
 
 impl SetEventBlock for Hotkey {
-    fn block(&self) -> ConditionalHook {
-        ConditionalHook::new(
+    fn block(&self) -> ConditionalHotkey {
+        ConditionalHotkey::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
                 event_block: EventBlock::Block,
@@ -98,8 +101,8 @@ impl SetEventBlock for Hotkey {
         )
     }
 
-    fn unblock(&self) -> ConditionalHook {
-        ConditionalHook::new(
+    fn unblock(&self) -> ConditionalHotkey {
+        ConditionalHotkey::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
                 event_block: EventBlock::Unblock,

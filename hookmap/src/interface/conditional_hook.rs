@@ -19,12 +19,12 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 /// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
 /// ```
 ///
-pub struct ConditionalHook {
+pub struct ConditionalHotkey {
     register: Weak<RefCell<Register>>,
     conditional_hotkey: ConditionalHotkeyInfo,
 }
 
-impl ConditionalHook {
+impl ConditionalHotkey {
     /// Creates a new instance of `ConditionalHook`.
     pub(super) fn new(
         register: Weak<RefCell<Register>>,
@@ -37,7 +37,7 @@ impl ConditionalHook {
     }
 }
 
-impl SelectHandleTarget for ConditionalHook {
+impl SelectHandleTarget for ConditionalHotkey {
     fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
         ButtonEventHandlerEntry::new(
             Weak::clone(&self.register),
@@ -55,8 +55,11 @@ impl SelectHandleTarget for ConditionalHook {
         MouseCursorHotKeyEntry::new(Weak::clone(&self.register), self.conditional_hotkey.clone())
     }
 
-    fn add_modifiers(&self, (pressed, released): (&[ButtonSet], &[ButtonSet])) -> ConditionalHook {
-        ConditionalHook::new(
+    fn add_modifiers(
+        &self,
+        (pressed, released): (&[ButtonSet], &[ButtonSet]),
+    ) -> ConditionalHotkey {
+        ConditionalHotkey::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
                 modifier: Arc::new(self.conditional_hotkey.modifier.add(pressed, released)),
@@ -66,9 +69,9 @@ impl SelectHandleTarget for ConditionalHook {
     }
 }
 
-impl SetEventBlock for ConditionalHook {
+impl SetEventBlock for ConditionalHotkey {
     fn block(&self) -> Self {
-        ConditionalHook::new(
+        ConditionalHotkey::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
                 event_block: EventBlock::Block,
@@ -78,7 +81,7 @@ impl SetEventBlock for ConditionalHook {
     }
 
     fn unblock(&self) -> Self {
-        ConditionalHook::new(
+        ConditionalHotkey::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
                 event_block: EventBlock::Unblock,

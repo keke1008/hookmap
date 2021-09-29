@@ -5,7 +5,7 @@ mod hotkey_info;
 mod mouse_event_handler_entry;
 
 pub use button_event_handler_entry::ButtonEventHandlerEntry;
-pub use conditional_hook::ConditionalHook;
+pub use conditional_hook::ConditionalHotkey;
 pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
@@ -63,7 +63,7 @@ pub trait SelectHandleTarget {
     /// modifier_shift.bind(Button::A)
     ///     .on_press(|_| println!("Pressed the A key while holding down the Shift key."));
     /// ```
-    fn add_modifiers(&self, modifiers: (&[ButtonSet], &[ButtonSet])) -> ConditionalHook;
+    fn add_modifiers(&self, modifiers: (&[ButtonSet], &[ButtonSet])) -> ConditionalHotkey;
 }
 
 /// Set whether the hook blocks events.
@@ -80,7 +80,7 @@ pub trait SetEventBlock {
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
-    fn block(&self) -> ConditionalHook;
+    fn block(&self) -> ConditionalHotkey;
 
     /// Do not block the input event when the hook to be registered is enable.
     ///
@@ -96,5 +96,5 @@ pub trait SetEventBlock {
     ///     .on_press(|e| println!("{:?}", e));
     /// ```
     ///
-    fn unblock(&self) -> ConditionalHook;
+    fn unblock(&self) -> ConditionalHotkey;
 }
