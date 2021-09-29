@@ -24,15 +24,16 @@ pub trait Utils: SelectHandleTarget + Sized {
     // }
     fn bind_alt_tab<T>(&self, alt: T, tab: Button)
     where
-        T: Into<ButtonSet> + Clone,
+        T: Clone,
+        ButtonSet: From<T>,
     {
         hotkey!(self => {
-            on_release [alt] => move |_| {
+            on_release [&alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
                 Button::LAlt.release();
             };
 
-            modifier([tab]) {
+            modifier([alt]) {
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
                         Button::LAlt.press();
@@ -59,15 +60,16 @@ pub trait Utils: SelectHandleTarget + Sized {
     /// ```
     fn bind_shift_alt_tab<T>(&self, alt: T, tab: Button)
     where
-        T: Into<ButtonSet> + Clone,
+        T: Clone,
+        ButtonSet: From<T>,
     {
         hotkey!(self => {
-            on_release [alt] => move |_| {
+            on_release [&alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
                 Button::LAlt.release();
             };
 
-            modifier([tab]) {
+            modifier([alt]) {
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
                         Button::LAlt.press();
