@@ -403,3 +403,95 @@ macro_rules! all {
         )
     };
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::*;
+
+    #[test]
+    fn bind_command() {
+        hotkey!(Hotkey::new() => {
+            bind A => B;
+            bind [Button::A] => [Button::B];
+            bind [&SHIFT] => [&CTRL];
+        });
+    }
+
+    #[test]
+    fn on_press_command() {
+        hotkey!(Hotkey::new() => {
+            on_press A => |_| {};
+            on_press [Button::A] => |_| {};
+            on_press [&SHIFT] => |_| {};
+        });
+    }
+
+    #[test]
+    fn disable_command() {
+        hotkey!(Hotkey::new() => {
+            disable A;
+            disable [Button::A];
+            disable [&SHIFT];
+        });
+    }
+
+    #[test]
+    fn modifier_command() {
+        hotkey!(Hotkey::new() => {
+            modifier () {}
+            modifier (A) {}
+            modifier (!A) {}
+            modifier (A, !A) {}
+            modifier ([Button::A], ![Button::B]) {}
+            modifier (![&SHIFT], [&CTRL], ![&ALT]) {}
+            modifier (![&META]) {
+                modifier (A) {}
+            }
+            modifier () {
+                bind A => B;
+            }
+        });
+    }
+
+    #[test]
+    fn block_event_command() {
+        hotkey!(Hotkey::new() => {
+            block_event {}
+            block_event {
+                unblock_event {
+                    bind A => B;
+                }
+            }
+        });
+    }
+
+    #[test]
+    fn unblock_event_command() {
+        hotkey!(Hotkey::new() => {
+            unblock_event {}
+            unblock_event {
+                block_event {
+                    bind A => B;
+                }
+            }
+        });
+    }
+
+    #[test]
+    fn button_name_macro() {
+        assert_eq!(button_name!(A), Button::A);
+        assert_eq!(button_name!([Button::LShift]), Button::LShift);
+    }
+
+    #[test]
+    fn any_macro() {
+        assert_eq!(any!(A, B), ButtonSet::Any(vec![Button::A, Button::B]));
+        assert_eq!(any!([Button::LShift]), ButtonSet::Any(vec![Button::LShift]));
+    }
+
+    #[test]
+    fn all_macro() {
+        assert_eq!(all!(A, B), ButtonSet::All(vec![Button::A, Button::B]));
+        assert_eq!(all!([Button::LShift]), ButtonSet::All(vec![Button::LShift]));
+    }
+}
