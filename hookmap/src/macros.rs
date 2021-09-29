@@ -188,6 +188,8 @@ macro_rules! button_name {
 ///
 /// Calls associated functions of [`SelectHandleTarget`].
 ///
+/// [`SelectHandleTarget`]: crate::SelectHandleTarget
+///
 /// ```no_run
 /// use hookmap::*;
 /// trait BindAsTab: SelectHandleTarget {
