@@ -94,6 +94,14 @@ impl Buffer {
     }
 }
 
+macro_rules! button_set {
+    ($($button:tt),*) => {
+        [$(crate::button_name!($button)),*]
+            .iter()
+            .collect::<std::collections::HashSet<_>>()
+    };
+}
+
 #[derive(Default, Debug)]
 pub(crate) struct Register {
     storage: Storage,
@@ -128,12 +136,14 @@ impl Register {
     }
 
     fn disable_modifier_keys(&mut self) {
+        let ignored_buttons = button_set!(LShift, LCtrl, LAlt, LMeta, RShift, RCtrl, RAlt, RMeta);
         let modifiers = self
             .buffer
             .0
             .keys()
             .map(|modifier_keys| modifier_keys.iter())
             .flatten()
+            .filter(|button| !ignored_buttons.contains(button))
             .cloned()
             .collect::<Vec<_>>();
         let empty_modifier_buffer = self.buffer.0.entry(Arc::default()).or_default();
