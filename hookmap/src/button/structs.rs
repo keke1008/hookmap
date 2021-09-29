@@ -54,4 +54,11 @@ mod tests {
             modifier (![&SHIFT], ![&CTRL], ![&ALT], ![&META]) {}
         });
     }
+
+    #[test]
+    fn use_modifier_static_variable_in_bind() {
+        crate::hotkey!(crate::Hotkey::new() => {
+            bind [&SHIFT] => [&CTRL];
+        });
+    }
 }

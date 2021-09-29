@@ -2,6 +2,7 @@ use super::hotkey_info::PartialHotkeyInfo;
 use crate::button::ButtonInput;
 use crate::hotkey::{Action, TriggerAction};
 use crate::runtime::Register;
+use crate::ButtonSet;
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::cell::RefCell;
 use std::{borrow::Borrow, rc::Weak};
@@ -125,16 +126,16 @@ impl ButtonEventHandlerEntry {
     /// hotkey.bind(Button::H).like(Button::LeftArrow);
     /// ```
     ///
-    pub fn like<B, R>(&self, button: B)
+    pub fn like<T>(&self, button: T)
     where
-        B: Borrow<R>,
-        R: ButtonInput + Clone + Send + Sync + 'static,
+        T: Into<ButtonSet> + Send + Sync,
     {
+        let button = button.into();
         let register = self.register.upgrade().unwrap();
         let mut partial_hotkey = self.partial_hotkey.clone();
         partial_hotkey.event_block = EventBlock::Block;
         {
-            let button = button.borrow().clone();
+            let button = button.clone();
             register.borrow_mut().register_hotkey(
                 partial_hotkey
                     .clone()
