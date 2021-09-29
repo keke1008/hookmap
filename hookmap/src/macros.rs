@@ -190,6 +190,7 @@ macro_rules! hotkey {
             $($cmd:tt)*
         }
     } => {{
+        #[allow(unused_variables)]
         let hotkey = &$hotkey;
         $crate::hotkey!(@command hotkey $($cmd)*);
     }};
@@ -247,6 +248,7 @@ macro_rules! hotkey {
     // Matches `modifier`.
     (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
+            #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifiers($crate::hotkey!(@modifier ([], []) $($button)*));
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
@@ -277,6 +279,7 @@ macro_rules! hotkey {
     // Matches `block_event`.
     (@command $hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
+            #[allow(unused_variables)]
             let $hotkey = $hotkey.block();
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
@@ -286,6 +289,7 @@ macro_rules! hotkey {
     // Matches `unblock_event`.
     (@command $hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
         {
+            #[allow(unused_variables)]
             let $hotkey = $hotkey.unblock();
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
