@@ -10,7 +10,6 @@ pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
 use crate::button::ButtonSet;
-use hookmap_core::Button;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
@@ -60,11 +59,11 @@ pub trait SelectHandleTarget {
     /// ```
     /// use hookmap::*;
     /// let hotkey = Hotkey::new();
-    /// let modifier_shift = hotkey.add_modifiers((&[Button::LShift], &[]));
+    /// let modifier_shift = hotkey.add_modifiers((&[Button::LShift.into()], &[]));
     /// modifier_shift.bind(Button::A)
     ///     .on_press(|_| println!("Pressed the A key while holding down the Shift key."));
     /// ```
-    fn add_modifiers(&self, modifiers: (&[Button], &[Button])) -> ConditionalHook;
+    fn add_modifiers(&self, modifiers: (&[ButtonSet], &[ButtonSet])) -> ConditionalHook;
 }
 
 /// Set whether the hook blocks events.

@@ -8,7 +8,7 @@ use super::{
 use crate::button::ButtonSet;
 use crate::hotkey::ModifierKeys;
 use crate::runtime::{HookInstaller, Register};
-use hookmap_core::{Button, EventBlock};
+use hookmap_core::EventBlock;
 use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
 
 /// A struct for selecting the target of the hook.
@@ -76,7 +76,7 @@ impl SelectHandleTarget for Hotkey {
         )
     }
 
-    fn add_modifiers(&self, (pressed, released): (&[Button], &[Button])) -> ConditionalHook {
+    fn add_modifiers(&self, (pressed, released): (&[ButtonSet], &[ButtonSet])) -> ConditionalHook {
         ConditionalHook::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {

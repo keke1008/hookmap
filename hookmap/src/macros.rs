@@ -255,7 +255,7 @@ macro_rules! hotkey {
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        (&[$($pressed),*], &[$($released),*])
+        (&[$($pressed.into()),*], &[$($released.into()),*])
     };
 
     // Matches `modifier(...)`

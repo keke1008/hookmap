@@ -78,9 +78,10 @@ impl Buffer {
     }
 
     fn register_hotkey(&mut self, hotkey: HotkeyInfo) {
-        let modifier_keys = match hotkey.trigger {
-            ButtonSet::All(ref buttons) => Arc::new(hotkey.modifier.add(buttons, &[])),
-            _ => Arc::clone(&hotkey.modifier),
+        let modifier_keys = if matches!(hotkey.trigger, ButtonSet::All(_)) {
+            Arc::new(hotkey.modifier.add(&[hotkey.trigger.clone()], &[]))
+        } else {
+            Arc::clone(&hotkey.modifier)
         };
         let triggers: Box<dyn Iterator<Item = TriggerButtonKind>> = match hotkey.trigger.clone() {
             ButtonSet::All(buttons) => Box::new(buttons.into_iter().map(TriggerButtonKind::Single)),

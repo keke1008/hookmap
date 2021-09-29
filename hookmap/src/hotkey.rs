@@ -72,19 +72,19 @@ impl<E> Debug for Action<E> {
 
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq)]
 struct ModifierKeysInner {
-    pressed: Vec<Button>,
-    released: Vec<Button>,
+    pressed: Vec<ButtonSet>,
+    released: Vec<ButtonSet>,
 }
 
 impl ModifierKeysInner {
-    pub(crate) fn new(pressed: &[Button], released: &[Button]) -> Self {
+    pub(crate) fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
         Self {
             pressed: pressed.into(),
             released: released.into(),
         }
     }
 
-    pub(crate) fn add(&self, pressed: &[Button], released: &[Button]) -> Self {
+    pub(crate) fn add(&self, pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
         let mut result = self.clone();
         result.pressed.extend_from_slice(pressed);
         result.released.extend_from_slice(released);
@@ -97,7 +97,10 @@ impl ModifierKeysInner {
     }
 
     pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
-        self.pressed.iter().chain(self.released.iter())
+        self.pressed
+            .iter()
+            .flat_map(ButtonSet::iter)
+            .chain(self.released.iter().flat_map(ButtonSet::iter))
     }
 }
 
@@ -105,11 +108,11 @@ impl ModifierKeysInner {
 pub(crate) struct ModifierKeys(Option<ModifierKeysInner>);
 
 impl ModifierKeys {
-    pub(crate) fn new(pressed: &[Button], released: &[Button]) -> Self {
+    pub(crate) fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
         Self::default().add(pressed, released)
     }
 
-    pub(crate) fn add(&self, pressed: &[Button], released: &[Button]) -> Self {
+    pub(crate) fn add(&self, pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
         let inner = self
             .0
             .as_ref()

@@ -5,7 +5,7 @@ use super::{
     SelectHandleTarget, SetEventBlock,
 };
 use crate::{button::ButtonSet, runtime::Register};
-use hookmap_core::{Button, EventBlock};
+use hookmap_core::EventBlock;
 use std::{cell::RefCell, rc::Weak, sync::Arc};
 
 /// A struct for selecting the target of the conditional hook.
@@ -15,7 +15,7 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 /// ```
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
-/// let mod_ctrl = hotkey.add_modifiers((&[Button::LCtrl], &[]));
+/// let mod_ctrl = hotkey.add_modifiers((&[Button::LCtrl.into()], &[]));
 /// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
 /// ```
 ///
@@ -55,7 +55,7 @@ impl SelectHandleTarget for ConditionalHook {
         MouseCursorHotKeyEntry::new(Weak::clone(&self.register), self.conditional_hotkey.clone())
     }
 
-    fn add_modifiers(&self, (pressed, released): (&[Button], &[Button])) -> ConditionalHook {
+    fn add_modifiers(&self, (pressed, released): (&[ButtonSet], &[ButtonSet])) -> ConditionalHook {
         ConditionalHook::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
