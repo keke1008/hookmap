@@ -35,3 +35,23 @@ pub static SHIFT: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LShift, RShift));
 pub static CTRL: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LCtrl, RCtrl));
 pub static ALT: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LAlt, RAlt));
 pub static META: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LMeta, RMeta));
+
+impl From<&Lazy<ButtonSet>> for ButtonSet {
+    fn from(buttons: &Lazy<ButtonSet>) -> Self {
+        (*buttons).clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::SelectHandleTarget;
+
+    #[test]
+    fn use_modifier_static_variable_in_condition() {
+        crate::hotkey!(crate::Hotkey::new() => {
+            modifier ([&SHIFT], [&CTRL], [&ALT], [&META]) {}
+            modifier (![&SHIFT], ![&CTRL], ![&ALT], ![&META]) {}
+        });
+    }
+}

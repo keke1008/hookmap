@@ -255,7 +255,7 @@ macro_rules! hotkey {
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        (&[$($pressed.into()),*], &[$($released.into()),*])
+        (&[$(ButtonSet::from($pressed)),*], &[$(ButtonSet::from($released)),*])
     };
 
     // Matches `modifier(...)`
