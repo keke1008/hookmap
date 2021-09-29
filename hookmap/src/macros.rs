@@ -3,7 +3,7 @@
 /// If the argument is enclosed in square brackets, it will be expanded without any action.
 ///
 /// # Example
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// assert_eq!(Button::Key0, button_name!(0));
 /// assert_eq!(Button::A, button_name!(A));
@@ -55,7 +55,7 @@ macro_rules! button_name {
 ///
 /// Binds the specified button as another button.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -67,7 +67,7 @@ macro_rules! button_name {
 ///
 /// Registers a function to be called when the specified button is pressed.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -79,7 +79,7 @@ macro_rules! button_name {
 ///
 /// Registers a function to be called when the specified button is released.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -91,7 +91,7 @@ macro_rules! button_name {
 ///
 /// Registers a function to be called when the specified button is pressed or releaesd.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -103,7 +103,7 @@ macro_rules! button_name {
 ///
 /// Disables the specified button, `MouseMove`, or `MouseWheel`.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -117,7 +117,7 @@ macro_rules! button_name {
 ///
 /// Registers a function to be called when the mouse cursor is moved.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -129,7 +129,7 @@ macro_rules! button_name {
 ///
 /// Registers a function to be called when the mouse wheel is rotated.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -142,7 +142,7 @@ macro_rules! button_name {
 /// Adds modifier keys to hotkeys defined enclosed in Curly brackets.
 /// The "!" in front of the button indicates that the button is released.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -156,7 +156,7 @@ macro_rules! button_name {
 ///
 /// The button/mouse event will be blocked if the hotkey defined in this statement is executed.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -173,7 +173,7 @@ macro_rules! button_name {
 /// If the hotkeys defined in the `block_event` statement are executed at the same time,
 /// the button event will be blocked.
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
@@ -366,7 +366,7 @@ macro_rules! send {
 ///
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// let a_or_b = any!(A, B);
@@ -387,7 +387,7 @@ macro_rules! any {
 /// Creates ButtonSet::All.
 /// # Example
 ///
-/// ```
+/// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// let a_and_b = all!(A, B);
