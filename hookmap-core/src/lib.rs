@@ -11,7 +11,7 @@
 //! * [`ButtonOperation`] for [`Button`]
 //! * [`EmulateMouseCursor`] for [`Mouse`]
 //! * [`EmulateMouseWheel`] for [`Mouse`]
-//! * [`HookInstaller`] for [`InputHandler`]
+//! * [`HookInstaller`] for [`HookHandler`]
 //!
 //! [`HookInstaller`]: crate::common::handler::HookInstaller
 //!
