@@ -315,10 +315,8 @@ impl Hook {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let event = Iter::new(self.filter.clone(), self.event_block)
-            .next()
-            .unwrap();
-        std::thread::spawn(move || f(event));
+        let mut iter = Iter::new(self.filter.clone(), self.event_block);
+        std::thread::spawn(move || f(iter.next().unwrap()));
     }
 
     /// Receives multimple hooks as iterator.
