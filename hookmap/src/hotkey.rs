@@ -1,24 +1,7 @@
 use crate::button::ButtonSet;
 use crate::ButtonState;
-use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
+use hookmap_core::{ButtonEvent, EventBlock};
 use std::{fmt::Debug, iter, sync::Arc};
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) enum TriggerAction {
-    Press,
-    Release,
-    PressOrRelease,
-}
-
-impl TriggerAction {
-    pub(crate) fn is_satisfied(&self, action: ButtonAction) -> bool {
-        match self {
-            TriggerAction::PressOrRelease => true,
-            TriggerAction::Press => action == ButtonAction::Press,
-            TriggerAction::Release => action == ButtonAction::Release,
-        }
-    }
-}
 
 type ActionFn<E> = Arc<dyn Fn(E) + Send + Sync>;
 
@@ -95,13 +78,6 @@ impl ModifierKeysInner {
         self.pressed.iter().all(ButtonState::is_pressed)
             && self.released.iter().all(ButtonState::is_released)
     }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
-        self.pressed
-            .iter()
-            .flat_map(ButtonSet::iter)
-            .chain(self.released.iter().flat_map(ButtonSet::iter))
-    }
 }
 
 #[derive(Debug, Default, Hash, PartialEq, Eq)]
@@ -126,14 +102,6 @@ impl ModifierKeys {
             .as_ref()
             .map(ModifierKeysInner::satisfies_condition)
             .unwrap_or(true)
-    }
-
-    pub(crate) fn iter(&self) -> impl Iterator<Item = &Button> {
-        self.0
-            .as_ref()
-            .map(ModifierKeysInner::iter)
-            .into_iter()
-            .flatten()
     }
 }
 
