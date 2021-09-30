@@ -119,7 +119,7 @@ impl ButtonEventHandlerEntry {
     /// # Example
     ///
     /// ```
-    /// use hokmap::*;
+    /// use hookmap::*;
     /// let hotkey = Hotkey::new();
     /// hotkey.bind(Button::A).on_press_and_release(
     ///     |_| println!("The A key is pressed"),
@@ -127,9 +127,10 @@ impl ButtonEventHandlerEntry {
     /// );
     /// ```
     ///
-    pub fn on_press_and_release<F>(self, on_press: F, on_release: F)
+    pub fn on_press_and_release<F, G>(self, on_press: F, on_release: G)
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
+        G: Fn(ButtonEvent) + Send + Sync + 'static,
     {
         let action = HotkeyAction::PressAndRelease {
             on_press: on_press.into(),
