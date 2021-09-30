@@ -1,11 +1,11 @@
 mod fetcher;
-mod hook_installer;
+mod startup;
 
 pub(crate) mod register;
 pub(crate) mod storage;
 
-pub(crate) use hook_installer::HookInstaller;
 pub(crate) use register::Register;
+pub(crate) use startup::HookInstaller;
 
 pub mod hook;
 pub mod interruption;
