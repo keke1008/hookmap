@@ -1,6 +1,6 @@
 use super::{
     compute_event_block,
-    storage::{ButtonHook, ButtonStorage, MouseStorage},
+    storage::{ButtonStorage, MouseStorage},
 };
 use crate::hotkey::Action;
 use hookmap_core::{ButtonEvent, EventBlock};
@@ -13,12 +13,12 @@ pub(crate) struct FetchResult<E> {
     pub(super) event_block: EventBlock,
 }
 
-pub(crate) struct ButtonFetcher<T: ButtonHook> {
-    storage: ButtonStorage<T>,
+pub(crate) struct ButtonFetcher {
+    storage: ButtonStorage,
 }
 
-impl<T: ButtonHook> ButtonFetcher<T> {
-    pub(crate) fn new(storage: ButtonStorage<T>) -> Self {
+impl ButtonFetcher {
+    pub(crate) fn new(storage: ButtonStorage) -> Self {
         Self { storage }
     }
 
@@ -28,7 +28,7 @@ impl<T: ButtonHook> ButtonFetcher<T> {
             .get(&event.target)?
             .iter()
             .filter(|hook| hook.satisfies_condition())
-            .map(|hook| (hook.action().clone(), hook.event_block()))
+            .map(|hook| (hook.action.clone(), hook.event_block))
             .unzip();
 
         Some(FetchResult {
