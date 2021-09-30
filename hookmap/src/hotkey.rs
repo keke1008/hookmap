@@ -137,7 +137,7 @@ impl ModifierKeys {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) enum HotkeyAction {
     OnPress(Action<ButtonEvent>),
     OnRelease(Action<ButtonEvent>),

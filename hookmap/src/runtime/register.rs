@@ -1,194 +1,88 @@
-use super::{
-    compute_event_block,
-    storage::{OnPressHook, OnReleaseHook, Storage},
-};
+use super::storage::{HookInfo, HookKind, Storage};
 use crate::button::ButtonSet;
-use crate::hotkey::{Action, HotkeyInfo, ModifierKeys, MouseEventHandler};
-use hookmap_core::{
-    Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
-};
-use std::{
-    collections::HashMap,
-    iter,
-    sync::{atomic::AtomicBool, Arc},
-};
+use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler};
+use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
+use std::sync::Arc;
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone)]
-enum TriggerButtonKind {
-    Single(Button),
-    Any(Vec<Button>),
-}
-
-impl TriggerButtonKind {
-    fn iter(&self) -> impl Iterator<Item = &Button> {
-        match self {
-            Self::Single(trigger) => {
-                Box::new(iter::once(trigger)) as Box<dyn Iterator<Item = &Button>>
-            }
-            Self::Any(triggers) => Box::new(triggers.iter()),
+fn hotkey_to_hook(hotkey: &HotkeyInfo) -> (Option<HookInfo>, Option<HookInfo>) {
+    let modifier_keys = Arc::clone(&hotkey.modifier);
+    match &hotkey.action {
+        HotkeyAction::OnPress(action) => {
+            let kind = HookKind::Independet { modifier_keys };
+            let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+            (Some(hook), None)
+        }
+        HotkeyAction::OnRelease(action) => {
+            let kind = HookKind::Independet { modifier_keys };
+            let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+            (None, Some(hook))
+        }
+        HotkeyAction::OnPressOrRelease(action) => {
+            let activated = Arc::default();
+            let kind = HookKind::LinkedOnPress {
+                modifier_keys,
+                activated: Arc::clone(&activated),
+            };
+            let hook_on_press = HookInfo::new(kind, action.clone(), hotkey.event_block);
+            let kind = HookKind::LinkedOnRelease { activated };
+            let hook_on_release = HookInfo::new(kind, action.clone(), hotkey.event_block);
+            (Some(hook_on_press), Some(hook_on_release))
+        }
+        HotkeyAction::OnPressAndRelease {
+            on_press: press,
+            on_release: release,
+        } => {
+            let activated = Arc::default();
+            let kind = HookKind::LinkedOnPress {
+                modifier_keys,
+                activated: Arc::clone(&activated),
+            };
+            let hook_on_press = HookInfo::new(kind, press.clone(), hotkey.event_block);
+            let kind = HookKind::LinkedOnRelease { activated };
+            let hook_on_release = HookInfo::new(kind, release.clone(), hotkey.event_block);
+            (Some(hook_on_press), Some(hook_on_release))
         }
     }
-}
-
-impl From<ButtonSet> for TriggerButtonKind {
-    fn from(buttons: ButtonSet) -> Self {
-        match buttons {
-            ButtonSet::Any(buttons) => Self::Any(buttons),
-            ButtonSet::Single(button) => Self::Single(button),
-            ButtonSet::All(_) => unreachable!(),
-        }
-    }
-}
-
-type BufferedHookInfo = (Vec<Action<ButtonEvent>>, Vec<EventBlock>);
-#[derive(Debug, Default)]
-struct BufferedHook {
-    on_press: BufferedHookInfo,
-    on_release: BufferedHookInfo,
-}
-
-type BufferInner = HashMap<Arc<ModifierKeys>, HashMap<TriggerButtonKind, BufferedHook>>;
-
-#[derive(Debug, Default)]
-struct Buffer(BufferInner);
-
-impl Buffer {
-    fn register_modifier(
-        &mut self,
-        modifier_keys: Arc<ModifierKeys>,
-        trigger: TriggerButtonKind,
-        hotkey: &HotkeyInfo,
-    ) {
-        let modifier_buffers = self
-            .0
-            .entry(modifier_keys)
-            .or_default()
-            .entry(trigger)
-            .or_default();
-        if hotkey.trigger_action.is_satisfied(ButtonAction::Press) {
-            modifier_buffers.on_press.0.push(hotkey.action.clone());
-            modifier_buffers.on_press.1.push(hotkey.event_block);
-        }
-        if hotkey.trigger_action.is_satisfied(ButtonAction::Release) {
-            modifier_buffers.on_release.0.push(hotkey.action.clone());
-            modifier_buffers.on_release.1.push(hotkey.event_block);
-        }
-    }
-
-    fn register_hotkey(&mut self, hotkey: HotkeyInfo) {
-        let modifier_keys = if matches!(hotkey.trigger, ButtonSet::All(_)) {
-            Arc::new(hotkey.modifier.add(&[hotkey.trigger.clone()], &[]))
-        } else {
-            Arc::clone(&hotkey.modifier)
-        };
-        let triggers: Box<dyn Iterator<Item = TriggerButtonKind>> = match hotkey.trigger.clone() {
-            ButtonSet::All(buttons) => Box::new(buttons.into_iter().map(TriggerButtonKind::Single)),
-            ButtonSet::Single(button) => Box::new(iter::once(TriggerButtonKind::Single(button))),
-            ButtonSet::Any(buttons) => Box::new(iter::once(TriggerButtonKind::Any(buttons))),
-        };
-        triggers.into_iter().for_each(|trigger| {
-            self.register_modifier(Arc::clone(&modifier_keys), trigger, &hotkey)
-        });
-    }
-}
-
-macro_rules! button_set {
-    ($($button:tt),*) => {
-        [$(crate::button_name!($button)),*]
-            .iter()
-            .collect::<std::collections::HashSet<_>>()
-    };
 }
 
 #[derive(Default, Debug)]
 pub(crate) struct Register {
     storage: Storage,
-    buffer: Buffer,
 }
 
 impl Register {
-    fn generate_pressed_hook(
-        hook_info: BufferedHookInfo,
-        modifier_keys: Arc<ModifierKeys>,
-        activated: Arc<AtomicBool>,
-    ) -> Arc<OnPressHook> {
-        let (actions, event_blocks) = hook_info;
-        Arc::new(OnPressHook::new(
-            actions,
-            modifier_keys,
-            compute_event_block(&event_blocks),
-            activated,
-        ))
-    }
-
-    fn generate_released_hook(
-        hook_info: BufferedHookInfo,
-        activated: Arc<AtomicBool>,
-    ) -> Arc<OnReleaseHook> {
-        let (actions, event_blocks) = hook_info;
-        Arc::new(OnReleaseHook::new(
-            actions,
-            compute_event_block(&event_blocks),
-            activated,
-        ))
-    }
-
-    fn disable_modifier_keys(&mut self) {
-        let ignored_buttons = button_set!(LShift, LCtrl, LAlt, LMeta, RShift, RCtrl, RAlt, RMeta);
-        let modifiers = self
-            .buffer
-            .0
-            .keys()
-            .map(|modifier_keys| modifier_keys.iter())
-            .flatten()
-            .filter(|button| !ignored_buttons.contains(button))
-            .cloned()
-            .collect::<Vec<_>>();
-        let empty_modifier_buffer = self.buffer.0.entry(Arc::default()).or_default();
-        modifiers.iter().for_each(|modifier| {
-            let buffer = empty_modifier_buffer
-                .entry(TriggerButtonKind::Single(*modifier))
-                .or_default();
-            buffer.on_press.1.push(EventBlock::Block);
-        });
-    }
-
-    pub(super) fn into_inner(mut self) -> Storage {
-        self.disable_modifier_keys();
-
-        for (modifier_keys, hook_info) in self.buffer.0 {
-            for (trigger_buttons, buffered_hook) in hook_info {
-                let activated = Arc::default();
-                let hook = Self::generate_pressed_hook(
-                    buffered_hook.on_press,
-                    Arc::clone(&modifier_keys),
-                    Arc::clone(&activated),
-                );
-                let storage = &mut self.storage;
-                trigger_buttons
-                    .iter()
-                    .zip(iter::repeat(hook))
-                    .for_each(|(&trigger, hook)| {
-                        storage.on_press.entry(trigger).or_default().push(hook);
-                    });
-
-                let hook = Self::generate_released_hook(buffered_hook.on_release, activated);
-                let storage = &mut self.storage;
-                trigger_buttons
-                    .iter()
-                    .chain(modifier_keys.iter())
-                    .zip(iter::repeat(hook))
-                    .for_each(|(&trigger, hook)| {
-                        storage.on_release.entry(trigger).or_default().push(hook);
-                    });
-            }
-        }
-
+    pub(super) fn into_inner(self) -> Storage {
         self.storage
     }
 
-    pub(crate) fn register_hotkey(&mut self, hotkey: HotkeyInfo) {
-        self.buffer.register_hotkey(hotkey);
+    pub(crate) fn register_hotkey(&mut self, mut hotkey: HotkeyInfo) {
+        let hotkey = {
+            if let ButtonSet::All(_) = hotkey.trigger {
+                hotkey.modifier = Arc::new(hotkey.modifier.add(&[hotkey.trigger.clone()], &[]))
+            }
+            hotkey
+        };
+        let (on_press_hook, on_release_hook) = hotkey_to_hook(&hotkey);
+        if let Some(hook) = on_press_hook {
+            let hook = Arc::new(hook);
+            for &trigger in hotkey.trigger.iter() {
+                self.storage
+                    .on_press
+                    .entry(trigger)
+                    .or_default()
+                    .push(Arc::clone(&hook));
+            }
+        }
+        if let Some(hook) = on_release_hook {
+            let hook = Arc::new(hook);
+            for &trigger in hotkey.trigger.iter() {
+                self.storage
+                    .on_release
+                    .entry(trigger)
+                    .or_default()
+                    .push(Arc::clone(&hook));
+            }
+        }
     }
 
     pub(crate) fn register_cursor_event_handler(

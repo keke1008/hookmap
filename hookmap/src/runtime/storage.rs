@@ -19,14 +19,18 @@ pub(super) enum HookKind {
 }
 
 #[derive(Debug)]
-pub(super) struct HookInfo {
-    kind: HookKind,
-    action: Action<ButtonEvent>,
-    event_block: EventBlock,
+pub(crate) struct HookInfo {
+    pub(super) kind: HookKind,
+    pub(super) action: Action<ButtonEvent>,
+    pub(super) event_block: EventBlock,
 }
 
 impl HookInfo {
-    fn new(kind: HookKind, action: Action<ButtonEvent>, event_block: EventBlock) -> Self {
+    pub(super) fn new(
+        kind: HookKind,
+        action: Action<ButtonEvent>,
+        event_block: EventBlock,
+    ) -> Self {
         Self {
             kind,
             action,
@@ -60,15 +64,15 @@ pub struct MouseHook<E> {
     pub(super) event_block: EventBlock,
 }
 
-pub(super) type ButtonStorage<T> = HashMap<Button, Vec<Arc<T>>>;
+pub(super) type ButtonStorage = HashMap<Button, Vec<Arc<HookInfo>>>;
 pub(super) type MouseStorage<E> = Vec<Arc<MouseEventHandler<E>>>;
 pub(super) type MouseCursorStorage = MouseStorage<MouseCursorEvent>;
 pub(super) type MouseWheelStorage = MouseStorage<MouseWheelEvent>;
 
 #[derive(Default, Debug)]
 pub(super) struct Storage {
-    pub(super) on_press: ButtonStorage<HookKind>,
-    pub(super) on_release: ButtonStorage<HookKind>,
+    pub(super) on_press: ButtonStorage,
+    pub(super) on_release: ButtonStorage,
     pub(super) mouse_cursor: MouseCursorStorage,
     pub(super) mouse_wheel: MouseWheelStorage,
 }
