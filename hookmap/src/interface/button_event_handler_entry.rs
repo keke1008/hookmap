@@ -109,6 +109,40 @@ impl ButtonEventHandlerEntry {
             .register_hotkey(hotkey);
     }
 
+    /// Registers handlers called when the specified button is pressed or released, respectively.
+    ///
+    /// # Arguments
+    ///
+    /// * `on_press` - A function that takes [`ButtonEvent`].
+    /// * `on_release` - A function that takes [`ButtonEvent`].
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hokmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind(Button::A).on_press_and_release(
+    ///     |_| println!("The A key is pressed"),
+    ///     |_| println!("The A key is released"),
+    /// );
+    /// ```
+    ///
+    pub fn on_press_and_release<F>(self, on_press: F, on_release: F)
+    where
+        F: Fn(ButtonEvent) + Send + Sync + 'static,
+    {
+        let action = HotkeyAction::OnPressAndRelease {
+            press: on_press.into(),
+            release: on_release.into(),
+        };
+        let hotkey = self.partial_hotkey.build_hotkey_info(action);
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(hotkey);
+    }
+
     /// When the specified button is pressed, the key passed in the argument will be pressed.
     /// The same applies when the button is released.
     ///
