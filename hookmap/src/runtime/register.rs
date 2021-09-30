@@ -7,17 +7,17 @@ use std::sync::Arc;
 fn hotkey_to_hook(hotkey: &HotkeyInfo) -> (Option<HookInfo>, Option<HookInfo>) {
     let modifier_keys = Arc::clone(&hotkey.modifier);
     match &hotkey.action {
-        HotkeyAction::OnPress(action) => {
+        HotkeyAction::Press(action) => {
             let kind = HookKind::Independet { modifier_keys };
             let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
             (Some(hook), None)
         }
-        HotkeyAction::OnRelease(action) => {
+        HotkeyAction::Release(action) => {
             let kind = HookKind::Independet { modifier_keys };
             let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
             (None, Some(hook))
         }
-        HotkeyAction::OnPressOrRelease(action) => {
+        HotkeyAction::PressOrRelease(action) => {
             let activated = Arc::default();
             let kind = HookKind::LinkedOnPress {
                 modifier_keys,
@@ -28,7 +28,7 @@ fn hotkey_to_hook(hotkey: &HotkeyInfo) -> (Option<HookInfo>, Option<HookInfo>) {
             let hook_on_release = HookInfo::new(kind, action.clone(), hotkey.event_block);
             (Some(hook_on_press), Some(hook_on_release))
         }
-        HotkeyAction::OnPressAndRelease {
+        HotkeyAction::PressAndRelease {
             on_press: press,
             on_release: release,
         } => {

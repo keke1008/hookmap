@@ -42,7 +42,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::OnPress(callback.into());
+        let action = HotkeyAction::Press(callback.into());
         let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
         self.register
             .upgrade()
@@ -73,7 +73,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::OnPressOrRelease(callback.into());
+        let action = HotkeyAction::PressOrRelease(callback.into());
         let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
         self.register
             .upgrade()
@@ -100,7 +100,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::OnRelease(callback.into());
+        let action = HotkeyAction::Release(callback.into());
         let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
         self.register
             .upgrade()
@@ -131,7 +131,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::OnPressAndRelease {
+        let action = HotkeyAction::PressAndRelease {
             on_press: on_press.into(),
             on_release: on_release.into(),
         };
@@ -169,7 +169,7 @@ impl ButtonEventHandlerEntry {
             (move |_| button.press()).into()
         };
         let on_release = (move |_| button.release()).into();
-        let action = HotkeyAction::OnPressAndRelease {
+        let action = HotkeyAction::PressAndRelease {
             on_press,
             on_release,
         };
@@ -196,7 +196,7 @@ impl ButtonEventHandlerEntry {
             partial_hotkey.event_block = EventBlock::Block;
             partial_hotkey
         };
-        let action = HotkeyAction::OnPressOrRelease(Action::Noop);
+        let action = HotkeyAction::PressOrRelease(Action::Noop);
         let hotkey = partial_hotkey.build_hotkey_info(action);
         self.register
             .upgrade()

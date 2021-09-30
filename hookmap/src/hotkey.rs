@@ -107,10 +107,10 @@ impl ModifierKeys {
 
 #[derive(Debug, Clone)]
 pub(crate) enum HotkeyAction {
-    OnPress(Action<ButtonEvent>),
-    OnRelease(Action<ButtonEvent>),
-    OnPressOrRelease(Action<ButtonEvent>),
-    OnPressAndRelease {
+    Press(Action<ButtonEvent>),
+    Release(Action<ButtonEvent>),
+    PressOrRelease(Action<ButtonEvent>),
+    PressAndRelease {
         on_press: Action<ButtonEvent>,
         on_release: Action<ButtonEvent>,
     },
