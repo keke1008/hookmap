@@ -1,3 +1,5 @@
+//! Gets keyboard events dynamically.
+
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
 use std::{collections::HashSet, sync::mpsc, sync::Arc};
 
