@@ -1,10 +1,12 @@
-use super::fetcher::{ButtonFetcher, FetchResult, MouseFetcher};
-use super::interruption::{EventSenderVec, INTERRUPTION_EVENT};
-use super::storage::Storage;
+use super::{
+    fetcher::{ButtonFetcher, FetchResult, MouseFetcher},
+    hook::event_sender,
+    storage::Storage,
+};
 use crate::interface::Hotkey;
 use hookmap_core::ButtonAction;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
-use std::{fmt::Debug, rc::Rc, sync::Mutex};
+use std::{fmt::Debug, rc::Rc};
 
 pub(crate) struct HookInstaller {
     storage: Storage,
@@ -12,22 +14,16 @@ pub(crate) struct HookInstaller {
 
 impl HookInstaller {
     fn handle_mouse_event<T: Debug + Copy>(
-        interruption: &Mutex<EventSenderVec<T>>,
         fetcher: &MouseFetcher<T>,
         event_message: &mut EventMessage,
         event: T,
     ) {
-        let event_block = interruption.lock().unwrap().send_event(event);
-        if event_block == EventBlock::Block {
-            event_message.send_event_block(EventBlock::Block)
-        } else {
-            let FetchResult {
-                actions,
-                event_block,
-            } = fetcher.fetch();
-            event_message.send_event_block(event_block);
-            actions.iter().for_each(|action| action.call(event));
-        }
+        let FetchResult {
+            actions,
+            event_block,
+        } = fetcher.fetch();
+        event_message.send_event_block(event_block);
+        actions.iter().for_each(|action| action.call(event));
     }
 
     pub(crate) fn install_hook(self) {
@@ -40,7 +36,7 @@ impl HookInstaller {
         while let Ok(mut event_message) = event_receiver.recv() {
             match event_message.event {
                 Event::Button(event) => {
-                    if INTERRUPTION_EVENT.send_button_event(event) == EventBlock::Block {
+                    if event_sender::send(event) == EventBlock::Block {
                         event_message.send_event_block(EventBlock::Block);
                     } else {
                         let actions = match event.action {
@@ -60,7 +56,6 @@ impl HookInstaller {
                 }
                 Event::MouseCursor(event) => {
                     HookInstaller::handle_mouse_event(
-                        &INTERRUPTION_EVENT.mouse_cursor,
                         &mouse_cursor_fetcher,
                         &mut event_message,
                         event,
@@ -68,7 +63,6 @@ impl HookInstaller {
                 }
                 Event::MouseWheel(event) => {
                     HookInstaller::handle_mouse_event(
-                        &INTERRUPTION_EVENT.mouse_wheel,
                         &mouse_wheel_fetcher,
                         &mut event_message,
                         event,

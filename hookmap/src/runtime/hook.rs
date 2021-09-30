@@ -1,7 +1,7 @@
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
 use std::{collections::HashSet, sync::mpsc, sync::Arc};
 
-mod event_sender {
+pub(super) mod event_sender {
     use super::Filter;
     use hookmap_core::{ButtonEvent, EventBlock};
     use once_cell::sync::Lazy;
