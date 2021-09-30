@@ -132,8 +132,8 @@ impl ButtonEventHandlerEntry {
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
         let action = HotkeyAction::OnPressAndRelease {
-            press: on_press.into(),
-            release: on_release.into(),
+            on_press: on_press.into(),
+            on_release: on_release.into(),
         };
         let hotkey = self.partial_hotkey.build_hotkey_info(action);
         self.register
@@ -164,12 +164,15 @@ impl ButtonEventHandlerEntry {
             partial_hotkey.event_block = EventBlock::Block;
             partial_hotkey
         };
-        let press = {
+        let on_press = {
             let button = button.clone();
             (move |_| button.press()).into()
         };
-        let release = (move |_| button.release()).into();
-        let action = HotkeyAction::OnPressAndRelease { press, release };
+        let on_release = (move |_| button.release()).into();
+        let action = HotkeyAction::OnPressAndRelease {
+            on_press,
+            on_release,
+        };
         let hotkey = partial_hotkey.build_hotkey_info(action);
         self.register
             .upgrade()

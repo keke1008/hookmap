@@ -143,8 +143,8 @@ pub(crate) enum HotkeyAction {
     OnRelease(Action<ButtonEvent>),
     OnPressOrRelease(Action<ButtonEvent>),
     OnPressAndRelease {
-        press: Action<ButtonEvent>,
-        release: Action<ButtonEvent>,
+        on_press: Action<ButtonEvent>,
+        on_release: Action<ButtonEvent>,
     },
 }
 
