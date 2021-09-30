@@ -1,6 +1,8 @@
-use crate::button::ButtonSet;
-use crate::hotkey::{Action, HotkeyInfo, ModifierKeys, MouseEventHandler, TriggerAction};
-use hookmap_core::{ButtonEvent, EventBlock};
+use crate::{
+    button::ButtonSet,
+    hotkey::{Action, HotkeyAction, HotkeyInfo, ModifierKeys, MouseEventHandler},
+};
+use hookmap_core::EventBlock;
 use std::sync::Arc;
 
 #[derive(Clone, Debug, Default)]
@@ -35,14 +37,9 @@ pub(super) struct PartialHotkeyInfo {
 }
 
 impl PartialHotkeyInfo {
-    pub(super) fn build_hotkey_info(
-        self,
-        trigger_action: TriggerAction,
-        action: Action<ButtonEvent>,
-    ) -> HotkeyInfo {
+    pub(super) fn build_hotkey_info(self, action: HotkeyAction) -> HotkeyInfo {
         HotkeyInfo {
             trigger: self.trigger,
-            trigger_action,
             modifier: self.modifier,
             event_block: self.event_block,
             action,

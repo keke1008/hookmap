@@ -138,12 +138,22 @@ impl ModifierKeys {
 }
 
 #[derive(Debug)]
+pub(crate) enum HotkeyAction {
+    OnPress(Action<ButtonEvent>),
+    OnRelease(Action<ButtonEvent>),
+    OnPressOrRelease(Action<ButtonEvent>),
+    OnPressAndRelease {
+        press: Action<ButtonEvent>,
+        release: Action<ButtonEvent>,
+    },
+}
+
+#[derive(Debug)]
 pub(crate) struct HotkeyInfo {
     pub(crate) trigger: ButtonSet,
-    pub(crate) trigger_action: TriggerAction,
     pub(crate) modifier: Arc<ModifierKeys>,
     pub(crate) event_block: EventBlock,
-    pub(crate) action: Action<ButtonEvent>,
+    pub(crate) action: HotkeyAction,
 }
 
 #[derive(Clone, Debug)]
