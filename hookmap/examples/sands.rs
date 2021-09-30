@@ -1,10 +1,12 @@
-use hookmap::*;
+use hookmap::{
+    hook::{Filter, Hook},
+    *,
+};
 use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
-use std::thread;
 
 fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
 where
@@ -27,11 +29,9 @@ where
         };
     });
 
-    thread::spawn(move || loop {
-        Interruption::unblock()
-            .keyboard()
-            .iter()
-            .filter(|e| e.action == ButtonAction::Press && !ignore.contains(&e.target))
+    let filter = Filter::new().action(ButtonAction::Press);
+    Hook::unblock(filter).then_iter(move |iter| {
+        iter.filter(|e| !ignore.contains(&e.target))
             .for_each(|_| is_alone.store(false, Ordering::SeqCst));
     });
 }
