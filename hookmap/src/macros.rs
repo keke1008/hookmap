@@ -40,17 +40,18 @@ macro_rules! button_name {
 ///
 /// # Commands
 ///
-/// * bind
-/// * on_press
-/// * on_release
-/// * on_press_or_release
-/// * disable
-/// * mouse_cursor
-/// * mouse_wheel
-/// * modifier
-/// * block_event
-/// * unblock_event
-/// * call
+/// * [bind](#bind)
+/// * [on_press](#on_press)
+/// * [on_release](#on_release)
+/// * [on_press_or_release](#on_press_or_release)
+/// * [on_press_and_release](#on_press_and_release)
+/// * [disable](#disable)
+/// * [mouse_cursor](#mouse_cursor)
+/// * [mouse_wheel](#mouse_wheel)
+/// * [modifier](#modifier)
+/// * [block_event](#block_event)
+/// * [unblock_event](#unblock_event)
+/// * [call](#call)
 ///
 /// ## bind
 ///
@@ -97,6 +98,21 @@ macro_rules! button_name {
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     on_press_or_release A => |event| {};
+/// });
+/// ```
+///
+/// ## on_press_and_reelase
+///
+/// Registers a function to be called when the specified button is pressed or releaesd, respectively.
+///
+/// ```no_run
+/// use hookmap::*;
+/// let hotkey = Hotkey::new();
+/// hotkey!(hotkey => {
+///     on_press_and_release A => {
+///         on_press => |event| {};
+///         on_release => |event| {};
+///     }
 /// });
 /// ```
 ///
@@ -194,7 +210,7 @@ macro_rules! button_name {
 /// use hookmap::*;
 /// trait BindAsTab: SelectHandleTarget {
 ///     fn bind_as_tab(&self, target: Button) {
-///         hotkeys!(self => {
+///         hotkey!(self => {
 ///             bind [target] => Tab;
 ///         });
 ///     }
@@ -206,6 +222,21 @@ macro_rules! button_name {
 ///     call bind_as_tab(A);
 /// });
 /// ```
+///
+/// # The difference between on_press_and_release and (on_press, on_release)
+///
+/// These will behave differently when the trigger key is released with the modifier key specified.
+///
+/// In the case of normal `on_release`, the specified function will be called when the trigger key
+/// is released while the modifier key is pressed.
+///
+///
+/// On the other hand, the function specified as on_release in `on_press_or_release` will be
+/// called when the following conditions are met.
+///
+/// 1. The trigger key was pressed while the modifier key was pressed.
+/// 2. Neither the trigger key nor the modifier key has been released since then.
+/// 3. And when the trigger key or modifier key was released.
 ///
 #[macro_export]
 macro_rules! hotkey {
@@ -242,6 +273,17 @@ macro_rules! hotkey {
     // Matches `on_press_or_release`.
     (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).on_press_or_release($rhs);
+        $crate::hotkey!(@command $hotkey $($rest)*)
+    };
+
+    //Matches `on_press_and_release`
+    (@command $hotkey:ident
+     on_press_and_release $button:tt => {
+        on_press => $press:expr;
+        on_release => $release:expr;
+    }
+    $($rest:tt)*) => {
+        $hotkey.bind($crate::button_name!($button)).on_press_and_release($press, $release);
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
@@ -494,6 +536,24 @@ mod tests {
             on_press A => |_| {};
             on_press [Button::A] => |_| {};
             on_press [&SHIFT] => |_| {};
+        });
+    }
+
+    #[test]
+    fn on_press_and_release_command() {
+        hotkey!(Hotkey::new() => {
+            on_press_and_release A => {
+                on_press => |_| {};
+                on_release => |_| {};
+            }
+            on_press_and_release [Button::A] => {
+                on_press => |_| {};
+                on_release => |_| {};
+            }
+            on_press_and_release [&SHIFT] => {
+                on_press => |_| {};
+                on_release => |_| {};
+            }
         });
     }
 
