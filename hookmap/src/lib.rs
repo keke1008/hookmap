@@ -16,7 +16,7 @@ mod hotkey;
 mod runtime;
 mod utils;
 
-pub use button::{ALT, CTRL, META, SHIFT};
+pub use button::{ButtonInput, ButtonState, ALT, CTRL, META, SHIFT};
 pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
 pub use interface::{Hotkey, SelectHandleTarget, SetEventBlock};
 pub use runtime::hook;
