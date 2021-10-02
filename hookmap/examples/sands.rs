@@ -1,6 +1,6 @@
 use hookmap::{
     button::ButtonSet,
-    hook::{Filter, Hook},
+    interceptor::{Filter, Interceptor},
     *,
 };
 use std::collections::HashSet;
@@ -31,7 +31,7 @@ where
     });
 
     let filter = Filter::new().action(ButtonAction::Press);
-    Hook::unblock(filter).then_iter(move |iter| {
+    Interceptor::unblock(filter).then_iter(move |iter| {
         iter.filter(|e| !ignore.contains(&e.target))
             .for_each(|_| is_alone.store(false, Ordering::SeqCst));
     });

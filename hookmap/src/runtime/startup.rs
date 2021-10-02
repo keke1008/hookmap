@@ -1,6 +1,6 @@
 use super::{
     fetcher::{ButtonFetcher, FetchResult, MouseFetcher},
-    hook::event_sender,
+    interceptor::event_sender,
     storage::Storage,
 };
 use crate::interface::Hotkey;

@@ -7,7 +7,7 @@ pub(crate) mod storage;
 pub(crate) use register::Register;
 pub(crate) use startup::HookInstaller;
 
-pub mod hook;
+pub mod interceptor;
 
 use hookmap_core::EventBlock;
 
