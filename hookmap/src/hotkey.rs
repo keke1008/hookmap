@@ -1,5 +1,4 @@
-use crate::button::ButtonSet;
-use crate::ButtonState;
+use crate::button::{ButtonSet, ButtonState};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{fmt::Debug, iter, sync::Arc};
 

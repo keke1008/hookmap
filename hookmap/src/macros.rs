@@ -1,3 +1,9 @@
+use crate::button::ButtonSet;
+
+trait BorrowButtonSet {
+    fn borrow_button_set(&self) -> &ButtonSet;
+}
+
 /// Expands button names.
 ///
 /// If the argument is enclosed in square brackets, it will be expanded without any action.
@@ -323,7 +329,10 @@ macro_rules! hotkey {
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        (&[$(ButtonSet::from($pressed)),*], &[$(ButtonSet::from($released)),*])
+        (
+            &[$($crate::button::ButtonSet::from($pressed)),*],
+            &[$($crate::button::ButtonSet::from($released)),*]
+        )
     };
 
     // Matches `modifier(...)`
@@ -413,15 +422,15 @@ macro_rules! seq {
     };
 
     (@single $button:expr) => {
-        $button.click()
+        $crate::button::ButtonInput::click(&$button);
     };
 
     (@single $button:expr, down) => {
-        $button.press()
+        $crate::button::ButtonInput::press(&$button);
     };
 
     (@single $button:expr, up) => {
-        $button.release()
+        $crate::button::ButtonInput::release(&$button);
     };
 }
 
@@ -467,11 +476,11 @@ macro_rules! send {
     ($($input:tt)*) => {{
         let pressed_modifiers = $crate::macros::MODIFIER_LIST
             .iter()
-            .filter(|button| button.is_pressed())
+            .filter(|button| $crate::button::ButtonState::is_pressed(button))
             .collect::<Vec<_>>();
-        pressed_modifiers.iter().for_each(|button| button.release());
+        pressed_modifiers.iter().for_each(|button| $crate::button::ButtonInput::release(button));
         $crate::seq!($($input)*);
-        pressed_modifiers.iter().for_each(|button| button.press());
+        pressed_modifiers.iter().for_each(|button| $crate::button::ButtonInput::press(button));
     }};
 }
 
@@ -491,7 +500,7 @@ macro_rules! send {
 #[macro_export]
 macro_rules! any {
     ($($button:tt),* $(,)?) => {
-        $crate::ButtonSet::Any(
+        $crate::button::ButtonSet::Any(
             vec![$($crate::button_name!($button)),*]
         )
     };
@@ -511,7 +520,7 @@ macro_rules! any {
 #[macro_export]
 macro_rules! all {
     ($($button:tt),* $(,)?) => {
-        $crate::ButtonSet::All(
+        $crate::button::ButtonSet::All(
             vec![$($crate::button_name!($button)),*]
         )
     };
@@ -648,6 +657,7 @@ mod tests {
 
     #[test]
     fn any_macro() {
+        use crate::button::ButtonSet;
         any!();
         any!(A,);
         assert_eq!(any!(A, B), ButtonSet::Any(vec![Button::A, Button::B]));
@@ -656,6 +666,7 @@ mod tests {
 
     #[test]
     fn all_macro() {
+        use crate::button::ButtonSet;
         all!();
         all!(A,);
         assert_eq!(all!(A, B), ButtonSet::All(vec![Button::A, Button::B]));

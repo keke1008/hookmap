@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{button::ButtonSet, *};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
@@ -30,13 +30,13 @@ pub trait Utils: SelectHandleTarget + Sized {
         hotkey!(self => {
             on_release [&alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-                Button::LAlt.release();
+                seq!(LAlt up);
             };
 
             modifier([alt]) {
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                        Button::LAlt.press();
+                        seq!(LAlt down);
                     }
                 };
                 bind [tab] => Tab;
@@ -66,13 +66,13 @@ pub trait Utils: SelectHandleTarget + Sized {
         hotkey!(self => {
             on_release [&alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-                Button::LAlt.release();
+                seq!(LAlt up);
             };
 
             modifier([alt]) {
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                        Button::LAlt.press();
+                        seq!(LAlt down);
                     }
                 };
                 bind [tab] => [all!(LShift, Tab)];

@@ -1,3 +1,4 @@
+use super::{ButtonInput, ButtonState};
 use hookmap_core::Button;
 use once_cell::sync::Lazy;
 use std::iter;
@@ -31,14 +32,60 @@ impl<T: Into<ButtonSet> + Clone> From<&T> for ButtonSet {
     }
 }
 
+impl From<&Lazy<ButtonSet>> for ButtonSet {
+    fn from(buttons: &Lazy<ButtonSet>) -> Self {
+        (*buttons).clone()
+    }
+}
+
 pub static SHIFT: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LShift, RShift));
 pub static CTRL: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LCtrl, RCtrl));
 pub static ALT: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LAlt, RAlt));
 pub static META: Lazy<ButtonSet> = Lazy::new(|| crate::any!(LMeta, RMeta));
 
-impl From<&Lazy<ButtonSet>> for ButtonSet {
-    fn from(buttons: &Lazy<ButtonSet>) -> Self {
-        (*buttons).clone()
+impl ButtonInput for Lazy<ButtonSet> {
+    fn press(&self) {
+        (**self).press();
+    }
+
+    fn release(&self) {
+        (**self).release();
+    }
+
+    fn press_recursive(&self) {
+        (**self).press_recursive();
+    }
+
+    fn release_recursive(&self) {
+        (**self).release_recursive();
+    }
+}
+
+impl<T: ButtonInput> ButtonInput for &T {
+    fn press(&self) {
+        (**self).press();
+    }
+
+    fn release(&self) {
+        (**self).release();
+    }
+
+    fn press_recursive(&self) {
+        (**self).press_recursive();
+    }
+
+    fn release_recursive(&self) {
+        (**self).release_recursive();
+    }
+}
+
+impl<T: ButtonState> ButtonState for &T {
+    fn is_pressed(&self) -> bool {
+        (**self).is_pressed()
+    }
+
+    fn is_released(&self) -> bool {
+        (**self).is_released()
     }
 }
 
