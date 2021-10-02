@@ -55,7 +55,7 @@ impl<E: Clone> MouseFetcher<E> {
         let (actions, event_blocks): (Vec<_>, Vec<_>) = self
             .storage
             .iter()
-            .filter(|hook| hook.modifier.satisfies_condition())
+            .filter(|hook| hook.modifier_keys.satisfies_condition())
             .map(|hook| (hook.action.clone(), hook.event_block))
             .unzip();
 

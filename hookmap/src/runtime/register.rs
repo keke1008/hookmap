@@ -5,7 +5,7 @@ use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
 use std::sync::Arc;
 
 fn hotkey_to_hook(hotkey: &HotkeyInfo) -> (Option<HookInfo>, Option<HookInfo>) {
-    let modifier_keys = Arc::clone(&hotkey.modifier);
+    let modifier_keys = Arc::clone(&hotkey.modifier_keys);
     match &hotkey.action {
         HotkeyAction::Press(action) => {
             let kind = HookKind::Independet { modifier_keys };
@@ -58,7 +58,8 @@ impl Register {
     pub(crate) fn register_hotkey(&mut self, mut hotkey: HotkeyInfo) {
         let hotkey = {
             if let ButtonSet::All(_) = hotkey.trigger {
-                hotkey.modifier = Arc::new(hotkey.modifier.add(&[hotkey.trigger.clone()], &[]))
+                hotkey.modifier_keys =
+                    Arc::new(hotkey.modifier_keys.add(&[hotkey.trigger.clone()], &[]))
             }
             hotkey
         };

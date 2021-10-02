@@ -62,7 +62,9 @@ impl SelectHandleTarget for ConditionalHotkey {
         ConditionalHotkey::new(
             Weak::clone(&self.register),
             ConditionalHotkeyInfo {
-                modifier: Arc::new(self.conditional_hotkey.modifier.add(pressed, released)),
+                modifier_keys: Arc::new(
+                    self.conditional_hotkey.modifier_keys.add(pressed, released),
+                ),
                 ..self.conditional_hotkey.clone()
             },
         )

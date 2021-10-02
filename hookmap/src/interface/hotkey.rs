@@ -83,7 +83,7 @@ impl SelectHandleTarget for Hotkey {
         ConditionalHotkey::new(
             Rc::downgrade(&self.register),
             ConditionalHotkeyInfo {
-                modifier: Arc::new(ModifierKeys::new(pressed, released)),
+                modifier_keys: Arc::new(ModifierKeys::new(pressed, released)),
                 ..ConditionalHotkeyInfo::default()
             },
         )
