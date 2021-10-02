@@ -22,11 +22,11 @@ fn main() {
             block_event {
 
                 // Send Ctrl+A when the Shift and the Space key are pressed.
-                on_press Space => |_| send!(LCtrl down, A, LCtrl up);
+                on_press Space => |_| send!(with(LCtrl), A);
 
                 // Sends an uppercase A or B when the A or B key is pressed.
                 on_release [any!(A, B)] => |event| {
-                    send!(LShift down, [event.target], LShift up)
+                    send!(with(LShift, [event.target]));
                 };
             }
         }

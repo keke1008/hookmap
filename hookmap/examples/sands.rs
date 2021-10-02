@@ -1,5 +1,5 @@
 use hookmap::{
-    button::{ButtonInput, ButtonSet},
+    button::ButtonSet,
     hook::{Filter, Hook},
     *,
 };
