@@ -1,9 +1,3 @@
-use crate::button::ButtonSet;
-
-trait BorrowButtonSet {
-    fn borrow_button_set(&self) -> &ButtonSet;
-}
-
 /// Expands button names.
 ///
 /// If the argument is enclosed in square brackets, it will be expanded without any action.
