@@ -1,5 +1,8 @@
 # hookmap
 
+[![Crates.io](https://img.shields.io/crates/v/hookmap.svg)](https://crates.io/crates/hookmap)
+[![API reference](https://docs.rs/hookmap/badge.svg)](https://docs.rs/hookmap)
+
 Register hotkeys and simulate keyboard and mosue input.
 
 ## Supported OS

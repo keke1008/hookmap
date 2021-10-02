@@ -1,5 +1,8 @@
 # hookmap
 
+[![Crates.io](https://img.shields.io/crates/v/hookmap.svg)](https://crates.io/crates/hookmap)
+[![API reference](https://docs.rs/hookmap/badge.svg)](https://docs.rs/hookmap)
+
 A rust library for Register hotkeys and emulate keyboard and mouse input.
 
 ## Supported OS

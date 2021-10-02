@@ -1,5 +1,8 @@
 # hookmap-core
 
+[![Crates.io](https://img.shields.io/crates/v/hookmap-core.svg)](https://crates.io/crates/hookmap-core)
+[![API reference](https://docs.rs/hookmap-core/badge.svg)](https://docs.rs/hookmap-core)
+
 Core crate of [hookmap](https://crates.io/crates/hookmap)
 
 Input emulation and global hooks for keyboard and mouse.
