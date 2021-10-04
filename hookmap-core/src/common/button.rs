@@ -1,3 +1,5 @@
+use variant_count::VariantCount;
+
 pub trait ButtonOperation {
     fn generate_press_event(self, recursive: bool);
     fn generate_release_event(self, recursive: bool);
@@ -17,33 +19,19 @@ pub enum ButtonKind {
     Mouse,
 }
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
+#[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, VariantCount)]
 pub enum Button {
     LeftButton,
     RightButton,
     MiddleButton,
     SideButton1,
     SideButton2,
-    Backspace,
-    Tab,
-    Enter,
-    CapsLock,
-    Esc,
-    Henkan,
-    Muhenkan,
-    Space,
-    PageUp,
-    PageDown,
-    End,
-    Home,
-    LeftArrow,
-    UpArrow,
-    RightArrow,
-    DownArrow,
-    PrintScreen,
-    Insert,
-    Delete,
-    Key0,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    Tilde,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    HankakuZenkaku,
+
     Key1,
     Key2,
     Key3,
@@ -53,36 +41,110 @@ pub enum Button {
     Key7,
     Key8,
     Key9,
-    A,
-    B,
-    C,
-    D,
+    Key0,
+    Minus,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    Equal,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Hat,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Yen,
+
+    Backspace,
+    Tab,
+    Q,
+    W,
     E,
+    R,
+    T,
+    Y,
+    U,
+    I,
+    O,
+    P,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    OpenSquareBracket,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    At,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    CloseSquareBracket,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    OpenSquareBracket,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    CapsLock,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Eisu,
+
+    A,
+    S,
+    D,
     F,
     G,
     H,
-    I,
     J,
     K,
     L,
-    M,
-    N,
-    O,
-    P,
-    Q,
-    R,
-    S,
-    T,
-    U,
-    V,
-    W,
-    X,
-    Y,
+    SemiColon,
+
+    #[cfg(feature = "us_keyboard_layout")]
+    SingleQuote,
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Colon,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    CloseSquareBracket,
+
+    Enter,
+    LShift,
     Z,
+    X,
+    C,
+    V,
+    B,
+    N,
+    M,
+    Comma,
+    Dot,
+    Slash,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    BackSlash,
+
+    RShift,
+    LCtrl,
     LMeta,
+    LAlt,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Muhenkan,
+
+    Space,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    Henkan,
+
+    #[cfg(feature = "japanese_keyboard_layout")]
+    KatakanaHiragana,
+
+    RAlt,
     RMeta,
     Application,
-    Numpad0,
+    RCtrl,
+    Insert,
+    Delete,
+    LeftArrow,
+    Home,
+    End,
+    UpArrow,
+    DownArrow,
+    PageUp,
+    PageDown,
+    RightArrow,
     Numpad1,
     Numpad2,
     Numpad3,
@@ -92,11 +154,13 @@ pub enum Button {
     Numpad7,
     Numpad8,
     Numpad9,
-    NumpadAsterisk,
-    NumpadPlus,
-    NumpadMinus,
+    Numpad0,
     NumpadDot,
     NumpadSlash,
+    NumpadAsterisk,
+    NumpadMinus,
+    NumpadPlus,
+    Esc,
     F1,
     F2,
     F3,
@@ -121,30 +185,39 @@ pub enum Button {
     F22,
     F23,
     F24,
-    Numlock,
-    ScrollLock,
-    LShift,
-    RShift,
-    LCtrl,
-    RCtrl,
-    LAlt,
-    RAlt,
-    Colon,
-    SemiColon,
-    Comma,
-    Minus,
-    Dot,
-    Slash,
-    At,
-    LeftSquareBracket,
-    BackSlashWithVerticalBar,
-    RightSquareBracket,
-    Hat,
-    BackSlashWithUnderLine,
-    Eisuu,
-    KatakanaHiragana,
-    HannkakuZenkaku,
-    OtherKey(u32),
+    PrintScreen,
+    Unassigned1,
+    Unassigned2,
+    Unassigned3,
+    Unassigned4,
+    Unassigned5,
+    Unassigned6,
+    Unassigned7,
+    Unassigned8,
+    Unassigned9,
+    Unassigned10,
+    Unassigned11,
+    Unassigned12,
+    Unassigned13,
+    Unassigned14,
+    Unassigned15,
+    Unassigned16,
+    Unassigned17,
+    Unassigned18,
+    Unassigned19,
+    Unassigned20,
+    Unassigned21,
+    Unassigned22,
+    Unassigned23,
+    Unassigned24,
+    Unassigned25,
+    Unassigned26,
+    Unassigned27,
+    Unassigned28,
+    Unassigned29,
+    Unassigned30,
+    Unassigned31,
+    Unassigned32,
 }
 
 impl Button {
