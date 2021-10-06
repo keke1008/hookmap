@@ -18,7 +18,12 @@ impl Button {
         match self {
             Button::RCtrl => Some((CTRL_KEY_SCANCODE, 0x1)),
             Button::RAlt => Some((ALT_KEY_SCANCODE, 0x1)),
-            _ => Some((*BUTTON_TO_CODE.get(self as usize)?, 0x0)),
+            _ => {
+                let code = BUTTON_TO_CODE
+                    .get(self as usize)
+                    .and_then(|&code| (code != 0).then(|| code))?;
+                Some((code, 0x0))
+            }
         }
     }
 }
