@@ -186,6 +186,9 @@ pub enum Button {
     F23,
     F24,
     PrintScreen,
+
+    Void,
+
     Unassigned1,
     Unassigned2,
     Unassigned3,

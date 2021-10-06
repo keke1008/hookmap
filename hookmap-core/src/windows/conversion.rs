@@ -6,9 +6,10 @@ impl Button {
     pub(super) fn from_hook_struct(hook: &KBDLLHOOKSTRUCT) -> Option<Self> {
         let button = *CODE_TO_BUTTON.get(hook.scanCode as usize)?;
         match button {
-            Some(Button::LCtrl) if hook.flags & 1 != 0 => Some(Button::RCtrl),
-            Some(Button::RAlt) if hook.flags & 1 != 0 => Some(Button::RAlt),
-            _ => button,
+            Button::Void => None,
+            Button::LCtrl if hook.flags & 1 != 0 => Some(Button::RCtrl),
+            Button::RAlt if hook.flags & 1 != 0 => Some(Button::RAlt),
+            _ => Some(button),
         }
     }
 
@@ -56,22 +57,18 @@ macro_rules! button_code_map {
             let mut map = [0; Button::VARIANT_COUNT];
             $(
                 $(#[$att])?
-                {
-                    map[Button::$button as usize] = $code;
-                }
+                { map[Button::$button as usize] = $code; }
              )*
             map
         };
         const _MAX_CODE_VALUE: usize = {
             button_code_map!(@max $($code),*) + 1
         };
-        const $code_to_button: [Option<Button>; _MAX_CODE_VALUE] = {
-            let mut map = [None; _MAX_CODE_VALUE];
+        const $code_to_button: [Button; _MAX_CODE_VALUE] = {
+            let mut map = [Button::Void; _MAX_CODE_VALUE];
             $(
                 $(#[$att])?
-                {
-                    map[$code] = Some(Button::$button);
-                }
+                { map[$code] = Button::$button; }
              )*
             map
         };
