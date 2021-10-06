@@ -21,7 +21,7 @@ winapi = { version = "0.3.9", features = ["winuser"] }
 
 [features]
 block-input-event = []
-defautl = [ "us_keyboard_layout" ]
+default = [ "us_keyboard_layout" ]
 us_keyboard_layout = []
 japanese_keyboard_layout = []
 
