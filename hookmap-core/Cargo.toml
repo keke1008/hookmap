@@ -22,9 +22,9 @@ winapi = { version = "0.3.9", features = ["winuser"] }
 
 [features]
 block-input-event = []
-default = [ "us_keyboard_layout" ]
-us_keyboard_layout = []
-japanese_keyboard_layout = []
+default = [ "us-keyboard-layout" ]
+us-keyboard-layout = []
+japanese-keyboard-layout = []
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc"]

@@ -27,9 +27,9 @@ pub enum Button {
     SideButton1,
     SideButton2,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     Tilde,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     HankakuZenkaku,
 
     Key1,
@@ -44,12 +44,12 @@ pub enum Button {
     Key0,
     Minus,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     Equal,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Hat,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Yen,
 
     Backspace,
@@ -65,19 +65,19 @@ pub enum Button {
     O,
     P,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     OpenSquareBracket,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     At,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     CloseSquareBracket,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     OpenSquareBracket,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     CapsLock,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Eisu,
 
     A,
@@ -91,12 +91,12 @@ pub enum Button {
     L,
     SemiColon,
 
-    #[cfg(feature = "us_keyboard_layout")]
+    #[cfg(feature = "us-keyboard-layout")]
     SingleQuote,
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Colon,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     CloseSquareBracket,
 
     Enter,
@@ -112,7 +112,7 @@ pub enum Button {
     Dot,
     Slash,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     BackSlash,
 
     RShift,
@@ -120,15 +120,15 @@ pub enum Button {
     LMeta,
     LAlt,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Muhenkan,
 
     Space,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     Henkan,
 
-    #[cfg(feature = "japanese_keyboard_layout")]
+    #[cfg(feature = "japanese-keyboard-layout")]
     KatakanaHiragana,
 
     RAlt,

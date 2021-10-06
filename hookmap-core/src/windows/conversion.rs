@@ -78,9 +78,9 @@ macro_rules! button_code_map {
 button_code_map! {
     const (BUTTON_TO_CODE, CODE_TO_BUTTON) = {
 
-        #[cfg(feature="us_keyboard_layout")]
+        #[cfg(feature="us-keyboard-layout")]
         Tilde => 0x29,
-        #[cfg(feature="japanese_keyboard_layout")]
+        #[cfg(feature="japanese-keyboard-layout")]
         HankakuZenkaku => 0x29,
 
         Key1 => 0x02,
@@ -95,12 +95,12 @@ button_code_map! {
         Key0 => 0x0B,
         Minus => 0x0C,
 
-        #[cfg(feature="us_keyboard_layout")]
+        #[cfg(feature="us-keyboard-layout")]
         Equal => 0x0D,
-        #[cfg(feature="japanese_keyboard_layout")]
+        #[cfg(feature="japanese-keyboard-layout")]
         Hat => 0x0D,
 
-        #[cfg(feature="japanese_keyboard_layout")]
+        #[cfg(feature="japanese-keyboard-layout")]
         Yen => 0x7D,
 
         Backspace => 0x0E,
@@ -117,19 +117,19 @@ button_code_map! {
         O => 0x18,
         P => 0x19,
 
-        #[cfg(feature = "us_keyboard_layout")]
+        #[cfg(feature = "us-keyboard-layout")]
         OpenSquareBracket => 0x1A,
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         At => 0x1A,
 
-        #[cfg(feature = "us_keyboard_layout")]
+        #[cfg(feature = "us-keyboard-layout")]
         CloseSquareBracket => 0x1B,
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         OpenSquareBracket => 0x1B,
 
-        #[cfg(feature = "us_keyboard_layout")]
+        #[cfg(feature = "us-keyboard-layout")]
         CapsLock => 0x3A,
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         Eisu => 0x3A,
 
         A => 0x1E,
@@ -143,12 +143,12 @@ button_code_map! {
         L => 0x26,
         SemiColon => 0x27,
 
-        #[cfg(feature = "us_keyboard_layout")]
+        #[cfg(feature = "us-keyboard-layout")]
         SingleQuote => 0x28,
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         Colon => 0x28,
 
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         CloseSquareBracket => 0x2B,
 
         Enter => 0x1C,
@@ -164,7 +164,7 @@ button_code_map! {
         Dot => 0x34,
         Slash => 0x35,
 
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         BackSlash => 0x73,
 
         RShift => 0x36,
@@ -172,15 +172,15 @@ button_code_map! {
         LMeta => 0x5B,
         LAlt => 0x38,
 
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         Muhenkan => 0x7B,
 
         Space => 0x39,
 
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         Henkan => 0x79,
 
-        #[cfg(feature = "japanese_keyboard_layout")]
+        #[cfg(feature = "japanese-keyboard-layout")]
         KatakanaHiragana => 0x70,
 
         // LAlt and RAlt have the same scancode.

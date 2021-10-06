@@ -18,8 +18,8 @@ smart-default = "0.6.0"
 
 [features]
 block-input-event = [ "hookmap-core/block-input-event" ]
-us_keyboard_layout = [ "hookmap-core/us_keyboard_layout" ]
-japanese_keyboard_layout = [ "hookmap-core/japanese_keyboard_layout" ]
+us-keyboard-layout = [ "hookmap-core/us-keyboard-layout" ]
+japanese-keyboard-layout = [ "hookmap-core/japanese-keyboard-layout" ]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc"]
