@@ -7,8 +7,9 @@ use crate::common::{
     event::EventMessageSender,
     handler::{HookHandler, HookInstaller},
 };
+use bitmaps::Bitmap;
 use once_cell::sync::Lazy;
-use std::{collections::HashMap, mem::MaybeUninit, ptr, sync::Mutex};
+use std::{mem::MaybeUninit, ptr, sync::Mutex};
 use winapi::{
     ctypes::c_int,
     shared::minwindef::{LPARAM, LRESULT, WPARAM},
@@ -29,7 +30,7 @@ fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     }
 }
 
-static BUTTON_STATE: Lazy<Mutex<HashMap<Button, bool>>> = Lazy::new(Mutex::default);
+static BUTTON_STATE: Lazy<Mutex<Bitmap<{ Button::VARIANT_COUNT }>>> = Lazy::new(Mutex::default);
 
 impl ButtonOperation for Button {
     fn generate_press_event(self, recursive: bool) {
@@ -49,17 +50,17 @@ impl ButtonOperation for Button {
     }
 
     fn read_is_pressed(self) -> bool {
-        *BUTTON_STATE.lock().unwrap().get(&self).unwrap_or(&false)
+        BUTTON_STATE.lock().unwrap().get(self as usize)
     }
 }
 
 impl Button {
-    pub(self) fn assume_pressed(&self) {
-        BUTTON_STATE.lock().unwrap().insert(*self, true);
+    fn assume_pressed(self) {
+        BUTTON_STATE.lock().unwrap().set(self as usize, true);
     }
 
-    pub(self) fn assume_released(&self) {
-        BUTTON_STATE.lock().unwrap().insert(*self, false);
+    fn assume_released(self) {
+        BUTTON_STATE.lock().unwrap().set(self as usize, false);
     }
 }
 
