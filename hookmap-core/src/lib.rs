@@ -18,6 +18,8 @@
 //! ## Feature flags
 //!
 //! * `block-input-event`: Set the default `EventBlock` value to `EventBlock::Block`.
+//! * `us-keyboard-layout` (default): Set the variants of [`Button`] to the buttons on the us keyboard.
+//! * `japanese-keyboard-layout`: Set the variants of [`Button`] to the buttons on the japanese keyboard.
 
 pub mod common;
 mod macros;
