@@ -3,7 +3,7 @@ use crate::common::button::Button;
 use std::mem;
 use winapi::{
     ctypes::c_int,
-    um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP},
+    um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE},
 };
 
 pub(crate) fn press(key: &Button, recursive: bool) {
@@ -15,11 +15,15 @@ pub(crate) fn release(key: &Button, recursive: bool) {
 }
 
 fn send_key_input(key: &Button, flags: u32, recursive: bool) {
-    let vk_code = key.to_vkcode();
+    let (scancode, flags) = if let Some((scancode, flag)) = key.to_scancode_and_flag() {
+        (scancode, flags | flag)
+    } else {
+        return;
+    };
     let keybd_input = KEYBDINPUT {
-        wVk: vk_code as u16,
-        wScan: 0,
-        dwFlags: flags,
+        wVk: 0,
+        wScan: scancode as u16,
+        dwFlags: flags | KEYEVENTF_SCANCODE,
         time: 0,
         dwExtraInfo: if recursive { 0 } else { IGNORED_DW_EXTRA_INFO },
     };

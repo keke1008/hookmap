@@ -30,7 +30,11 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
-    let target = Button::from_vkcode(event_info.vkCode);
+    let target = if let Some(button) = Button::from_hook_struct(&event_info) {
+        button
+    } else {
+        return call_next_hook(code, w_param, l_param);
+    };
     let action = into_button_action(event_info);
     match action {
         ButtonAction::Press => target.assume_pressed(),
