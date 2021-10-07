@@ -19,17 +19,27 @@ impl Button {
             Button::Home if hook.flags & 1 == 0 => Some(Button::Numpad7),
             Button::UpArrow if hook.flags & 1 == 0 => Some(Button::Numpad8),
             Button::PageUp if hook.flags & 1 == 0 => Some(Button::Numpad9),
+            Button::RMeta if hook.flags & 1 == 0 => None,
 
             _ => Some(button),
         }
     }
 
     pub(super) fn to_scancode_and_flag(self) -> Option<(u32, u32)> {
-        const CTRL_KEY_SCANCODE: u32 = 0x1D;
-        const ALT_KEY_SCANCODE: u32 = 0x38;
         match self {
-            Button::RCtrl => Some((CTRL_KEY_SCANCODE, 0x1)),
-            Button::RAlt => Some((ALT_KEY_SCANCODE, 0x1)),
+            Button::RCtrl => Some((*BUTTON_TO_CODE.get(Button::LCtrl as usize)?, 0x1)),
+            Button::RAlt => Some((*BUTTON_TO_CODE.get(Button::LAlt as usize)?, 0x1)),
+            Button::End => Some((*BUTTON_TO_CODE.get(Button::End as usize)?, 0x1)),
+            Button::DownArrow => Some((*BUTTON_TO_CODE.get(Button::DownArrow as usize)?, 0x1)),
+            Button::PageDown => Some((*BUTTON_TO_CODE.get(Button::PageDown as usize)?, 0x1)),
+            Button::LeftArrow => Some((*BUTTON_TO_CODE.get(Button::LeftArrow as usize)?, 0x1)),
+            Button::RightArrow => Some((*BUTTON_TO_CODE.get(Button::RightArrow as usize)?, 0x1)),
+            Button::Home => Some((*BUTTON_TO_CODE.get(Button::Home as usize)?, 0x1)),
+            Button::UpArrow => Some((*BUTTON_TO_CODE.get(Button::UpArrow as usize)?, 0x1)),
+            Button::PageUp => Some((*BUTTON_TO_CODE.get(Button::PageUp as usize)?, 0x1)),
+            Button::Insert => Some((*BUTTON_TO_CODE.get(Button::Insert as usize)?, 0x1)),
+            Button::Delete => Some((*BUTTON_TO_CODE.get(Button::Delete as usize)?, 0x1)),
+            Button::RMeta => Some((*BUTTON_TO_CODE.get(Button::RMeta as usize)?, 0x1)),
             _ => {
                 let code = BUTTON_TO_CODE
                     .get(self as usize)
