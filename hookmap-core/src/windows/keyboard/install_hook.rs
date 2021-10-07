@@ -30,6 +30,12 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_info.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
         return call_next_hook(code, w_param, l_param);
     }
+    println!(
+        "target: {:?}, flags: {}, code: {}",
+        Button::from_hook_struct(&event_info),
+        event_info.flags,
+        event_info.scanCode
+    );
     let target = if let Some(button) = Button::from_hook_struct(&event_info) {
         button
     } else {

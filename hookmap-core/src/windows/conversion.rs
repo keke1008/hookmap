@@ -9,6 +9,17 @@ impl Button {
             Button::Void => None,
             Button::LCtrl if hook.flags & 1 != 0 => Some(Button::RCtrl),
             Button::RAlt if hook.flags & 1 != 0 => Some(Button::RAlt),
+            Button::Insert if hook.flags & 1 == 0 => Some(Button::Numpad0),
+            Button::Delete if hook.flags & 1 == 0 => Some(Button::NumpadDot),
+            Button::End if hook.flags & 1 == 0 => Some(Button::Numpad0),
+            Button::DownArrow if hook.flags & 1 == 0 => Some(Button::Numpad2),
+            Button::PageDown if hook.flags & 1 == 0 => Some(Button::Numpad3),
+            Button::LeftArrow if hook.flags & 1 == 0 => Some(Button::Numpad4),
+            Button::RightArrow if hook.flags & 1 == 0 => Some(Button::Numpad6),
+            Button::Home if hook.flags & 1 == 0 => Some(Button::Numpad7),
+            Button::UpArrow if hook.flags & 1 == 0 => Some(Button::Numpad8),
+            Button::PageUp if hook.flags & 1 == 0 => Some(Button::Numpad9),
+
             _ => Some(button),
         }
     }
@@ -190,6 +201,7 @@ button_code_map! {
 
         // LCtrl and RCtrl have the same scancode.
         // RCtrl =>0x1D,
+
         Insert => 0x52,
         Delete => 0x53,
         LeftArrow => 0x4B,
@@ -200,17 +212,30 @@ button_code_map! {
         PageUp => 0x49,
         PageDown => 0x51,
         RightArrow => 0x4D,
-        Numpad1 => 0x4F,
-        Numpad2 => 0x62,
-        Numpad3 => 0x63,
-        Numpad4 => 0x4B,
-        Numpad5 => 0x65,
-        Numpad6 => 0x66,
-        Numpad7 => 0x47,
-        Numpad8 => 0x48,
-        Numpad9 => 0x49,
-        Numpad0 => 0x52,
-        NumpadDot => 0x53,
+
+        // Numpad1 and End have the same scancode.
+        // Numpad1 => 0x4F,
+        // Numpad2 and DownArrow have the same scancode.
+        // Numpad2 => 0x50,
+        // Numpad3 and PageDown have the same scancode.
+        // Numpad3 => 0x51,
+        // Numpad4 and LeftArrow have the same scancode.
+        // Numpad4 => 0x4B,
+        Numpad5 => 0x4C,
+        // Numpad6 and RightArrow have the same scancode.
+        // Numpad6 => 0x4D,
+        // Numpad7 and Home have the same scancode.
+        // Numpad7 => 0x47,
+        // Numpad8 and UpArrow have the same scancode.
+        // Numpad8 => 0x48,
+        // Numpad9 and PageUp have the same scancode.
+        // Numpad9 => 0x49,
+
+        // Numpad0 and Insert have the same sacncode.
+        // Numpad0 => 0x52,
+
+        // NumpadDot and Delete have the same scancode.
+        // NumpadDot => 0x53,
         NumpadSlash => 0x35,
         NumpadAsterisk => 0x37,
         NumpadMinus => 0x4A,
