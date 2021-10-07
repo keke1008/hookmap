@@ -184,7 +184,7 @@ pub enum HotkeyCommandCompletion {
 ///     on_press_and_release A => {
 ///         on_press => |event| {};
 ///         on_release => |event| {};
-///     }
+///     };
 /// });
 /// ```
 ///
@@ -358,7 +358,7 @@ macro_rules! hotkey {
      on_press_and_release $button:tt => {
         on_press => $press:expr;
         on_release => $release:expr;
-    }
+    };
     $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($button)).on_press_and_release($press, $release);
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
@@ -443,11 +443,11 @@ macro_rules! hotkey {
     };
 
     // Matches `call`.
-    (@command $hotkey:ident call $name:ident($($arg:tt),*);) => {
+    (@command $hotkey:ident call $name:ident($($arg:tt),*); $($rest:tt)*) => {
         $hotkey.$name(
             $($crate::button_name!($arg)),*
         );
-        $crate::hotkey!(@command_completion $hotkey);
+        $crate::hotkey!(@command_completion $hotkey $($rest:tt)*);
     };
 }
 
@@ -626,15 +626,15 @@ mod tests {
             on_press_and_release A => {
                 on_press => |_| {};
                 on_release => |_| {};
-            }
+            };
             on_press_and_release [Button::A] => {
                 on_press => |_| {};
                 on_release => |_| {};
-            }
+            };
             on_press_and_release [&SHIFT] => {
                 on_press => |_| {};
                 on_release => |_| {};
-            }
+            };
         });
     }
 
