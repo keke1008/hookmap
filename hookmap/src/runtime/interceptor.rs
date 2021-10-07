@@ -1,7 +1,7 @@
 //! Gets keyboard events dynamically.
 
 use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
-use std::{collections::HashSet, sync::mpsc, sync::Arc};
+use std::{collections::HashSet, fmt::Debug, sync::mpsc, sync::Arc};
 
 pub(super) mod event_sender {
     use super::Filter;
@@ -137,6 +137,24 @@ enum Target {
     Multiple(Arc<HashSet<Button>>),
 }
 
+#[derive(Clone)]
+struct Callback(Arc<dyn Fn(&ButtonEvent) -> bool + Send + Sync>);
+
+impl Callback {
+    fn new<F>(callback: F) -> Self
+    where
+        F: Fn(&ButtonEvent) -> bool + Send + Sync + 'static,
+    {
+        Self(Arc::new(callback))
+    }
+}
+
+impl Debug for Callback {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Callback")
+    }
+}
+
 /// Filters input events.
 ///
 /// # Examples
@@ -152,6 +170,7 @@ enum Target {
 pub struct Filter {
     target: Option<Target>,
     action: Option<ButtonAction>,
+    callback: Vec<Callback>,
 }
 
 impl Filter {
@@ -212,6 +231,14 @@ impl Filter {
         self
     }
 
+    pub fn callback<F>(mut self, callback: F) -> Self
+    where
+        F: Fn(&ButtonEvent) -> bool + Send + Sync + 'static,
+    {
+        self.callback.push(Callback::new(callback));
+        self
+    }
+
     fn filter(&self, event: &ButtonEvent) -> bool {
         self.action
             .map(|action| action == event.action)
@@ -221,6 +248,7 @@ impl Filter {
                 Some(Target::Multiple(ref buttons)) => buttons.contains(&event.target),
                 None => true,
             }
+            && self.callback.iter().all(|callback| callback.0(event))
     }
 }
 
@@ -449,6 +477,17 @@ mod tests {
         assert!(!filter.filter(&event));
 
         event.target = Button::B;
+        event.action = ButtonAction::Release;
+        assert!(!filter.filter(&event));
+    }
+
+    #[test]
+    fn filtering_events_by_callback() {
+        let filter = Filter::new().callback(|e| e.action == ButtonAction::Press);
+
+        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        assert!(filter.filter(&event));
+
         event.action = ButtonAction::Release;
         assert!(!filter.filter(&event));
     }
