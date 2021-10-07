@@ -1,6 +1,6 @@
 [package]
 name = "hookmap"
-version = "0.4.3"
+version = "0.4.4"
 authors = ["keke1008 <keke2222337@gmail.com>"]
 edition = "2018"
 description = "Register hotkeys and simulate keyboard and mosue input."
@@ -12,7 +12,7 @@ readme = "README.md"
 documentation = "https://docs.rs/hookmap"
 
 [dependencies]
-hookmap-core = { version = "0.1.9", path = "../hookmap-core" }
+hookmap-core = { version = "0.1.10", path = "../hookmap-core" }
 once_cell = "1.8.0"
 smart-default = "0.6.0"
 
