@@ -6,7 +6,7 @@ use super::{
     SelectHandleTarget, SetEventBlock,
 };
 use crate::button::ButtonSet;
-use crate::hotkey::ModifierKeys;
+use crate::hotkey::{ModifierKeys, Trigger};
 use crate::runtime::{HookInstaller, Register};
 use hookmap_core::EventBlock;
 use std::{cell::RefCell, fmt::Debug, rc::Rc, sync::Arc};
@@ -55,7 +55,18 @@ impl SelectHandleTarget for Hotkey {
         ButtonEventHandlerEntry::new(
             Rc::downgrade(&self.register),
             PartialHotkeyInfo {
-                trigger: button.into(),
+                trigger: Trigger::Just(button.into()),
+                modifier: Arc::default(),
+                event_block: EventBlock::default(),
+            },
+        )
+    }
+
+    fn bind_all(&self) -> ButtonEventHandlerEntry {
+        ButtonEventHandlerEntry::new(
+            Rc::downgrade(&self.register),
+            PartialHotkeyInfo {
+                trigger: Trigger::All,
                 modifier: Arc::default(),
                 event_block: EventBlock::default(),
             },

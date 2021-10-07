@@ -13,7 +13,7 @@ pub(crate) struct FetchResult<E> {
     pub(super) event_block: EventBlock,
 }
 
-pub(crate) struct ButtonFetcher {
+pub(super) struct ButtonFetcher {
     storage: ButtonStorage,
 }
 
@@ -23,13 +23,21 @@ impl ButtonFetcher {
     }
 
     fn fetch_inner(&self, event: &ButtonEvent) -> Option<FetchResult<ButtonEvent>> {
-        let (actions, event_blocks): (Vec<_>, Vec<_>) = self
+        let all_hooks = self
             .storage
-            .get(&event.target)?
+            .all
             .iter()
             .filter(|hook| hook.satisfies_condition())
-            .map(|hook| (hook.action.clone(), hook.event_block))
-            .unzip();
+            .map(|hook| (hook.action.clone(), hook.event_block));
+        let (actions, event_blocks): (Vec<_>, Vec<_>) = match self.storage.just.get(&event.target) {
+            Some(hooks) => hooks
+                .iter()
+                .filter(|hook| hook.satisfies_condition())
+                .map(|hook| (hook.action.clone(), hook.event_block))
+                .chain(all_hooks)
+                .unzip(),
+            None => all_hooks.unzip(),
+        };
 
         Some(FetchResult {
             actions,

@@ -26,6 +26,19 @@ pub trait SelectHandleTarget {
     ///
     fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry;
 
+    /// Returns a [`ButtonEventHandlerEntry`] for registering a hook to the every button.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.bind_all()
+    ///     .on_press(|_| println!("The A key has been pressed"));
+    /// ```
+    ///
+    fn bind_all(&self) -> ButtonEventHandlerEntry;
+
     /// Returns a [`MouseWheelHotkeyEntry`] for registering a hook to the mouse wheel.
     ///
     /// # Example

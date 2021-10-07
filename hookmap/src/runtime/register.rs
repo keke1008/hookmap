@@ -1,6 +1,6 @@
 use super::storage::{HookInfo, HookKind, Storage};
 use crate::button::ButtonSet;
-use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler};
+use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler, Trigger};
 use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
 use std::sync::Arc;
 
@@ -57,31 +57,41 @@ impl Register {
 
     pub(crate) fn register_hotkey(&mut self, mut hotkey: HotkeyInfo) {
         let hotkey = {
-            if let ButtonSet::All(_) = hotkey.trigger {
-                hotkey.modifier_keys =
-                    Arc::new(hotkey.modifier_keys.add(&[hotkey.trigger.clone()], &[]))
+            if let Trigger::Just(ref trigger @ ButtonSet::All(_)) = hotkey.trigger {
+                hotkey.modifier_keys = Arc::new(hotkey.modifier_keys.add(&[trigger.clone()], &[]))
             }
             hotkey
         };
         let (on_press_hook, on_release_hook) = hotkey_to_hook(&hotkey);
-        if let Some(hook) = on_press_hook {
-            let hook = Arc::new(hook);
-            for &trigger in hotkey.trigger.iter() {
-                self.storage
-                    .on_press
-                    .entry(trigger)
-                    .or_default()
-                    .push(Arc::clone(&hook));
+        if let Trigger::Just(ref trigger) = hotkey.trigger {
+            if let Some(hook) = on_press_hook {
+                let hook = Arc::new(hook);
+                for &trigger in trigger.iter() {
+                    self.storage
+                        .on_press
+                        .just
+                        .entry(trigger)
+                        .or_default()
+                        .push(Arc::clone(&hook));
+                }
             }
-        }
-        if let Some(hook) = on_release_hook {
-            let hook = Arc::new(hook);
-            for &trigger in hotkey.trigger.iter() {
-                self.storage
-                    .on_release
-                    .entry(trigger)
-                    .or_default()
-                    .push(Arc::clone(&hook));
+            if let Some(hook) = on_release_hook {
+                let hook = Arc::new(hook);
+                for &trigger in trigger.iter() {
+                    self.storage
+                        .on_release
+                        .just
+                        .entry(trigger)
+                        .or_default()
+                        .push(Arc::clone(&hook));
+                }
+            }
+        } else {
+            if let Some(hook) = on_press_hook {
+                self.storage.on_press.all.push(hook);
+            }
+            if let Some(hook) = on_release_hook {
+                self.storage.on_release.all.push(hook);
             }
         }
     }

@@ -329,27 +329,36 @@ macro_rules! hotkey {
         $crate::hotkey!(@command $hotkey $command $($rest)*);
     };
 
+    (@bind $hotkey:ident all) => {
+        $hotkey.bind_all()
+    };
+
+    (@bind $hotkey:ident $target:tt) => {
+        $hotkey.bind($crate::button_name!($target))
+    };
+
+
     // Matches `bind`.
     (@command $hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($lhs)).like($crate::button_name!($rhs));
+        $crate::hotkey!(@bind $hotkey $lhs).like($crate::button_name!($rhs));
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
     (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($lhs)).on_press($rhs);
+        $crate::hotkey!(@bind $hotkey $lhs).on_press($rhs);
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
     (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($lhs)).on_release($rhs);
+        $crate::hotkey!(@bind $hotkey $lhs).on_release($rhs);
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_press_or_release`.
     (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($lhs)).on_press_or_release($rhs);
+        $crate::hotkey!(@bind $hotkey $lhs).on_press_or_release($rhs);
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
@@ -360,7 +369,7 @@ macro_rules! hotkey {
         on_release => $release:expr;
     };
     $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($button)).on_press_and_release($press, $release);
+        $crate::hotkey!(@bind $hotkey $button).on_press_and_release($press, $release);
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
@@ -378,7 +387,7 @@ macro_rules! hotkey {
 
     // Matches `disable $button`.
     (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
-        $hotkey.bind($crate::button_name!($lhs)).disable();
+        $crate::hotkey!(@bind $hotkey $lhs).disable();
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
@@ -608,6 +617,7 @@ mod tests {
             bind A => B;
             bind [Button::A] => [Button::B];
             bind [&SHIFT] => [&CTRL];
+            bind all => A;
         });
     }
 
@@ -617,6 +627,7 @@ mod tests {
             on_press A => |_| {};
             on_press [Button::A] => |_| {};
             on_press [&SHIFT] => |_| {};
+            on_press all => |_| {};
         });
     }
 
@@ -635,6 +646,10 @@ mod tests {
                 on_press => |_| {};
                 on_release => |_| {};
             };
+            on_press_and_release all => {
+                on_press => |_| {};
+                on_release => |_|{};
+            };
         });
     }
 
@@ -644,6 +659,7 @@ mod tests {
             disable A;
             disable [Button::A];
             disable [&SHIFT];
+            disable all;
         });
     }
 

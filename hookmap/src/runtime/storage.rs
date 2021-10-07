@@ -64,7 +64,11 @@ pub struct MouseHook<E> {
     pub(super) event_block: EventBlock,
 }
 
-pub(super) type ButtonStorage = HashMap<Button, Vec<Arc<HookInfo>>>;
+#[derive(Default, Debug)]
+pub(super) struct ButtonStorage {
+    pub(super) just: HashMap<Button, Vec<Arc<HookInfo>>>,
+    pub(super) all: Vec<HookInfo>,
+}
 pub(super) type MouseStorage<E> = Vec<Arc<MouseEventHandler<E>>>;
 pub(super) type MouseCursorStorage = MouseStorage<MouseCursorEvent>;
 pub(super) type MouseWheelStorage = MouseStorage<MouseWheelEvent>;
