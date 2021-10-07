@@ -167,9 +167,9 @@ impl ButtonEventHandlerEntry {
         };
         let on_press = {
             let button = button.clone();
-            (move |_| button.press()).into()
+            (move |_| button.press_recursive()).into()
         };
-        let on_release = (move |_| button.release()).into();
+        let on_release = (move |_| button.release_recursive()).into();
         let action = HotkeyAction::PressAndRelease {
             on_press,
             on_release,
