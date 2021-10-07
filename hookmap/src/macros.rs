@@ -36,6 +36,78 @@ macro_rules! button_name {
 
 }
 
+#[allow(non_camel_case_types)]
+pub enum HotkeyCommandCompletion {
+    /// ```ignore
+    /// bind <Key> => <Key>;
+    /// ```
+    bind,
+
+    /// ```ignore
+    /// on_press <Key => |_| {};
+    /// ```
+    on_press,
+
+    /// ```ignore
+    /// on_release <Key> => |_| {};
+    /// ```
+    on_release,
+
+    /// ```ignore
+    /// on_press_or_release <Key> => |_| {};
+    /// ```
+    on_press_or_release,
+
+    /// ```ignore
+    /// on_press_and_release <Key> => {
+    ///     on_press => |_| {};
+    ///     on_release => |_| {};
+    /// }
+    /// ```
+    on_press_and_release,
+
+    /// ```ignore
+    /// disable <Key>;
+    /// ```
+    disable,
+
+    /// ```ignore
+    /// mouse_cursor |_| {};
+    /// ```
+    mouse_cursor,
+
+    /// ```ignore
+    /// mouse_wheel |_| {};
+    /// ```
+    mouse_wheel,
+
+    /// ```ignore
+    /// modifier ( <Key>, ... ) {
+    ///     bind <Key> => <Key>;
+    /// }
+    /// ```
+    modifier,
+
+    /// ```ignore
+    /// block_event {
+    ///     bind A => B;
+    /// }
+    /// ```
+    block_event,
+
+    /// ```ignore
+    /// unblock_event {
+    ///     bind A => B;
+    /// }
+    /// ```
+    unblock_event,
+
+    /// ```ignore
+    /// call bind_alt_tab(A, T);
+    /// ```
+    call,
+}
+
 /// Registers hotkeys.
 ///
 /// # Commands
@@ -247,33 +319,38 @@ macro_rules! hotkey {
     } => {{
         #[allow(unused_variables)]
         let hotkey = &$hotkey;
-        $crate::hotkey!(@command hotkey $($cmd)*);
+        $crate::hotkey!(@command_completion hotkey $($cmd)*);
     }};
 
-    (@command $hotkey:ident) => {};
+    (@command_completion $hotkey:ident) => {};
+
+    (@command_completion $hotkey:ident $command:ident $($rest:tt)*) => {
+        let _ = $crate::macros::HotkeyCommandCompletion::$command;
+        $crate::hotkey!(@command $hotkey $command $($rest)*);
+    };
 
     // Matches `bind`.
     (@command $hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).like($crate::button_name!($rhs));
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
     (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).on_press($rhs);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
     (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).on_release($rhs);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `on_press_or_release`.
     (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).on_press_or_release($rhs);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     //Matches `on_press_and_release`
@@ -284,31 +361,31 @@ macro_rules! hotkey {
     }
     $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($button)).on_press_and_release($press, $release);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `disable MouseMove`.
     (@command $hotkey:ident disable MouseMove; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().disable();
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `disable MouseWheel`.
     (@command $hotkey:ident disable MouseWheel; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().disable();
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `disable $button`.
     (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
         $hotkey.bind($crate::button_name!($lhs)).disable();
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `mouse_cursor`.
     (@command $hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_cursor().on_move($lhs);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `modifier`.
@@ -316,9 +393,9 @@ macro_rules! hotkey {
         {
             #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifiers($crate::hotkey!(@modifier ([], []) $($button)*));
-            $crate::hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command_completion $hotkey $($rest)*);
     };
 
     // Matches `modifier(...)`
@@ -342,7 +419,7 @@ macro_rules! hotkey {
     // Matches `mouse_wheel`.
     (@command $hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
         $hotkey.bind_mouse_wheel().on_rotate($lhs);
-        $crate::hotkey!(@command $hotkey $($rest)*)
+        $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
     // Matches `block_event`.
@@ -350,9 +427,9 @@ macro_rules! hotkey {
         {
             #[allow(unused_variables)]
             let $hotkey = $hotkey.block();
-            $crate::hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command_completion $hotkey $($rest)*);
     };
 
     // Matches `unblock_event`.
@@ -360,9 +437,9 @@ macro_rules! hotkey {
         {
             #[allow(unused_variables)]
             let $hotkey = $hotkey.unblock();
-            $crate::hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command $hotkey $($rest)*);
+        $crate::hotkey!(@command_completion $hotkey $($rest)*);
     };
 
     // Matches `call`.
@@ -370,6 +447,7 @@ macro_rules! hotkey {
         $hotkey.$name(
             $($crate::button_name!($arg)),*
         );
+        $crate::hotkey!(@command_completion $hotkey);
     };
 }
 
