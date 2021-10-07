@@ -456,7 +456,7 @@ macro_rules! hotkey {
         $hotkey.$name(
             $($crate::button_name!($arg)),*
         );
-        $crate::hotkey!(@command_completion $hotkey $($rest:tt)*);
+        $crate::hotkey!(@command_completion $hotkey $($rest)*);
     };
 }
 
