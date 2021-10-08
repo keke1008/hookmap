@@ -1,7 +1,6 @@
 mod button_event_handler_entry;
 mod conditional_hook;
 mod hotkey;
-mod hotkey_info;
 mod mouse_event_handler_entry;
 mod remap_entry;
 

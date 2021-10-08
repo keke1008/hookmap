@@ -1,26 +1,37 @@
-use super::hotkey_info::PartialHotkeyInfo;
 use crate::{
-    hotkey::{Action, HotkeyAction},
+    hotkey::{Action, HotkeyAction, HotkeyInfo, ModifierKeys, Trigger},
     runtime::Register,
 };
 use hookmap_core::{ButtonEvent, EventBlock};
-use std::{cell::RefCell, rc::Weak};
+use std::{cell::RefCell, rc::Weak, sync::Arc};
+use typed_builder::TypedBuilder;
 
 /// A struct for registering handlers for the buttons.
+#[derive(TypedBuilder)]
 pub struct ButtonEventHandlerEntry {
     register: Weak<RefCell<Register>>,
-    partial_hotkey: PartialHotkeyInfo,
+    trigger: Trigger,
+
+    #[builder(default)]
+    modifier_keys: Arc<ModifierKeys>,
+
+    #[builder(default)]
+    event_block: EventBlock,
 }
 
 impl ButtonEventHandlerEntry {
-    pub(super) fn new(
-        register: Weak<RefCell<Register>>,
-        partial_hotkey: PartialHotkeyInfo,
-    ) -> Self {
-        Self {
-            register,
-            partial_hotkey,
-        }
+    fn register_hotkey(&self, action: HotkeyAction) {
+        let hotkey_info = HotkeyInfo::builder()
+            .trigger(self.trigger.clone())
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .action(action)
+            .build();
+        self.register
+            .upgrade()
+            .unwrap()
+            .borrow_mut()
+            .register_hotkey(hotkey_info);
     }
 
     /// Registers a handler called when the specified button is pressed.
@@ -41,13 +52,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::Press(callback.into());
-        let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
-        self.register
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .register_hotkey(hotkey);
+        self.register_hotkey(HotkeyAction::Press(callback.into()));
     }
 
     /// Registers a handler called when the specified button is pressed or released.
@@ -72,13 +77,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::PressOrRelease(callback.into());
-        let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
-        self.register
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .register_hotkey(hotkey);
+        self.register_hotkey(HotkeyAction::PressOrRelease(callback.into()));
     }
 
     /// Registers a handler called when the specified button is released.
@@ -99,13 +98,7 @@ impl ButtonEventHandlerEntry {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::Release(callback.into());
-        let hotkey = self.partial_hotkey.clone().build_hotkey_info(action);
-        self.register
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .register_hotkey(hotkey);
+        self.register_hotkey(HotkeyAction::Release(callback.into()));
     }
 
     /// Registers handlers called when the specified button is pressed or released, respectively.
@@ -131,16 +124,10 @@ impl ButtonEventHandlerEntry {
         F: Fn(ButtonEvent) + Send + Sync + 'static,
         G: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let action = HotkeyAction::PressAndRelease {
+        self.register_hotkey(HotkeyAction::PressAndRelease {
             on_press: on_press.into(),
             on_release: on_release.into(),
-        };
-        let hotkey = self.partial_hotkey.build_hotkey_info(action);
-        self.register
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .register_hotkey(hotkey);
+        });
     }
 
     /// Disables the button and blocks the event.
@@ -153,17 +140,16 @@ impl ButtonEventHandlerEntry {
     /// hotkey.bind(Button::A).disable();
     /// ```
     pub fn disable(&self) {
-        let partial_hotkey = {
-            let mut partial_hotkey = self.partial_hotkey.clone();
-            partial_hotkey.event_block = EventBlock::Block;
-            partial_hotkey
-        };
-        let action = HotkeyAction::PressOrRelease(Action::Noop);
-        let hotkey = partial_hotkey.build_hotkey_info(action);
+        let hotkey_info = HotkeyInfo::builder()
+            .trigger(self.trigger.clone())
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .action(HotkeyAction::PressOrRelease(Action::Noop))
+            .build();
         self.register
             .upgrade()
             .unwrap()
             .borrow_mut()
-            .register_hotkey(hotkey);
+            .register_hotkey(hotkey_info);
     }
 }

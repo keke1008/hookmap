@@ -80,8 +80,9 @@ impl HotkeyConverter {
     }
 }
 
+#[doc(hidden)]
 #[derive(Default, Debug)]
-pub(crate) struct Register {
+pub struct Register {
     storage: Storage,
 }
 

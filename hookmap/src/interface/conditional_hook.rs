@@ -1,13 +1,17 @@
 use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
-    hotkey_info::ConditionalHotkeyInfo,
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     remap_entry::RemapEntry,
     SelectHandleTarget, SetEventBlock,
 };
-use crate::{button::ButtonSet, hotkey::Trigger, runtime::Register};
+use crate::{
+    button::ButtonSet,
+    hotkey::{ModifierKeys, Trigger},
+    runtime::Register,
+};
 use hookmap_core::EventBlock;
 use std::{cell::RefCell, rc::Weak, sync::Arc};
+use typed_builder::TypedBuilder;
 
 /// A struct for selecting the target of the conditional hook.
 ///
@@ -20,93 +24,86 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 /// mod_ctrl.remap(Button::H).to(Button::LeftArrow);
 /// ```
 ///
+#[derive(TypedBuilder)]
 pub struct ConditionalHotkey {
     register: Weak<RefCell<Register>>,
-    conditional_hotkey: ConditionalHotkeyInfo,
-}
 
-impl ConditionalHotkey {
-    /// Creates a new instance of `ConditionalHook`.
-    pub(super) fn new(
-        register: Weak<RefCell<Register>>,
-        conditional_hotkey: ConditionalHotkeyInfo,
-    ) -> Self {
-        Self {
-            register,
-            conditional_hotkey,
-        }
-    }
+    #[builder(default)]
+    modifier_keys: Arc<ModifierKeys>,
+
+    #[builder(default)]
+    event_block: EventBlock,
 }
 
 impl SelectHandleTarget for ConditionalHotkey {
-    fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
-        ButtonEventHandlerEntry::new(
-            Weak::clone(&self.register),
-            self.conditional_hotkey
-                .clone()
-                .build_partial_hotkey_info(Trigger::Just(button.into())),
-        )
+    fn bind(&self, trigger: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
+        ButtonEventHandlerEntry::builder()
+            .register(Weak::clone(&self.register))
+            .trigger(Trigger::Just(trigger.into()))
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .build()
     }
 
     fn bind_all(&self) -> ButtonEventHandlerEntry {
-        ButtonEventHandlerEntry::new(
-            Weak::clone(&self.register),
-            self.conditional_hotkey
-                .clone()
-                .build_partial_hotkey_info(Trigger::All),
-        )
+        ButtonEventHandlerEntry::builder()
+            .register(Weak::clone(&self.register))
+            .trigger(Trigger::All)
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .build()
     }
 
-    fn remap(&self, button: impl Into<ButtonSet>) -> super::remap_entry::RemapEntry {
-        RemapEntry::new(
-            Weak::clone(&self.register),
-            button.into(),
-            self.conditional_hotkey.modifier_keys.clone(),
-        )
+    fn remap(&self, target: impl Into<ButtonSet>) -> RemapEntry {
+        RemapEntry::builder()
+            .register(Weak::clone(&self.register))
+            .trigger(target.into())
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .build()
     }
 
     fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {
-        MouseWheelHotkeyEntry::new(Weak::clone(&self.register), self.conditional_hotkey.clone())
+        MouseWheelHotkeyEntry::builder()
+            .register(Weak::clone(&self.register))
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .build()
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry {
-        MouseCursorHotKeyEntry::new(Weak::clone(&self.register), self.conditional_hotkey.clone())
+        MouseCursorHotKeyEntry::builder()
+            .register(Weak::clone(&self.register))
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(self.event_block)
+            .build()
     }
 
     fn add_modifiers(
         &self,
         (pressed, released): (&[ButtonSet], &[ButtonSet]),
     ) -> ConditionalHotkey {
-        ConditionalHotkey::new(
-            Weak::clone(&self.register),
-            ConditionalHotkeyInfo {
-                modifier_keys: Arc::new(
-                    self.conditional_hotkey.modifier_keys.add(pressed, released),
-                ),
-                ..self.conditional_hotkey.clone()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Weak::clone(&self.register))
+            .modifier_keys(Arc::new(self.modifier_keys.add(pressed, released)))
+            .event_block(self.event_block)
+            .build()
     }
 }
 
 impl SetEventBlock for ConditionalHotkey {
     fn block(&self) -> Self {
-        ConditionalHotkey::new(
-            Weak::clone(&self.register),
-            ConditionalHotkeyInfo {
-                event_block: EventBlock::Block,
-                ..self.conditional_hotkey.clone()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Weak::clone(&self.register))
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(EventBlock::Block)
+            .build()
     }
 
     fn unblock(&self) -> Self {
-        ConditionalHotkey::new(
-            Weak::clone(&self.register),
-            ConditionalHotkeyInfo {
-                event_block: EventBlock::Unblock,
-                ..self.conditional_hotkey.clone()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Weak::clone(&self.register))
+            .modifier_keys(Arc::clone(&self.modifier_keys))
+            .event_block(EventBlock::Unblock)
+            .build()
     }
 }

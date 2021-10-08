@@ -1,6 +1,7 @@
 use crate::button::{ButtonSet, ButtonState};
 use hookmap_core::{ButtonEvent, EventBlock};
 use std::{fmt::Debug, iter, sync::Arc};
+use typed_builder::TypedBuilder;
 
 type ActionFn<E> = Arc<dyn Fn(E) + Send + Sync>;
 
@@ -79,8 +80,9 @@ impl ModifierKeysInner {
     }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Default, Hash, PartialEq, Eq)]
-pub(crate) struct ModifierKeys(Option<ModifierKeysInner>);
+pub struct ModifierKeys(Option<ModifierKeysInner>);
 
 impl ModifierKeys {
     pub(crate) fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
@@ -104,8 +106,9 @@ impl ModifierKeys {
     }
 }
 
+#[doc(hidden)]
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub(crate) enum Trigger {
+pub enum Trigger {
     All,
     Just(ButtonSet),
 }
@@ -121,7 +124,7 @@ pub(crate) enum HotkeyAction {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, TypedBuilder)]
 pub(crate) struct HotkeyInfo {
     pub(crate) trigger: Trigger,
     pub(crate) modifier_keys: Arc<ModifierKeys>,
@@ -129,14 +132,14 @@ pub(crate) struct HotkeyInfo {
     pub(crate) action: HotkeyAction,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypedBuilder)]
 pub(crate) struct MouseEventHandler<E> {
     pub(crate) modifier_keys: Arc<ModifierKeys>,
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<E>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, TypedBuilder)]
 pub(crate) struct RemapInfo {
     pub(crate) modifier_keys: Arc<ModifierKeys>,
     pub(crate) trigger: ButtonSet,

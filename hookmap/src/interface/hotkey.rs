@@ -1,7 +1,6 @@
 use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
     conditional_hook::ConditionalHotkey,
-    hotkey_info::{ConditionalHotkeyInfo, PartialHotkeyInfo},
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
     remap_entry::RemapEntry,
     SelectHandleTarget, SetEventBlock,
@@ -52,79 +51,63 @@ impl Hotkey {
 }
 
 impl SelectHandleTarget for Hotkey {
-    fn bind(&self, button: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
-        ButtonEventHandlerEntry::new(
-            Rc::downgrade(&self.register),
-            PartialHotkeyInfo {
-                trigger: Trigger::Just(button.into()),
-                modifier: Arc::default(),
-                event_block: EventBlock::default(),
-            },
-        )
+    fn bind(&self, trigger: impl Into<ButtonSet>) -> ButtonEventHandlerEntry {
+        ButtonEventHandlerEntry::builder()
+            .register(Rc::downgrade(&self.register))
+            .trigger(Trigger::Just(trigger.into()))
+            .build()
     }
 
     fn bind_all(&self) -> ButtonEventHandlerEntry {
-        ButtonEventHandlerEntry::new(
-            Rc::downgrade(&self.register),
-            PartialHotkeyInfo {
-                trigger: Trigger::All,
-                modifier: Arc::default(),
-                event_block: EventBlock::default(),
-            },
-        )
+        ButtonEventHandlerEntry::builder()
+            .register(Rc::downgrade(&self.register))
+            .trigger(Trigger::All)
+            .build()
     }
 
-    fn remap(&self, button: impl Into<ButtonSet>) -> super::remap_entry::RemapEntry {
-        RemapEntry::new(Rc::downgrade(&self.register), button.into(), Arc::default())
+    fn remap(&self, trigger: impl Into<ButtonSet>) -> RemapEntry {
+        RemapEntry::builder()
+            .register(Rc::downgrade(&self.register))
+            .trigger(trigger.into())
+            .build()
     }
 
     fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {
-        MouseWheelHotkeyEntry::new(
-            Rc::downgrade(&self.register),
-            ConditionalHotkeyInfo::default(),
-        )
+        MouseWheelHotkeyEntry::builder()
+            .register(Rc::downgrade(&self.register))
+            .build()
     }
 
     fn bind_mouse_cursor(&self) -> MouseCursorHotKeyEntry {
-        MouseCursorHotKeyEntry::new(
-            Rc::downgrade(&self.register),
-            ConditionalHotkeyInfo::default(),
-        )
+        MouseCursorHotKeyEntry::builder()
+            .register(Rc::downgrade(&self.register))
+            .build()
     }
 
     fn add_modifiers(
         &self,
         (pressed, released): (&[ButtonSet], &[ButtonSet]),
     ) -> ConditionalHotkey {
-        ConditionalHotkey::new(
-            Rc::downgrade(&self.register),
-            ConditionalHotkeyInfo {
-                modifier_keys: Arc::new(ModifierKeys::new(pressed, released)),
-                ..ConditionalHotkeyInfo::default()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Rc::downgrade(&self.register))
+            .modifier_keys(Arc::new(ModifierKeys::new(pressed, released)))
+            .build()
     }
 }
 
 impl SetEventBlock for Hotkey {
     fn block(&self) -> ConditionalHotkey {
-        ConditionalHotkey::new(
-            Rc::downgrade(&self.register),
-            ConditionalHotkeyInfo {
-                event_block: EventBlock::Block,
-                ..ConditionalHotkeyInfo::default()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Rc::downgrade(&self.register))
+            .event_block(EventBlock::Block)
+            .build()
     }
 
     fn unblock(&self) -> ConditionalHotkey {
-        ConditionalHotkey::new(
-            Rc::downgrade(&self.register),
-            ConditionalHotkeyInfo {
-                event_block: EventBlock::Unblock,
-                ..ConditionalHotkeyInfo::default()
-            },
-        )
+        ConditionalHotkey::builder()
+            .register(Rc::downgrade(&self.register))
+            .event_block(EventBlock::Unblock)
+            .build()
     }
 }
 

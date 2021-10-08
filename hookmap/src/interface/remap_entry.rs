@@ -1,32 +1,22 @@
-use std::{cell::RefCell, rc::Weak, sync::Arc};
-
+use super::ButtonSet;
 use crate::{
     hotkey::{ModifierKeys, RemapInfo},
     runtime::Register,
 };
-
-use super::ButtonSet;
+use std::{cell::RefCell, rc::Weak, sync::Arc};
+use typed_builder::TypedBuilder;
 
 /// Register remapping information.
+#[derive(TypedBuilder)]
 pub struct RemapEntry {
     register: Weak<RefCell<Register>>,
     trigger: ButtonSet,
+
+    #[builder(default)]
     modifier_keys: Arc<ModifierKeys>,
 }
 
 impl RemapEntry {
-    pub(super) fn new(
-        register: Weak<RefCell<Register>>,
-        target: ButtonSet,
-        modifier_keys: Arc<ModifierKeys>,
-    ) -> Self {
-        Self {
-            register,
-            trigger: target,
-            modifier_keys,
-        }
-    }
-
     /// Determines which key to remap to.
     ///
     /// # Example
