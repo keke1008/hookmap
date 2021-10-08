@@ -19,11 +19,11 @@ fn main() {
 
     hotkey!(hotkey => {
 
-        // Binds the H,J,K,L keys as in vim.
-        bind H => LeftArrow;
-        bind J => DownArrow;
-        bind K => UpArrow;
-        bind L => RightArrow;
+        // Remap H,J,K,L keys as in vim.
+        remap H => LeftArrow;
+        remap J => DownArrow;
+        remap K => UpArrow;
+        remap L => RightArrow;
 
 
         // if left ctrl is pressed and right shift is not pressed.
