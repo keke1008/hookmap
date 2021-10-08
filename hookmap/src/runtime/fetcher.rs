@@ -5,7 +5,7 @@ use super::{
     storage::{ButtonStorage, HookInfo, MouseStorage, RemapStorage, Storage},
 };
 use crate::{button::ButtonSet, hotkey::Action, ButtonInput};
-use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
+use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
 
 pub(super) struct Fetchers {
     pub(super) on_press_fetcher: ButtonFetcher,
@@ -74,10 +74,16 @@ impl ButtonFetcher {
 
     pub(crate) fn fetch(&self, event: &ButtonEvent) -> FetchResult<ButtonEvent> {
         match self.try_remap(*event) {
-            Ok(remap_target) => FetchResult {
-                actions: vec![Action::from(move |_| remap_target.press())],
-                event_block: EventBlock::Block,
-            },
+            Ok(remap_target) => {
+                let action = match event.action {
+                    ButtonAction::Press => (move |_| remap_target.press_recursive()).into(),
+                    ButtonAction::Release => (move |_| remap_target.release_recursive()).into(),
+                };
+                FetchResult {
+                    actions: vec![action],
+                    event_block: EventBlock::Block,
+                }
+            }
             Err(event) => {
                 let (actions, event_blocks) = self.fetch_inner(&event, |hook| hook.event_block);
                 FetchResult {
