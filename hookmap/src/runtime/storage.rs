@@ -1,5 +1,7 @@
 use crate::hotkey::{Action, ModifierKeys, MouseEventHandler};
-use hookmap_core::{Button, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
+use hookmap_core::{
+    Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
+};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -58,6 +60,39 @@ impl HookInfo {
 }
 
 #[derive(Debug)]
+pub(super) struct Remap {
+    modifier_keys: Arc<ModifierKeys>,
+    target: Button,
+    activated: Arc<AtomicBool>,
+}
+
+impl Remap {
+    fn remap(&self, event: &ButtonEvent) -> Option<ButtonEvent> {
+        match event.action {
+            ButtonAction::Press => {
+                if self.modifier_keys.satisfies_condition() {
+                    self.activated.store(true, Ordering::SeqCst);
+                    let mut event = *event;
+                    event.target = self.target;
+                    Some(event)
+                } else {
+                    None
+                }
+            }
+            ButtonAction::Release => {
+                if self.activated.swap(false, Ordering::SeqCst) {
+                    let mut event = *event;
+                    event.target = self.target;
+                    Some(event)
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct MouseHook<E> {
     pub(super) modifier_keys: Arc<ModifierKeys>,
     pub(super) action: Action<E>,
@@ -68,6 +103,7 @@ pub struct MouseHook<E> {
 pub(super) struct ButtonStorage {
     pub(super) just: HashMap<Button, Vec<Arc<HookInfo>>>,
     pub(super) all: Vec<HookInfo>,
+    pub(super) remap: HashMap<Button, Vec<Remap>>,
 }
 pub(super) type MouseStorage<E> = Vec<Arc<MouseEventHandler<E>>>;
 pub(super) type MouseCursorStorage = MouseStorage<MouseCursorEvent>;
