@@ -87,14 +87,15 @@ pub struct MouseHook<E> {
 pub(super) struct ButtonStorage {
     pub(super) just: HashMap<Button, Vec<HookInfo>>,
     pub(super) all: Vec<HookInfo>,
-    pub(super) remap: HashMap<Button, Vec<Remap>>,
 }
 pub(super) type MouseStorage<E> = Vec<MouseEventHandler<E>>;
 pub(super) type MouseCursorStorage = MouseStorage<MouseCursorEvent>;
 pub(super) type MouseWheelStorage = MouseStorage<MouseWheelEvent>;
+pub(super) type RemapStorage = HashMap<Button, Vec<Remap>>;
 
 #[derive(Default, Debug)]
 pub(super) struct Storage {
+    pub(super) remap: HashMap<Button, Vec<Remap>>,
     pub(super) on_press: ButtonStorage,
     pub(super) on_release: ButtonStorage,
     pub(super) mouse_cursor: MouseCursorStorage,

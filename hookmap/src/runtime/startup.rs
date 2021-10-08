@@ -1,5 +1,5 @@
 use super::{
-    fetcher::{ButtonFetcher, FetchResult, MouseFetcher},
+    fetcher::{FetchResult, Fetchers, MouseFetcher},
     interceptor::event_sender,
     storage::Storage,
 };
@@ -27,10 +27,12 @@ impl HookInstaller {
     }
 
     pub(crate) fn install_hook(self) {
-        let on_press_fetcher = ButtonFetcher::new(self.storage.on_press);
-        let on_release_fetcher = ButtonFetcher::new(self.storage.on_release);
-        let mouse_cursor_fetcher = MouseFetcher::new(self.storage.mouse_cursor);
-        let mouse_wheel_fetcher = MouseFetcher::new(self.storage.mouse_wheel);
+        let Fetchers {
+            on_press_fetcher,
+            on_release_fetcher,
+            mouse_cursor_fetcher,
+            mouse_wheel_fetcher,
+        } = self.storage.into();
 
         let event_receiver = HookHandler::install_hook();
         while let Ok(mut event_message) = event_receiver.recv() {

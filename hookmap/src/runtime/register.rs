@@ -142,13 +142,6 @@ impl Register {
         };
         for trigger in remap_info.trigger.iter() {
             self.storage
-                .on_release
-                .remap
-                .entry(*trigger)
-                .or_default()
-                .push(remap.clone());
-            self.storage
-                .on_press
                 .remap
                 .entry(*trigger)
                 .or_default()

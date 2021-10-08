@@ -1,9 +1,30 @@
+use std::sync::Arc;
+
 use super::{
     compute_event_block,
-    storage::{ButtonStorage, HookInfo, MouseStorage},
+    storage::{ButtonStorage, HookInfo, MouseStorage, RemapStorage, Storage},
 };
 use crate::{button::ButtonSet, hotkey::Action, ButtonInput};
-use hookmap_core::{ButtonEvent, EventBlock};
+use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
+
+pub(super) struct Fetchers {
+    pub(super) on_press_fetcher: ButtonFetcher,
+    pub(super) on_release_fetcher: ButtonFetcher,
+    pub(super) mouse_cursor_fetcher: MouseFetcher<MouseCursorEvent>,
+    pub(super) mouse_wheel_fetcher: MouseFetcher<MouseWheelEvent>,
+}
+
+impl From<Storage> for Fetchers {
+    fn from(storage: Storage) -> Self {
+        let remap = Arc::new(storage.remap);
+        Self {
+            on_press_fetcher: ButtonFetcher::new(storage.on_press, Arc::clone(&remap)),
+            on_release_fetcher: ButtonFetcher::new(storage.on_release, remap),
+            mouse_cursor_fetcher: MouseFetcher::new(storage.mouse_cursor),
+            mouse_wheel_fetcher: MouseFetcher::new(storage.mouse_wheel),
+        }
+    }
+}
 
 pub(crate) struct FetchResult<E> {
     pub(super) actions: Vec<Action<E>>,
@@ -12,15 +33,16 @@ pub(crate) struct FetchResult<E> {
 
 pub(super) struct ButtonFetcher {
     storage: ButtonStorage,
+    remap: Arc<RemapStorage>,
 }
 
 impl ButtonFetcher {
-    pub(crate) fn new(storage: ButtonStorage) -> Self {
-        Self { storage }
+    pub(crate) fn new(storage: ButtonStorage, remap: Arc<RemapStorage>) -> Self {
+        Self { storage, remap }
     }
 
     fn try_remap(&self, event: ButtonEvent) -> Result<ButtonSet, ButtonEvent> {
-        if let Some(remaps) = self.storage.remap.get(&event.target) {
+        if let Some(remaps) = self.remap.get(&event.target) {
             if let Some(remap) = remaps.iter().find(|remap| remap.remappable(event.action)) {
                 return Ok(remap.target.clone());
             }
