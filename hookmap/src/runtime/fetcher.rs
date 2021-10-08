@@ -1,15 +1,12 @@
 use super::{
     compute_event_block,
-    storage::{ButtonStorage, MouseStorage},
+    storage::{ButtonStorage, HookInfo, MouseStorage},
 };
-use crate::hotkey::Action;
+use crate::{button::ButtonSet, hotkey::Action, ButtonInput};
 use hookmap_core::{ButtonEvent, EventBlock};
-use smart_default::SmartDefault;
 
-#[derive(SmartDefault)]
 pub(crate) struct FetchResult<E> {
     pub(super) actions: Vec<Action<E>>,
-    #[default(EventBlock::Unblock)]
     pub(super) event_block: EventBlock,
 }
 
@@ -22,31 +19,51 @@ impl ButtonFetcher {
         Self { storage }
     }
 
-    fn fetch_inner(&self, event: &ButtonEvent) -> Option<FetchResult<ButtonEvent>> {
+    fn try_remap(&self, event: ButtonEvent) -> Result<ButtonSet, ButtonEvent> {
+        if let Some(remaps) = self.storage.remap.get(&event.target) {
+            if let Some(remap) = remaps.iter().find(|remap| remap.remappable(event.action)) {
+                return Ok(remap.target.clone());
+            }
+        }
+        Err(event)
+    }
+
+    fn fetch_inner<T, F>(&self, event: &ButtonEvent, f: F) -> (Vec<Action<ButtonEvent>>, Vec<T>)
+    where
+        F: Fn(&HookInfo) -> T,
+    {
         let all_hooks = self
             .storage
             .all
             .iter()
             .filter(|hook| hook.satisfies_condition())
-            .map(|hook| (hook.action.clone(), hook.event_block));
-        let (actions, event_blocks): (Vec<_>, Vec<_>) = match self.storage.just.get(&event.target) {
-            Some(hooks) => hooks
+            .map(|hook| (hook.action.clone(), f(hook)));
+        if let Some(hooks) = self.storage.just.get(&event.target) {
+            hooks
                 .iter()
                 .filter(|hook| hook.satisfies_condition())
-                .map(|hook| (hook.action.clone(), hook.event_block))
+                .map(|hook| (hook.action.clone(), f(hook)))
                 .chain(all_hooks)
-                .unzip(),
-            None => all_hooks.unzip(),
-        };
-
-        Some(FetchResult {
-            actions,
-            event_block: compute_event_block(&event_blocks),
-        })
+                .unzip()
+        } else {
+            all_hooks.unzip()
+        }
     }
 
     pub(crate) fn fetch(&self, event: &ButtonEvent) -> FetchResult<ButtonEvent> {
-        self.fetch_inner(event).unwrap_or_default()
+        match self.try_remap(*event) {
+            Ok(remap_target) => FetchResult {
+                actions: vec![Action::from(move |_| remap_target.press())],
+                event_block: EventBlock::Block,
+            },
+            Err(event) => {
+                let (actions, event_blocks) = self.fetch_inner(&event, |hook| hook.event_block);
+                FetchResult {
+                    actions,
+                    event_block: compute_event_block(&event_blocks),
+                }
+            }
+        }
     }
 }
 
@@ -59,7 +76,7 @@ impl<E: Clone> MouseFetcher<E> {
         Self { storage }
     }
 
-    fn fetch_inner(&self) -> Option<FetchResult<E>> {
+    pub(crate) fn fetch(&self) -> FetchResult<E> {
         let (actions, event_blocks): (Vec<_>, Vec<_>) = self
             .storage
             .iter()
@@ -67,13 +84,9 @@ impl<E: Clone> MouseFetcher<E> {
             .map(|hook| (hook.action.clone(), hook.event_block))
             .unzip();
 
-        Some(FetchResult {
+        FetchResult {
             actions,
             event_block: compute_event_block(&event_blocks),
-        })
-    }
-
-    pub(crate) fn fetch(&self) -> FetchResult<E> {
-        self.fetch_inner().unwrap_or_default()
+        }
     }
 }
