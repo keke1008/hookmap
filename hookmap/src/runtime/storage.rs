@@ -1,3 +1,4 @@
+use crate::button::ButtonSet;
 use crate::hotkey::{Action, ModifierKeys, MouseEventHandler};
 use hookmap_core::{
     Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
@@ -6,7 +7,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) enum HookKind {
     Independet {
         modifier_keys: Arc<ModifierKeys>,
@@ -20,7 +21,7 @@ pub(super) enum HookKind {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct HookInfo {
     pub(super) kind: HookKind,
     pub(super) action: Action<ButtonEvent>,
@@ -61,33 +62,16 @@ impl HookInfo {
 
 #[derive(Debug)]
 pub(super) struct Remap {
-    modifier_keys: Arc<ModifierKeys>,
-    target: Button,
-    activated: Arc<AtomicBool>,
+    pub(super) modifier_keys: Arc<ModifierKeys>,
+    pub(super) target: ButtonSet,
+    pub(super) activated: Arc<AtomicBool>,
 }
 
 impl Remap {
-    fn remap(&self, event: &ButtonEvent) -> Option<ButtonEvent> {
-        match event.action {
-            ButtonAction::Press => {
-                if self.modifier_keys.satisfies_condition() {
-                    self.activated.store(true, Ordering::SeqCst);
-                    let mut event = *event;
-                    event.target = self.target;
-                    Some(event)
-                } else {
-                    None
-                }
-            }
-            ButtonAction::Release => {
-                if self.activated.swap(false, Ordering::SeqCst) {
-                    let mut event = *event;
-                    event.target = self.target;
-                    Some(event)
-                } else {
-                    None
-                }
-            }
+    pub(super) fn remappable(&self, action: ButtonAction) -> bool {
+        match action {
+            ButtonAction::Press => self.modifier_keys.satisfies_condition(),
+            ButtonAction::Release => self.activated.swap(false, Ordering::SeqCst),
         }
     }
 }
@@ -101,11 +85,11 @@ pub struct MouseHook<E> {
 
 #[derive(Default, Debug)]
 pub(super) struct ButtonStorage {
-    pub(super) just: HashMap<Button, Vec<Arc<HookInfo>>>,
+    pub(super) just: HashMap<Button, Vec<HookInfo>>,
     pub(super) all: Vec<HookInfo>,
     pub(super) remap: HashMap<Button, Vec<Remap>>,
 }
-pub(super) type MouseStorage<E> = Vec<Arc<MouseEventHandler<E>>>;
+pub(super) type MouseStorage<E> = Vec<MouseEventHandler<E>>;
 pub(super) type MouseCursorStorage = MouseStorage<MouseCursorEvent>;
 pub(super) type MouseWheelStorage = MouseStorage<MouseWheelEvent>;
 

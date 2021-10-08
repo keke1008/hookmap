@@ -65,25 +65,23 @@ impl Register {
         let (on_press_hook, on_release_hook) = hotkey_to_hook(&hotkey);
         if let Trigger::Just(ref trigger) = hotkey.trigger {
             if let Some(hook) = on_press_hook {
-                let hook = Arc::new(hook);
                 for &trigger in trigger.iter() {
                     self.storage
                         .on_press
                         .just
                         .entry(trigger)
                         .or_default()
-                        .push(Arc::clone(&hook));
+                        .push(hook.clone());
                 }
             }
             if let Some(hook) = on_release_hook {
-                let hook = Arc::new(hook);
                 for &trigger in trigger.iter() {
                     self.storage
                         .on_release
                         .just
                         .entry(trigger)
                         .or_default()
-                        .push(Arc::clone(&hook));
+                        .push(hook.clone());
                 }
             }
         } else {
@@ -100,13 +98,13 @@ impl Register {
         &mut self,
         handler: MouseEventHandler<MouseCursorEvent>,
     ) {
-        self.storage.mouse_cursor.push(Arc::new(handler));
+        self.storage.mouse_cursor.push(handler);
     }
 
     pub(crate) fn register_wheel_event_event_handler(
         &mut self,
         handler: MouseEventHandler<MouseWheelEvent>,
     ) {
-        self.storage.mouse_wheel.push(Arc::new(handler));
+        self.storage.mouse_wheel.push(handler);
     }
 }
