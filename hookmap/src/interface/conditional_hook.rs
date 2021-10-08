@@ -17,7 +17,7 @@ use std::{cell::RefCell, rc::Weak, sync::Arc};
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// let mod_ctrl = hotkey.add_modifiers((&[Button::LCtrl.into()], &[]));
-/// mod_ctrl.bind(Button::H).like(Button::LeftArrow);
+/// mod_ctrl.remap(Button::H).to(Button::LeftArrow);
 /// ```
 ///
 pub struct ConditionalHotkey {

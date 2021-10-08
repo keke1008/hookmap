@@ -1,6 +1,5 @@
 use super::hotkey_info::PartialHotkeyInfo;
 use crate::{
-    button::{ButtonInput, ButtonSet},
     hotkey::{Action, HotkeyAction},
     runtime::Register,
 };
@@ -137,44 +136,6 @@ impl ButtonEventHandlerEntry {
             on_release: on_release.into(),
         };
         let hotkey = self.partial_hotkey.build_hotkey_info(action);
-        self.register
-            .upgrade()
-            .unwrap()
-            .borrow_mut()
-            .register_hotkey(hotkey);
-    }
-
-    /// When the specified button is pressed, the key passed in the argument will be pressed.
-    /// The same applies when the button is released.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::*;
-    /// let hotkey = Hotkey::new();
-    /// hotkey.bind(Button::H).like(Button::LeftArrow);
-    /// ```
-    ///
-    pub fn like<T>(&self, button: T)
-    where
-        T: Into<ButtonSet> + Send + Sync,
-    {
-        let button = button.into();
-        let partial_hotkey = {
-            let mut partial_hotkey = self.partial_hotkey.clone();
-            partial_hotkey.event_block = EventBlock::Block;
-            partial_hotkey
-        };
-        let on_press = {
-            let button = button.clone();
-            (move |_| button.press_recursive()).into()
-        };
-        let on_release = (move |_| button.release_recursive()).into();
-        let action = HotkeyAction::PressAndRelease {
-            on_press,
-            on_release,
-        };
-        let hotkey = partial_hotkey.build_hotkey_info(action);
         self.register
             .upgrade()
             .unwrap()
