@@ -60,7 +60,7 @@ impl HookInfo {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(super) struct Remap {
     pub(super) modifier_keys: Arc<ModifierKeys>,
     pub(super) target: ButtonSet,

@@ -1,6 +1,6 @@
-use super::storage::{ButtonStorage, HookInfo, HookKind, Storage};
+use super::storage::{ButtonStorage, HookInfo, HookKind, Remap, Storage};
 use crate::button::ButtonSet;
-use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler, Trigger};
+use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler, RemapInfo, Trigger};
 use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
@@ -125,6 +125,35 @@ impl Register {
             converter.create_released_function(&hotkey),
             &mut self.storage.on_release,
         );
+    }
+
+    pub(crate) fn register_remap(&mut self, mut remap_info: RemapInfo) {
+        let remap_info = {
+            if let trigger @ ButtonSet::All(_) = &remap_info.trigger {
+                remap_info.modifier_keys =
+                    Arc::new(remap_info.modifier_keys.add(&[trigger.clone()], &[]))
+            }
+            remap_info
+        };
+        let remap = Remap {
+            modifier_keys: remap_info.modifier_keys,
+            target: remap_info.target,
+            activated: Arc::default(),
+        };
+        for trigger in remap_info.trigger.iter() {
+            self.storage
+                .on_release
+                .remap
+                .entry(*trigger)
+                .or_default()
+                .push(remap.clone());
+            self.storage
+                .on_press
+                .remap
+                .entry(*trigger)
+                .or_default()
+                .push(remap.clone());
+        }
     }
 
     pub(crate) fn register_cursor_event_handler(

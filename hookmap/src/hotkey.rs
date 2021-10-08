@@ -135,3 +135,10 @@ pub(crate) struct MouseEventHandler<E> {
     pub(crate) event_block: EventBlock,
     pub(crate) action: Action<E>,
 }
+
+#[derive(Clone, Debug)]
+pub(crate) struct RemapInfo {
+    pub(crate) modifier_keys: Arc<ModifierKeys>,
+    pub(crate) trigger: ButtonSet,
+    pub(crate) target: ButtonSet,
+}
