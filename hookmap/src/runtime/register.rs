@@ -1,46 +1,81 @@
-use super::storage::{HookInfo, HookKind, Storage};
+use super::storage::{ButtonStorage, HookInfo, HookKind, Storage};
 use crate::button::ButtonSet;
 use crate::hotkey::{HotkeyAction, HotkeyInfo, MouseEventHandler, Trigger};
 use hookmap_core::{MouseCursorEvent, MouseWheelEvent};
+use std::sync::atomic::AtomicBool;
 use std::sync::Arc;
 
-fn hotkey_to_hook(hotkey: &HotkeyInfo) -> (Option<HookInfo>, Option<HookInfo>) {
-    let modifier_keys = Arc::clone(&hotkey.modifier_keys);
-    match &hotkey.action {
-        HotkeyAction::Press(action) => {
-            let kind = HookKind::Independet { modifier_keys };
-            let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
-            (Some(hook), None)
+#[derive(Debug, Default)]
+struct HotkeyConverter(Option<Arc<AtomicBool>>);
+
+impl HotkeyConverter {
+    fn activated(&mut self) -> Arc<AtomicBool> {
+        match self.0 {
+            Some(ref activated) => Arc::clone(activated),
+            None => {
+                let activated = Arc::default();
+                self.0 = Some(Arc::clone(&activated));
+                activated
+            }
         }
-        HotkeyAction::Release(action) => {
-            let kind = HookKind::Independet { modifier_keys };
-            let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
-            (None, Some(hook))
+    }
+
+    fn crate_pressed_hook(&mut self, hotkey: &HotkeyInfo) -> Option<HookInfo> {
+        let modifier_keys = Arc::clone(&hotkey.modifier_keys);
+        match &hotkey.action {
+            HotkeyAction::Release(_) => None,
+            HotkeyAction::Press(action) => {
+                let kind = HookKind::Independet { modifier_keys };
+                let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                Some(hook)
+            }
+            HotkeyAction::PressOrRelease(action) => {
+                let kind = HookKind::LinkedOnPress {
+                    modifier_keys,
+                    activated: self.activated(),
+                };
+                let hook_on_press = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                Some(hook_on_press)
+            }
+            HotkeyAction::PressAndRelease {
+                on_press: press, ..
+            } => {
+                let kind = HookKind::LinkedOnPress {
+                    modifier_keys,
+                    activated: self.activated(),
+                };
+                let hook_on_press = HookInfo::new(kind, press.clone(), hotkey.event_block);
+                Some(hook_on_press)
+            }
         }
-        HotkeyAction::PressOrRelease(action) => {
-            let activated = Arc::default();
-            let kind = HookKind::LinkedOnPress {
-                modifier_keys,
-                activated: Arc::clone(&activated),
-            };
-            let hook_on_press = HookInfo::new(kind, action.clone(), hotkey.event_block);
-            let kind = HookKind::LinkedOnRelease { activated };
-            let hook_on_release = HookInfo::new(kind, action.clone(), hotkey.event_block);
-            (Some(hook_on_press), Some(hook_on_release))
-        }
-        HotkeyAction::PressAndRelease {
-            on_press: press,
-            on_release: release,
-        } => {
-            let activated = Arc::default();
-            let kind = HookKind::LinkedOnPress {
-                modifier_keys,
-                activated: Arc::clone(&activated),
-            };
-            let hook_on_press = HookInfo::new(kind, press.clone(), hotkey.event_block);
-            let kind = HookKind::LinkedOnRelease { activated };
-            let hook_on_release = HookInfo::new(kind, release.clone(), hotkey.event_block);
-            (Some(hook_on_press), Some(hook_on_release))
+    }
+
+    fn create_released_function(&mut self, hotkey: &HotkeyInfo) -> Option<HookInfo> {
+        match &hotkey.action {
+            HotkeyAction::Press(_) => None,
+            HotkeyAction::Release(action) => {
+                let modifier_keys = Arc::clone(&hotkey.modifier_keys);
+                let kind = HookKind::Independet { modifier_keys };
+                let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                Some(hook)
+            }
+            HotkeyAction::PressOrRelease(action) => {
+                let kind = HookKind::LinkedOnRelease {
+                    activated: self.activated(),
+                };
+                let hook_on_release = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                Some(hook_on_release)
+            }
+            HotkeyAction::PressAndRelease {
+                on_release: release,
+                ..
+            } => {
+                let kind = HookKind::LinkedOnRelease {
+                    activated: self.activated(),
+                };
+                let hook_on_release = HookInfo::new(kind, release.clone(), hotkey.event_block);
+                Some(hook_on_release)
+            }
         }
     }
 }
@@ -55,6 +90,23 @@ impl Register {
         self.storage
     }
 
+    fn register_hotkey_inner(
+        trigger: &Trigger,
+        hook: Option<HookInfo>,
+        storage: &mut ButtonStorage,
+    ) {
+        if let Some(hook) = hook {
+            match trigger {
+                Trigger::Just(trigger) => {
+                    for &trigger in trigger.iter() {
+                        storage.just.entry(trigger).or_default().push(hook.clone());
+                    }
+                }
+                Trigger::All => storage.all.push(hook),
+            };
+        }
+    }
+
     pub(crate) fn register_hotkey(&mut self, mut hotkey: HotkeyInfo) {
         let hotkey = {
             if let Trigger::Just(ref trigger @ ButtonSet::All(_)) = hotkey.trigger {
@@ -62,36 +114,17 @@ impl Register {
             }
             hotkey
         };
-        let (on_press_hook, on_release_hook) = hotkey_to_hook(&hotkey);
-        if let Trigger::Just(ref trigger) = hotkey.trigger {
-            if let Some(hook) = on_press_hook {
-                for &trigger in trigger.iter() {
-                    self.storage
-                        .on_press
-                        .just
-                        .entry(trigger)
-                        .or_default()
-                        .push(hook.clone());
-                }
-            }
-            if let Some(hook) = on_release_hook {
-                for &trigger in trigger.iter() {
-                    self.storage
-                        .on_release
-                        .just
-                        .entry(trigger)
-                        .or_default()
-                        .push(hook.clone());
-                }
-            }
-        } else {
-            if let Some(hook) = on_press_hook {
-                self.storage.on_press.all.push(hook);
-            }
-            if let Some(hook) = on_release_hook {
-                self.storage.on_release.all.push(hook);
-            }
-        }
+        let mut converter = HotkeyConverter::default();
+        Self::register_hotkey_inner(
+            &hotkey.trigger,
+            converter.crate_pressed_hook(&hotkey),
+            &mut self.storage.on_press,
+        );
+        Self::register_hotkey_inner(
+            &hotkey.trigger,
+            converter.create_released_function(&hotkey),
+            &mut self.storage.on_release,
+        );
     }
 
     pub(crate) fn register_cursor_event_handler(
