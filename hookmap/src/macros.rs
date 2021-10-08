@@ -39,12 +39,12 @@ macro_rules! button_name {
 #[allow(non_camel_case_types)]
 pub enum HotkeyCommandCompletion {
     /// ```ignore
-    /// bind <Key> => <Key>;
+    /// remap <Key> => <Key>;
     /// ```
-    bind,
+    remap,
 
     /// ```ignore
-    /// on_press <Key => |_| {};
+    /// on_press <Key> => |_| {};
     /// ```
     on_press,
 
@@ -68,6 +68,8 @@ pub enum HotkeyCommandCompletion {
 
     /// ```ignore
     /// disable <Key>;
+    /// disable MouseMove;
+    /// disable MouseWheel;
     /// ```
     disable,
 
@@ -83,27 +85,27 @@ pub enum HotkeyCommandCompletion {
 
     /// ```ignore
     /// modifier ( <Key>, ... ) {
-    ///     bind <Key> => <Key>;
+    ///     remap A => B;
     /// }
     /// ```
     modifier,
 
     /// ```ignore
     /// block_event {
-    ///     bind A => B;
+    ///     remap A => B;
     /// }
     /// ```
     block_event,
 
     /// ```ignore
     /// unblock_event {
-    ///     bind A => B;
+    ///     remap A => B;
     /// }
     /// ```
     unblock_event,
 
     /// ```ignore
-    /// call bind_alt_tab(A, T);
+    /// call remap_alt_tab(A, T);
     /// ```
     call,
 }
@@ -112,7 +114,7 @@ pub enum HotkeyCommandCompletion {
 ///
 /// # Commands
 ///
-/// * [bind](#bind)
+/// * [remap](#remap)
 /// * [on_press](#on_press)
 /// * [on_release](#on_release)
 /// * [on_press_or_release](#on_press_or_release)
@@ -125,15 +127,15 @@ pub enum HotkeyCommandCompletion {
 /// * [unblock_event](#unblock_event)
 /// * [call](#call)
 ///
-/// ## bind
+/// ## remap
 ///
-/// Binds the specified button as another button.
+/// Remap keys.
 ///
 /// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     bind A => B;
+///     remap A => B;
 /// });
 /// ```
 ///
@@ -173,7 +175,7 @@ pub enum HotkeyCommandCompletion {
 /// });
 /// ```
 ///
-/// ## on_press_and_reelase
+/// ## on_press_and_release
 ///
 /// Registers a function to be called when the specified button is pressed or releaesd, respectively.
 ///
@@ -236,7 +238,7 @@ pub enum HotkeyCommandCompletion {
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     modifier (LShift, !RCtrl) {
-///         bind A => B;
+///         remap A => B;
 ///     }
 /// })
 /// ```
@@ -280,18 +282,18 @@ pub enum HotkeyCommandCompletion {
 ///
 /// ```no_run
 /// use hookmap::*;
-/// trait BindAsTab: SelectHandleTarget {
-///     fn bind_as_tab(&self, target: Button) {
+/// trait RemapAsTab: SelectHandleTarget {
+///     fn remap_as_tab(&self, target: Button) {
 ///         hotkey!(self => {
-///             bind [target] => Tab;
+///             remap [target] => Tab;
 ///         });
 ///     }
 /// }
-/// impl<T: SelectHandleTarget> BindAsTab for T {}
+/// impl<T: SelectHandleTarget> RemapAsTab for T {}
 ///
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     call bind_as_tab(A);
+///     call remap_as_tab(A);
 /// });
 /// ```
 ///
@@ -338,9 +340,9 @@ macro_rules! hotkey {
     };
 
 
-    // Matches `bind`.
-    (@command $hotkey:ident bind $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $lhs).like($crate::button_name!($rhs));
+    // Matches `remap`.
+    (@command $hotkey:ident remap $lhs:tt => $rhs:tt; $($rest:tt)*) => {
+        $hotkey.remap($crate::button_name!($lhs)).to($crate::button_name!($rhs));
         $crate::hotkey!(@command_completion $hotkey $($rest)*)
     };
 
@@ -612,12 +614,11 @@ mod tests {
     use crate::*;
 
     #[test]
-    fn bind_command() {
+    fn remap() {
         hotkey!(Hotkey::new() => {
-            bind A => B;
-            bind [Button::A] => [Button::B];
-            bind [&SHIFT] => [&CTRL];
-            bind all => A;
+            remap A => B;
+            remap [Button::A] => [Button::B];
+            remap [&SHIFT] => [&CTRL];
         });
     }
 
@@ -676,7 +677,7 @@ mod tests {
                 modifier (A) {}
             }
             modifier () {
-                bind A => B;
+                remap A => B;
             }
         });
     }
@@ -687,7 +688,7 @@ mod tests {
             block_event {}
             block_event {
                 unblock_event {
-                    bind A => B;
+                    remap A => B;
                 }
             }
         });
@@ -699,7 +700,7 @@ mod tests {
             unblock_event {}
             unblock_event {
                 block_event {
-                    bind A => B;
+                    remap A => B;
                 }
             }
         });

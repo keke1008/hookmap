@@ -11,23 +11,29 @@ use std::sync::{
 
 fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
 where
-    T: SelectHandleTarget,
+    T: SelectHandleTarget + SetEventBlock,
     U: ButtonInput + Into<ButtonSet> + Clone + Send + Sync + 'static,
 {
     let is_alone = Arc::new(AtomicBool::new(true));
 
     hotkey!(hook => {
-        bind [&space] => LShift;
+        block_event {
+            on_press [&space] => {
+                let is_alone = Arc::clone(&is_alone);
+                move |_| {
+                    is_alone.store(true, Ordering::SeqCst);
+                    seq!(LShift down);
+                }
+            };
 
-        on_press [&space] => {
-            let is_alone = Arc::clone(&is_alone);
-            move |_| is_alone.store(true, Ordering::SeqCst)
-        };
-
-        on_release [&space] => {
-            let is_alone = Arc::clone(&is_alone);
-            move |_| if is_alone.load(Ordering::SeqCst) { space.click() }
-        };
+            on_release [&space] => {
+                let is_alone = Arc::clone(&is_alone);
+                move |_| {
+                    if is_alone.load(Ordering::SeqCst) { space.click(); }
+                    seq!(LShift up);
+                }
+            };
+        }
     });
 
     let filter = Filter::new().action(ButtonAction::Press);

@@ -70,7 +70,12 @@ pub(super) struct Remap {
 impl Remap {
     pub(super) fn remappable(&self, action: ButtonAction) -> bool {
         match action {
-            ButtonAction::Press => self.modifier_keys.satisfies_condition(),
+            ButtonAction::Press => {
+                self.modifier_keys.satisfies_condition() && {
+                    self.activated.store(true, Ordering::SeqCst);
+                    true
+                }
+            }
             ButtonAction::Release => self.activated.swap(false, Ordering::SeqCst),
         }
     }
