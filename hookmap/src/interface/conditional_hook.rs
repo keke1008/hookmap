@@ -2,6 +2,7 @@ use super::{
     button_event_handler_entry::ButtonEventHandlerEntry,
     hotkey_info::ConditionalHotkeyInfo,
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
+    remap_entry::RemapEntry,
     SelectHandleTarget, SetEventBlock,
 };
 use crate::{button::ButtonSet, hotkey::Trigger, runtime::Register};
@@ -53,6 +54,14 @@ impl SelectHandleTarget for ConditionalHotkey {
             self.conditional_hotkey
                 .clone()
                 .build_partial_hotkey_info(Trigger::All),
+        )
+    }
+
+    fn remap(&self, button: impl Into<ButtonSet>) -> super::remap_entry::RemapEntry {
+        RemapEntry::new(
+            Weak::clone(&self.register),
+            button.into(),
+            self.conditional_hotkey.modifier_keys.clone(),
         )
     }
 

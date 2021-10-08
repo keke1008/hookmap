@@ -3,6 +3,7 @@ use super::{
     conditional_hook::ConditionalHotkey,
     hotkey_info::{ConditionalHotkeyInfo, PartialHotkeyInfo},
     mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
+    remap_entry::RemapEntry,
     SelectHandleTarget, SetEventBlock,
 };
 use crate::button::ButtonSet;
@@ -71,6 +72,10 @@ impl SelectHandleTarget for Hotkey {
                 event_block: EventBlock::default(),
             },
         )
+    }
+
+    fn remap(&self, button: impl Into<ButtonSet>) -> super::remap_entry::RemapEntry {
+        RemapEntry::new(Rc::downgrade(&self.register), button.into(), Arc::default())
     }
 
     fn bind_mouse_wheel(&self) -> MouseWheelHotkeyEntry {

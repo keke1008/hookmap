@@ -3,13 +3,15 @@ mod conditional_hook;
 mod hotkey;
 mod hotkey_info;
 mod mouse_event_handler_entry;
+mod remap_entry;
 
+pub use crate::button::ButtonSet;
 pub use button_event_handler_entry::ButtonEventHandlerEntry;
 pub use conditional_hook::ConditionalHotkey;
 pub use hotkey::Hotkey;
 pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
 
-use crate::button::ButtonSet;
+use self::remap_entry::RemapEntry;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
@@ -38,6 +40,17 @@ pub trait SelectHandleTarget {
     /// ```
     ///
     fn bind_all(&self) -> ButtonEventHandlerEntry;
+
+    /// Remap keys.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::*;
+    /// let hotkey = Hotkey::new();
+    /// hotkey.remap(Button::A).to(Button::B);
+    /// ```
+    fn remap(&self, button: impl Into<ButtonSet>) -> RemapEntry;
 
     /// Returns a [`MouseWheelHotkeyEntry`] for registering a hook to the mouse wheel.
     ///
