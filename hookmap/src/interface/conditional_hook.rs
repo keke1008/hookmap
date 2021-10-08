@@ -1,7 +1,5 @@
 use super::{
-    button_event_handler_entry::ButtonEventHandlerEntry,
-    mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry},
-    remap_entry::RemapEntry,
+    entry::{ButtonEventHandlerEntry, MouseCursorHotKeyEntry, MouseWheelHotkeyEntry, RemapEntry},
     SelectHandleTarget, SetEventBlock,
 };
 use crate::{

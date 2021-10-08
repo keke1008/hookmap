@@ -1,16 +1,13 @@
-mod button_event_handler_entry;
 mod conditional_hook;
+mod entry;
 mod hotkey;
-mod mouse_event_handler_entry;
-mod remap_entry;
 
 pub use crate::button::ButtonSet;
-pub use button_event_handler_entry::ButtonEventHandlerEntry;
 pub use conditional_hook::ConditionalHotkey;
+pub use entry::{
+    ButtonEventHandlerEntry, MouseCursorHotKeyEntry, MouseWheelHotkeyEntry, RemapEntry,
+};
 pub use hotkey::Hotkey;
-pub use mouse_event_handler_entry::{MouseCursorHotKeyEntry, MouseWheelHotkeyEntry};
-
-use self::remap_entry::RemapEntry;
 
 /// Selecting the target of the hook.
 pub trait SelectHandleTarget {
