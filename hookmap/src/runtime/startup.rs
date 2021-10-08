@@ -6,14 +6,14 @@ use super::{
 use crate::interface::Hotkey;
 use hookmap_core::ButtonAction;
 use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
-use std::{fmt::Debug, rc::Rc};
+use std::{fmt::Debug, rc::Rc, thread};
 
 pub(crate) struct HookInstaller {
     storage: Storage,
 }
 
 impl HookInstaller {
-    fn handle_mouse_event<T: Debug + Copy>(
+    fn handle_mouse_event<T: 'static + Debug + Copy + Send>(
         fetcher: &MouseFetcher<T>,
         event_message: &mut EventMessage,
         event: T,
@@ -23,7 +23,7 @@ impl HookInstaller {
             event_block,
         } = fetcher.fetch();
         event_message.send_event_block(event_block);
-        actions.iter().for_each(|action| action.call(event));
+        thread::spawn(move || actions.iter().for_each(|action| action.call(event)));
     }
 
     pub(crate) fn install_hook(self) {
@@ -51,7 +51,7 @@ impl HookInstaller {
                                 on_release_fetcher.fetch(&event).actions
                             }
                         };
-                        actions.iter().for_each(|action| action.call(event));
+                        thread::spawn(move || actions.iter().for_each(|action| action.call(event)));
                     }
                 }
                 Event::MouseCursor(event) => {
