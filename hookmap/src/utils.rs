@@ -34,11 +34,12 @@ pub trait Utils: SelectHandleTarget + Sized {
             };
 
             modifier([alt]) {
-                remap [tab] => Tab;
-                on_press Tab => move |_| {
+                disable [tab];
+                on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                        seq!(LAlt down, Tab);
+                        seq!(LAlt down);
                     }
+                    seq!(Tab);
                 };
             }
         });
@@ -66,15 +67,16 @@ pub trait Utils: SelectHandleTarget + Sized {
         hotkey!(self => {
             on_release [&alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
-                seq!(LAlt up, LShift up);
+                seq!(LAlt up);
             };
 
             modifier([alt]) {
-                remap [tab] => Tab;
-                on_press Tab => move |_| {
+                disable [tab];
+                on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
-                        seq!(LAlt down, LShift down, Tab);
+                        seq!(LAlt down);
                     }
+                    seq!(with(LShift), Tab);
                 };
             }
         });
