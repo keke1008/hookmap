@@ -56,14 +56,14 @@ pub enum Event {
 
 pub struct EventMessage {
     pub event: Event,
-    pub(crate) event_block_sender: Option<Sender<NativeEventOperation>>,
+    pub(crate) native_event_operation_sender: Option<Sender<NativeEventOperation>>,
 }
 
 impl EventMessage {
-    fn new(event: Event, event_block_sender: Sender<NativeEventOperation>) -> Self {
+    fn new(event: Event, native_event_operation_sender: Sender<NativeEventOperation>) -> Self {
         Self {
             event,
-            event_block_sender: Some(event_block_sender),
+            native_event_operation_sender: Some(native_event_operation_sender),
         }
     }
 
@@ -74,37 +74,37 @@ impl EventMessage {
     /// ```no_run
     /// use hookmap_core::*;
     /// let mut message = HookHandler::install_hook().recv().unwrap();
-    /// message.send_event_block(EventBlock::Block);
+    /// message.send_native_event_operation(NativeEventOperation::Block);
     /// ```
     ///
-    pub fn send_event_block(&mut self, event_block: NativeEventOperation) {
-        self.event_block_sender
+    pub fn send_native_event_operation(&mut self, operation: NativeEventOperation) {
+        self.native_event_operation_sender
             .take()
-            .expect("EventBlock has already been sent.")
-            .send(event_block)
+            .expect("The native event operation has already been sent.")
+            .send(operation)
             .unwrap();
     }
 
-    /// Sends the default value of `EventBlock`.
-    /// The feature flag `block-input-event` can set the default value of `EventBlock`.
+    /// Sends the default value of `NativeEventOperation`.
+    /// The feature flag `block-input-event` can set the default value of `NativeEventOperation`.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap_core::*;
     /// let mut message = HookHandler::install_hook().recv().unwrap();
-    /// message.send_default_event_block();
+    /// message.send_default_native_event_operation();
     /// ```
     ///
-    pub fn send_default_event_block(&mut self) {
-        self.send_event_block(NativeEventOperation::default());
+    pub fn send_default_native_event_operation(&mut self) {
+        self.send_native_event_operation(NativeEventOperation::default());
     }
 }
 
 impl Drop for EventMessage {
     fn drop(&mut self) {
-        if self.event_block_sender.is_some() {
-            self.send_default_event_block();
+        if self.native_event_operation_sender.is_some() {
+            self.send_default_native_event_operation();
         }
     }
 }

@@ -71,7 +71,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     if event_target.is_none() {
         return call_next_hook(code, w_param, l_param);
     }
-    let event_block = match event_target.unwrap() {
+    let operation = match event_target.unwrap() {
         MouseEventTarget::Button(target) => {
             let button_action = to_button_action(w_param).unwrap();
             let event = ButtonEvent::new(target, button_action);
@@ -90,7 +90,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
             EVENT_SENDER.get().unwrap().send(Event::MouseCursor(pos))
         }
     };
-    match event_block {
+    match operation {
         NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
         NativeEventOperation::Block => 1,
     }

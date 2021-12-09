@@ -20,9 +20,9 @@ pub(super) mod event_sender {
             &mut self,
             tx: SyncSender<ButtonEvent>,
             filter: Filter,
-            event_block: NativeEventOperation,
+            native_event_operation: NativeEventOperation,
         ) {
-            match event_block {
+            match native_event_operation {
                 NativeEventOperation::Block => self.block.push((tx, filter)),
                 NativeEventOperation::Dispatch => self.unblock.push((tx, filter)),
             }
@@ -60,9 +60,12 @@ pub(super) mod event_sender {
     pub(super) fn push(
         tx: SyncSender<ButtonEvent>,
         filter: Filter,
-        event_block: NativeEventOperation,
+        native_event_operation: NativeEventOperation,
     ) {
-        EVENT_SENDERS.lock().unwrap().push(tx, filter, event_block);
+        EVENT_SENDERS
+            .lock()
+            .unwrap()
+            .push(tx, filter, native_event_operation);
     }
 
     pub(in super::super) fn send(event: ButtonEvent) -> NativeEventOperation {
@@ -263,14 +266,14 @@ impl Filter {
 
 pub struct Iter {
     filter: Filter,
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl Iter {
-    fn new(filter: Filter, event_block: NativeEventOperation) -> Self {
+    fn new(filter: Filter, native_event_operation: NativeEventOperation) -> Self {
         Iter {
             filter,
-            event_block,
+            native_event_operation,
         }
     }
 }
@@ -280,7 +283,7 @@ impl Iterator for Iter {
 
     fn next(&mut self) -> Option<Self::Item> {
         let (tx, rx) = mpsc::sync_channel(0);
-        event_sender::push(tx, self.filter.clone(), self.event_block);
+        event_sender::push(tx, self.filter.clone(), self.native_event_operation);
         Some(rx.recv().unwrap())
     }
 }
@@ -300,7 +303,7 @@ impl Iterator for Iter {
 ///
 pub struct Interceptor {
     filter: Filter,
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl Interceptor {
@@ -318,7 +321,7 @@ impl Interceptor {
     pub fn block(filter: Filter) -> Self {
         Self {
             filter,
-            event_block: NativeEventOperation::Block,
+            native_event_operation: NativeEventOperation::Block,
         }
     }
 
@@ -336,7 +339,7 @@ impl Interceptor {
     pub fn unblock(filter: Filter) -> Self {
         Self {
             filter,
-            event_block: NativeEventOperation::Dispatch,
+            native_event_operation: NativeEventOperation::Dispatch,
         }
     }
 
@@ -354,7 +357,7 @@ impl Interceptor {
     where
         F: Fn(ButtonEvent) + Send + Sync + 'static,
     {
-        let mut iter = Iter::new(self.filter.clone(), self.event_block);
+        let mut iter = Iter::new(self.filter.clone(), self.native_event_operation);
         std::thread::spawn(move || f(iter.next().unwrap()));
     }
 
@@ -378,7 +381,7 @@ impl Interceptor {
     where
         F: Fn(Iter) + Send + Sync + 'static,
     {
-        let iter = Iter::new(self.filter.clone(), self.event_block);
+        let iter = Iter::new(self.filter.clone(), self.native_event_operation);
         std::thread::spawn(move || f(iter));
     }
 }

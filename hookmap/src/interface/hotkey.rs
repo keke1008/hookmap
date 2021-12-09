@@ -1,6 +1,6 @@
 use super::{
     entry::{ButtonEventHandlerEntry, MouseCursorHotKeyEntry, MouseWheelHotkeyEntry, RemapEntry},
-    SelectHandleTarget, SetEventBlock,
+    SelectHandleTarget, SetNativeEventOpereation,
 };
 use crate::button::ButtonSet;
 use crate::hotkey::{ModifierKeys, Trigger};
@@ -33,7 +33,7 @@ pub struct ConditionalHotkey {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl SelectHandleTarget for ConditionalHotkey {
@@ -42,7 +42,7 @@ impl SelectHandleTarget for ConditionalHotkey {
             .register(Weak::clone(&self.register))
             .trigger(Trigger::Just(trigger.into()))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .build()
     }
 
@@ -51,7 +51,7 @@ impl SelectHandleTarget for ConditionalHotkey {
             .register(Weak::clone(&self.register))
             .trigger(Trigger::All)
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .build()
     }
 
@@ -67,7 +67,7 @@ impl SelectHandleTarget for ConditionalHotkey {
         MouseWheelHotkeyEntry::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .build()
     }
 
@@ -75,7 +75,7 @@ impl SelectHandleTarget for ConditionalHotkey {
         MouseCursorHotKeyEntry::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .build()
     }
 
@@ -86,17 +86,17 @@ impl SelectHandleTarget for ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::new(self.modifier_keys.add(pressed, released)))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .build()
     }
 }
 
-impl SetEventBlock for ConditionalHotkey {
+impl SetNativeEventOpereation for ConditionalHotkey {
     fn block(&self) -> Self {
         ConditionalHotkey::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(NativeEventOperation::Block)
+            .native_event_operation(NativeEventOperation::Block)
             .build()
     }
 
@@ -104,7 +104,7 @@ impl SetEventBlock for ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(NativeEventOperation::Dispatch)
+            .native_event_operation(NativeEventOperation::Dispatch)
             .build()
     }
 }
@@ -193,18 +193,18 @@ impl SelectHandleTarget for Hotkey {
     }
 }
 
-impl SetEventBlock for Hotkey {
+impl SetNativeEventOpereation for Hotkey {
     fn block(&self) -> ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Rc::downgrade(&self.register))
-            .event_block(NativeEventOperation::Block)
+            .native_event_operation(NativeEventOperation::Block)
             .build()
     }
 
     fn unblock(&self) -> ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Rc::downgrade(&self.register))
-            .event_block(NativeEventOperation::Dispatch)
+            .native_event_operation(NativeEventOperation::Dispatch)
             .build()
     }
 }
@@ -212,7 +212,7 @@ impl SetEventBlock for Hotkey {
 impl Debug for Hotkey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Hook")
-            .field("event_block", &NativeEventOperation::default())
+            .field("native_event_operation", &NativeEventOperation::default())
             .finish()
     }
 }

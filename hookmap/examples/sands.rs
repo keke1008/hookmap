@@ -11,7 +11,7 @@ use std::sync::{
 
 fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
 where
-    T: SelectHandleTarget + SetEventBlock,
+    T: SelectHandleTarget + SetNativeEventOpereation,
     U: ButtonInput + Into<ButtonSet> + Clone + Send + Sync + 'static,
 {
     let is_alone = Arc::new(AtomicBool::new(true));

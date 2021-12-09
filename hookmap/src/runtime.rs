@@ -11,9 +11,9 @@ pub mod interceptor;
 
 use hookmap_core::NativeEventOperation;
 
-fn compute_event_block(event_blocks: &[NativeEventOperation]) -> NativeEventOperation {
-    *event_blocks
+fn compute_native_event_operation(operations: &[NativeEventOperation]) -> NativeEventOperation {
+    *operations
         .iter()
-        .find(|&&event_block| event_block == NativeEventOperation::Block)
+        .find(|&&operation| operation == NativeEventOperation::Block)
         .unwrap_or(&NativeEventOperation::Dispatch)
 }

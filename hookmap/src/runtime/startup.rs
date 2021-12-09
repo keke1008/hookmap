@@ -20,9 +20,9 @@ impl HookInstaller {
     ) {
         let FetchResult {
             actions,
-            event_block,
+            native_event_operation,
         } = fetcher.fetch();
-        event_message.send_event_block(event_block);
+        event_message.send_native_event_operation(native_event_operation);
         thread::spawn(move || actions.iter().for_each(|action| action.call(event)));
     }
 
@@ -39,17 +39,19 @@ impl HookInstaller {
             match event_message.event {
                 Event::Button(event) => {
                     if event_sender::send(event) == NativeEventOperation::Block {
-                        event_message.send_event_block(NativeEventOperation::Block);
+                        event_message.send_native_event_operation(NativeEventOperation::Block);
                     } else {
                         let actions = match event.action {
                             ButtonAction::Press => {
                                 let result = on_press_fetcher.fetch(&event);
-                                event_message.send_event_block(result.event_block);
+                                event_message
+                                    .send_native_event_operation(result.native_event_operation);
                                 result.actions
                             }
                             ButtonAction::Release => {
                                 // If the release event is not blocked, the button will remain pressed.
-                                event_message.send_event_block(NativeEventOperation::Dispatch);
+                                event_message
+                                    .send_native_event_operation(NativeEventOperation::Dispatch);
                                 on_release_fetcher.fetch(&event).actions
                             }
                         };

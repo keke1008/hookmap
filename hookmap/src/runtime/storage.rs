@@ -25,19 +25,19 @@ pub(super) enum HookKind {
 pub(crate) struct HookInfo {
     pub(super) kind: HookKind,
     pub(super) action: Action<ButtonEvent>,
-    pub(super) event_block: NativeEventOperation,
+    pub(super) native_event_operation: NativeEventOperation,
 }
 
 impl HookInfo {
     pub(super) fn new(
         kind: HookKind,
         action: Action<ButtonEvent>,
-        event_block: NativeEventOperation,
+        native_event_operation: NativeEventOperation,
     ) -> Self {
         Self {
             kind,
             action,
-            event_block,
+            native_event_operation,
         }
     }
 }
@@ -85,7 +85,7 @@ impl Remap {
 pub struct MouseHook<E> {
     pub(super) modifier_keys: Arc<ModifierKeys>,
     pub(super) action: Action<E>,
-    pub(super) event_block: NativeEventOperation,
+    pub(super) native_event_operation: NativeEventOperation,
 }
 
 #[derive(Default, Debug)]

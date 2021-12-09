@@ -41,8 +41,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         ButtonAction::Release => target.assume_released(),
     };
     let event = ButtonEvent::new(target, action);
-    let event_block = EVENT_SENDER.get().unwrap().send(Event::Button(event));
-    match event_block {
+    let operation = EVENT_SENDER.get().unwrap().send(Event::Button(event));
+    match operation {
         NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
         NativeEventOperation::Block => 1,
     }

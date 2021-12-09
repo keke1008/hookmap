@@ -19,7 +19,7 @@ pub struct ButtonEventHandlerEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl ButtonEventHandlerEntry {
@@ -27,7 +27,7 @@ impl ButtonEventHandlerEntry {
         let hotkey_info = HotkeyInfo::builder()
             .trigger(self.trigger.clone())
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .action(action)
             .build();
         self.register
@@ -146,7 +146,7 @@ impl ButtonEventHandlerEntry {
         let hotkey_info = HotkeyInfo::builder()
             .trigger(self.trigger.clone())
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .action(HotkeyAction::PressOrRelease(Action::Noop))
             .build();
         self.register
@@ -166,7 +166,7 @@ pub struct MouseCursorHotKeyEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl MouseCursorHotKeyEntry {
@@ -190,7 +190,7 @@ impl MouseCursorHotKeyEntry {
     {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .action(callback.into())
             .build();
         self.register
@@ -213,7 +213,7 @@ impl MouseCursorHotKeyEntry {
     pub fn disable(&self) {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(NativeEventOperation::Block)
+            .native_event_operation(NativeEventOperation::Block)
             .action(Action::Noop)
             .build();
         self.register
@@ -233,7 +233,7 @@ pub struct MouseWheelHotkeyEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: NativeEventOperation,
+    native_event_operation: NativeEventOperation,
 }
 
 impl MouseWheelHotkeyEntry {
@@ -259,7 +259,7 @@ impl MouseWheelHotkeyEntry {
     {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(self.event_block)
+            .native_event_operation(self.native_event_operation)
             .action(callback.into())
             .build();
         self.register
@@ -282,7 +282,7 @@ impl MouseWheelHotkeyEntry {
     pub fn disable(&self) {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(NativeEventOperation::Block)
+            .native_event_operation(NativeEventOperation::Block)
             .action(Action::Noop)
             .build();
         self.register

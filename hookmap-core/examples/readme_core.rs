@@ -12,19 +12,19 @@ fn main() {
                     Button::LeftArrow => println!("Right"),
                     Button::DownArrow => println!("Down"),
                     _ => {
-                        event_message.send_event_block(NativeEventOperation::Dispatch);
+                        event_message.send_native_event_operation(NativeEventOperation::Dispatch);
                         continue;
                     }
                 };
-                event_message.send_event_block(NativeEventOperation::Block);
+                event_message.send_native_event_operation(NativeEventOperation::Block);
             }
             Event::MouseCursor(cursor) => {
                 println!("position: {:?}", cursor);
-                event_message.send_event_block(NativeEventOperation::Dispatch);
+                event_message.send_native_event_operation(NativeEventOperation::Dispatch);
             }
             Event::MouseWheel(speed) => {
                 println!("speed: {}", speed);
-                event_message.send_event_block(NativeEventOperation::Dispatch);
+                event_message.send_native_event_operation(NativeEventOperation::Dispatch);
             }
         }
     }

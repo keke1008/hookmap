@@ -128,14 +128,14 @@ pub(crate) enum HotkeyAction {
 pub(crate) struct HotkeyInfo {
     pub(crate) trigger: Trigger,
     pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) event_block: NativeEventOperation,
+    pub(crate) native_event_operation: NativeEventOperation,
     pub(crate) action: HotkeyAction,
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
 pub(crate) struct MouseEventHandler<E> {
     pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) event_block: NativeEventOperation,
+    pub(crate) native_event_operation: NativeEventOperation,
     pub(crate) action: Action<E>,
 }
 

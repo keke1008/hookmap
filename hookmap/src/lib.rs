@@ -18,7 +18,7 @@ mod utils;
 
 pub use button::{ButtonInput, ButtonState, ALT, CTRL, META, SHIFT};
 pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
-pub use interface::{Hotkey, SelectHandleTarget, SetEventBlock};
+pub use interface::{Hotkey, SelectHandleTarget, SetNativeEventOpereation};
 pub use runtime::interceptor;
 pub use utils::Utils;
 

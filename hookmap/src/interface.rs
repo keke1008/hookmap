@@ -88,7 +88,7 @@ pub trait SelectHandleTarget {
 }
 
 /// Set whether the hook blocks events.
-pub trait SetEventBlock {
+pub trait SetNativeEventOpereation {
     /// Blocks the input event when the hook to be registered is enable.
     ///
     /// # Example

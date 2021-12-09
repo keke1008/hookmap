@@ -26,7 +26,7 @@ impl HotkeyConverter {
             HotkeyAction::Release(_) => None,
             HotkeyAction::Press(action) => {
                 let kind = HookKind::Independet { modifier_keys };
-                let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                let hook = HookInfo::new(kind, action.clone(), hotkey.native_event_operation);
                 Some(hook)
             }
             HotkeyAction::PressOrRelease(action) => {
@@ -34,7 +34,8 @@ impl HotkeyConverter {
                     modifier_keys,
                     activated: self.activated(),
                 };
-                let hook_on_press = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                let hook_on_press =
+                    HookInfo::new(kind, action.clone(), hotkey.native_event_operation);
                 Some(hook_on_press)
             }
             HotkeyAction::PressAndRelease {
@@ -44,7 +45,8 @@ impl HotkeyConverter {
                     modifier_keys,
                     activated: self.activated(),
                 };
-                let hook_on_press = HookInfo::new(kind, press.clone(), hotkey.event_block);
+                let hook_on_press =
+                    HookInfo::new(kind, press.clone(), hotkey.native_event_operation);
                 Some(hook_on_press)
             }
         }
@@ -56,14 +58,15 @@ impl HotkeyConverter {
             HotkeyAction::Release(action) => {
                 let modifier_keys = Arc::clone(&hotkey.modifier_keys);
                 let kind = HookKind::Independet { modifier_keys };
-                let hook = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                let hook = HookInfo::new(kind, action.clone(), hotkey.native_event_operation);
                 Some(hook)
             }
             HotkeyAction::PressOrRelease(action) => {
                 let kind = HookKind::LinkedOnRelease {
                     activated: self.activated(),
                 };
-                let hook_on_release = HookInfo::new(kind, action.clone(), hotkey.event_block);
+                let hook_on_release =
+                    HookInfo::new(kind, action.clone(), hotkey.native_event_operation);
                 Some(hook_on_release)
             }
             HotkeyAction::PressAndRelease {
@@ -73,7 +76,8 @@ impl HotkeyConverter {
                 let kind = HookKind::LinkedOnRelease {
                     activated: self.activated(),
                 };
-                let hook_on_release = HookInfo::new(kind, release.clone(), hotkey.event_block);
+                let hook_on_release =
+                    HookInfo::new(kind, release.clone(), hotkey.native_event_operation);
                 Some(hook_on_release)
             }
         }

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use super::{
-    compute_event_block,
+    compute_native_event_operation,
     storage::{ButtonStorage, HookInfo, MouseStorage, RemapStorage, Storage},
 };
 use crate::{button::ButtonSet, hotkey::Action, ButtonInput};
@@ -30,7 +30,7 @@ impl From<Storage> for Fetchers {
 
 pub(crate) struct FetchResult<E> {
     pub(super) actions: Vec<Action<E>>,
-    pub(super) event_block: NativeEventOperation,
+    pub(super) native_event_operation: NativeEventOperation,
 }
 
 pub(super) struct ButtonFetcher {
@@ -83,14 +83,15 @@ impl ButtonFetcher {
                 };
                 FetchResult {
                     actions: vec![action],
-                    event_block: NativeEventOperation::Block,
+                    native_event_operation: NativeEventOperation::Block,
                 }
             }
             Err(event) => {
-                let (actions, event_blocks) = self.fetch_inner(&event, |hook| hook.event_block);
+                let (actions, operations) =
+                    self.fetch_inner(&event, |hook| hook.native_event_operation);
                 FetchResult {
                     actions,
-                    event_block: compute_event_block(&event_blocks),
+                    native_event_operation: compute_native_event_operation(&operations),
                 }
             }
         }
@@ -107,16 +108,16 @@ impl<E: Clone> MouseFetcher<E> {
     }
 
     pub(crate) fn fetch(&self) -> FetchResult<E> {
-        let (actions, event_blocks): (Vec<_>, Vec<_>) = self
+        let (actions, operations): (Vec<_>, Vec<_>) = self
             .storage
             .iter()
             .filter(|hook| hook.modifier_keys.satisfies_condition())
-            .map(|hook| (hook.action.clone(), hook.event_block))
+            .map(|hook| (hook.action.clone(), hook.native_event_operation))
             .unzip();
 
         FetchResult {
             actions,
-            event_block: compute_event_block(&event_blocks),
+            native_event_operation: compute_native_event_operation(&operations),
         }
     }
 }
