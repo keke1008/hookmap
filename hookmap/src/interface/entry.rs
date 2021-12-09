@@ -5,7 +5,7 @@ use crate::{
     },
     runtime::Register,
 };
-use hookmap_core::{ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
+use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::{cell::RefCell, rc::Weak, sync::Arc};
 use typed_builder::TypedBuilder;
 
@@ -19,7 +19,7 @@ pub struct ButtonEventHandlerEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl ButtonEventHandlerEntry {
@@ -166,7 +166,7 @@ pub struct MouseCursorHotKeyEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl MouseCursorHotKeyEntry {
@@ -213,7 +213,7 @@ impl MouseCursorHotKeyEntry {
     pub fn disable(&self) {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(EventBlock::Block)
+            .event_block(NativeEventOperation::Block)
             .action(Action::Noop)
             .build();
         self.register
@@ -233,7 +233,7 @@ pub struct MouseWheelHotkeyEntry {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl MouseWheelHotkeyEntry {
@@ -282,7 +282,7 @@ impl MouseWheelHotkeyEntry {
     pub fn disable(&self) {
         let handler = MouseEventHandler::builder()
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(EventBlock::Block)
+            .event_block(NativeEventOperation::Block)
             .action(Action::Noop)
             .build();
         self.register

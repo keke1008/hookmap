@@ -9,11 +9,11 @@ pub(crate) use startup::HookInstaller;
 
 pub mod interceptor;
 
-use hookmap_core::EventBlock;
+use hookmap_core::NativeEventOperation;
 
-fn compute_event_block(event_blocks: &[EventBlock]) -> EventBlock {
+fn compute_event_block(event_blocks: &[NativeEventOperation]) -> NativeEventOperation {
     *event_blocks
         .iter()
-        .find(|&&event_block| event_block == EventBlock::Block)
-        .unwrap_or(&EventBlock::Unblock)
+        .find(|&&event_block| event_block == NativeEventOperation::Block)
+        .unwrap_or(&NativeEventOperation::Dispatch)
 }

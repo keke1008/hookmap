@@ -1,7 +1,7 @@
 use super::{call_next_hook, IGNORED_DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
-    event::{ButtonEvent, Event, EventBlock, EventMessageSender},
+    event::{ButtonEvent, Event, EventMessageSender, NativeEventOperation},
     mouse::{EmulateMouseCursor, Mouse},
 };
 use once_cell::sync::{Lazy, OnceCell};
@@ -91,8 +91,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         }
     };
     match event_block {
-        EventBlock::Unblock => call_next_hook(code, w_param, l_param),
-        EventBlock::Block => 1,
+        NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
+        NativeEventOperation::Block => 1,
     }
 }
 

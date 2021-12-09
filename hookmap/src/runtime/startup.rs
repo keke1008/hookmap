@@ -5,7 +5,7 @@ use super::{
 };
 use crate::interface::Hotkey;
 use hookmap_core::ButtonAction;
-use hookmap_core::{common::event::EventMessage, Event, EventBlock, HookHandler};
+use hookmap_core::{common::event::EventMessage, Event, HookHandler, NativeEventOperation};
 use std::{fmt::Debug, rc::Rc, thread};
 
 pub(crate) struct HookInstaller {
@@ -38,8 +38,8 @@ impl HookInstaller {
         while let Ok(mut event_message) = event_receiver.recv() {
             match event_message.event {
                 Event::Button(event) => {
-                    if event_sender::send(event) == EventBlock::Block {
-                        event_message.send_event_block(EventBlock::Block);
+                    if event_sender::send(event) == NativeEventOperation::Block {
+                        event_message.send_event_block(NativeEventOperation::Block);
                     } else {
                         let actions = match event.action {
                             ButtonAction::Press => {
@@ -49,7 +49,7 @@ impl HookInstaller {
                             }
                             ButtonAction::Release => {
                                 // If the release event is not blocked, the button will remain pressed.
-                                event_message.send_event_block(EventBlock::Unblock);
+                                event_message.send_event_block(NativeEventOperation::Dispatch);
                                 on_release_fetcher.fetch(&event).actions
                             }
                         };

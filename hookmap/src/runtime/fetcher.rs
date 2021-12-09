@@ -5,7 +5,9 @@ use super::{
     storage::{ButtonStorage, HookInfo, MouseStorage, RemapStorage, Storage},
 };
 use crate::{button::ButtonSet, hotkey::Action, ButtonInput};
-use hookmap_core::{ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent};
+use hookmap_core::{
+    ButtonAction, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation,
+};
 
 pub(super) struct Fetchers {
     pub(super) on_press_fetcher: ButtonFetcher,
@@ -28,7 +30,7 @@ impl From<Storage> for Fetchers {
 
 pub(crate) struct FetchResult<E> {
     pub(super) actions: Vec<Action<E>>,
-    pub(super) event_block: EventBlock,
+    pub(super) event_block: NativeEventOperation,
 }
 
 pub(super) struct ButtonFetcher {
@@ -81,7 +83,7 @@ impl ButtonFetcher {
                 };
                 FetchResult {
                     actions: vec![action],
-                    event_block: EventBlock::Block,
+                    event_block: NativeEventOperation::Block,
                 }
             }
             Err(event) => {

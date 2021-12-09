@@ -1,11 +1,11 @@
 //! Gets keyboard events dynamically.
 
-use hookmap_core::{Button, ButtonAction, ButtonEvent, EventBlock};
+use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
 use std::{collections::HashSet, fmt::Debug, sync::mpsc, sync::Arc};
 
 pub(super) mod event_sender {
     use super::Filter;
-    use hookmap_core::{ButtonEvent, EventBlock};
+    use hookmap_core::{ButtonEvent, NativeEventOperation};
     use once_cell::sync::Lazy;
     use std::{sync::mpsc::SyncSender, sync::Mutex};
 
@@ -16,14 +16,19 @@ pub(super) mod event_sender {
     }
 
     impl EventSender {
-        fn push(&mut self, tx: SyncSender<ButtonEvent>, filter: Filter, event_block: EventBlock) {
+        fn push(
+            &mut self,
+            tx: SyncSender<ButtonEvent>,
+            filter: Filter,
+            event_block: NativeEventOperation,
+        ) {
             match event_block {
-                EventBlock::Block => self.block.push((tx, filter)),
-                EventBlock::Unblock => self.unblock.push((tx, filter)),
+                NativeEventOperation::Block => self.block.push((tx, filter)),
+                NativeEventOperation::Dispatch => self.unblock.push((tx, filter)),
             }
         }
 
-        fn send(&mut self, event: ButtonEvent) -> EventBlock {
+        fn send(&mut self, event: ButtonEvent) -> NativeEventOperation {
             if !self.block.is_empty() {
                 let satisfied_index = self
                     .block
@@ -32,7 +37,7 @@ pub(super) mod event_sender {
                 if let Some(index) = satisfied_index {
                     let (tx, _) = self.block.remove(index);
                     tx.send(event).unwrap();
-                    return EventBlock::Block;
+                    return NativeEventOperation::Block;
                 }
             }
 
@@ -46,17 +51,21 @@ pub(super) mod event_sender {
                     i += 1;
                 }
             }
-            EventBlock::Unblock
+            NativeEventOperation::Dispatch
         }
     }
 
     static EVENT_SENDERS: Lazy<Mutex<EventSender>> = Lazy::new(Mutex::default);
 
-    pub(super) fn push(tx: SyncSender<ButtonEvent>, filter: Filter, event_block: EventBlock) {
+    pub(super) fn push(
+        tx: SyncSender<ButtonEvent>,
+        filter: Filter,
+        event_block: NativeEventOperation,
+    ) {
         EVENT_SENDERS.lock().unwrap().push(tx, filter, event_block);
     }
 
-    pub(in super::super) fn send(event: ButtonEvent) -> EventBlock {
+    pub(in super::super) fn send(event: ButtonEvent) -> NativeEventOperation {
         EVENT_SENDERS.lock().unwrap().send(event)
     }
 
@@ -71,7 +80,7 @@ pub(super) mod event_sender {
             let mut event_sender = EventSender::default();
             let (tx, rx) = mpsc::sync_channel(1);
             let filter = Filter::new();
-            event_sender.push(tx, filter, EventBlock::Block);
+            event_sender.push(tx, filter, NativeEventOperation::Block);
 
             let event = ButtonEvent::new(Button::A, ButtonAction::Press);
             event_sender.send(event);
@@ -83,7 +92,7 @@ pub(super) mod event_sender {
             let mut event_sender = EventSender::default();
             let (tx, rx) = mpsc::sync_channel(1);
             let filter = Filter::new().target(Button::A);
-            event_sender.push(tx, filter, EventBlock::Block);
+            event_sender.push(tx, filter, NativeEventOperation::Block);
 
             let event = ButtonEvent::new(Button::B, ButtonAction::Press);
             event_sender.send(event);
@@ -96,10 +105,10 @@ pub(super) mod event_sender {
 
             let (tx_unblock, rx_unblock) = mpsc::sync_channel(1);
             let filter = Filter::new();
-            event_sender.push(tx_unblock, filter.clone(), EventBlock::Unblock);
+            event_sender.push(tx_unblock, filter.clone(), NativeEventOperation::Dispatch);
 
             let (tx_block, rx_block) = mpsc::sync_channel(1);
-            event_sender.push(tx_block, filter, EventBlock::Block);
+            event_sender.push(tx_block, filter, NativeEventOperation::Block);
 
             let event = ButtonEvent::new(Button::A, ButtonAction::Press);
             event_sender.send(event);
@@ -117,11 +126,11 @@ pub(super) mod event_sender {
 
             let (tx1, rx1) = mpsc::sync_channel(1);
             let filter = Filter::new();
-            event_sender.push(tx1, filter.clone(), EventBlock::Unblock);
+            event_sender.push(tx1, filter.clone(), NativeEventOperation::Dispatch);
 
             let (tx2, rx2) = mpsc::sync_channel(1);
             let filter = Filter::new();
-            event_sender.push(tx2, filter, EventBlock::Unblock);
+            event_sender.push(tx2, filter, NativeEventOperation::Dispatch);
 
             let event = ButtonEvent::new(Button::C, ButtonAction::Release);
             event_sender.send(event);
@@ -254,11 +263,11 @@ impl Filter {
 
 pub struct Iter {
     filter: Filter,
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl Iter {
-    fn new(filter: Filter, event_block: EventBlock) -> Self {
+    fn new(filter: Filter, event_block: NativeEventOperation) -> Self {
         Iter {
             filter,
             event_block,
@@ -291,7 +300,7 @@ impl Iterator for Iter {
 ///
 pub struct Interceptor {
     filter: Filter,
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl Interceptor {
@@ -309,7 +318,7 @@ impl Interceptor {
     pub fn block(filter: Filter) -> Self {
         Self {
             filter,
-            event_block: EventBlock::Block,
+            event_block: NativeEventOperation::Block,
         }
     }
 
@@ -327,7 +336,7 @@ impl Interceptor {
     pub fn unblock(filter: Filter) -> Self {
         Self {
             filter,
-            event_block: EventBlock::Unblock,
+            event_block: NativeEventOperation::Dispatch,
         }
     }
 

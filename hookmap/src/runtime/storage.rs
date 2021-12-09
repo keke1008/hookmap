@@ -1,7 +1,7 @@
 use crate::button::ButtonSet;
 use crate::hotkey::{Action, ModifierKeys, MouseEventHandler};
 use hookmap_core::{
-    Button, ButtonAction, ButtonEvent, EventBlock, MouseCursorEvent, MouseWheelEvent,
+    Button, ButtonAction, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation,
 };
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -25,14 +25,14 @@ pub(super) enum HookKind {
 pub(crate) struct HookInfo {
     pub(super) kind: HookKind,
     pub(super) action: Action<ButtonEvent>,
-    pub(super) event_block: EventBlock,
+    pub(super) event_block: NativeEventOperation,
 }
 
 impl HookInfo {
     pub(super) fn new(
         kind: HookKind,
         action: Action<ButtonEvent>,
-        event_block: EventBlock,
+        event_block: NativeEventOperation,
     ) -> Self {
         Self {
             kind,
@@ -85,7 +85,7 @@ impl Remap {
 pub struct MouseHook<E> {
     pub(super) modifier_keys: Arc<ModifierKeys>,
     pub(super) action: Action<E>,
-    pub(super) event_block: EventBlock,
+    pub(super) event_block: NativeEventOperation,
 }
 
 #[derive(Default, Debug)]

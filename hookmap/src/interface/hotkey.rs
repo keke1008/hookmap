@@ -5,7 +5,7 @@ use super::{
 use crate::button::ButtonSet;
 use crate::hotkey::{ModifierKeys, Trigger};
 use crate::runtime::{HookInstaller, Register};
-use hookmap_core::EventBlock;
+use hookmap_core::NativeEventOperation;
 use std::{
     cell::RefCell,
     fmt::Debug,
@@ -33,7 +33,7 @@ pub struct ConditionalHotkey {
     modifier_keys: Arc<ModifierKeys>,
 
     #[builder(default)]
-    event_block: EventBlock,
+    event_block: NativeEventOperation,
 }
 
 impl SelectHandleTarget for ConditionalHotkey {
@@ -96,7 +96,7 @@ impl SetEventBlock for ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(EventBlock::Block)
+            .event_block(NativeEventOperation::Block)
             .build()
     }
 
@@ -104,7 +104,7 @@ impl SetEventBlock for ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Weak::clone(&self.register))
             .modifier_keys(Arc::clone(&self.modifier_keys))
-            .event_block(EventBlock::Unblock)
+            .event_block(NativeEventOperation::Dispatch)
             .build()
     }
 }
@@ -197,14 +197,14 @@ impl SetEventBlock for Hotkey {
     fn block(&self) -> ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Rc::downgrade(&self.register))
-            .event_block(EventBlock::Block)
+            .event_block(NativeEventOperation::Block)
             .build()
     }
 
     fn unblock(&self) -> ConditionalHotkey {
         ConditionalHotkey::builder()
             .register(Rc::downgrade(&self.register))
-            .event_block(EventBlock::Unblock)
+            .event_block(NativeEventOperation::Dispatch)
             .build()
     }
 }
@@ -212,7 +212,7 @@ impl SetEventBlock for Hotkey {
 impl Debug for Hotkey {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Hook")
-            .field("event_block", &EventBlock::default())
+            .field("event_block", &NativeEventOperation::default())
             .finish()
     }
 }

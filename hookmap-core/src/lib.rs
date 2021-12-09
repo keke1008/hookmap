@@ -29,7 +29,7 @@ mod windows;
 
 pub use common::{
     button::{Button, ButtonAction, ButtonKind, ButtonOperation},
-    event::{ButtonEvent, Event, EventBlock, MouseCursorEvent, MouseWheelEvent},
+    event::{ButtonEvent, Event, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
     handler::HookHandler,
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
 };

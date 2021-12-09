@@ -4,27 +4,27 @@ use std::sync::mpsc::{self, Sender, SyncSender};
 
 /// Indicates whether to pass the generated event to the next program or not .
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum EventBlock {
+pub enum NativeEventOperation {
     /// Do not pass the generated event to the next program.
     Block,
 
     /// Pass the generated event to the next program.
-    Unblock,
+    Dispatch,
 }
 
-impl Default for &EventBlock {
+impl Default for &NativeEventOperation {
     fn default() -> Self {
         if cfg!(feature = "block-input-event") {
-            &EventBlock::Block
+            &NativeEventOperation::Block
         } else {
-            &EventBlock::Unblock
+            &NativeEventOperation::Dispatch
         }
     }
 }
 
-impl Default for EventBlock {
+impl Default for NativeEventOperation {
     fn default() -> Self {
-        *<&EventBlock>::default()
+        *<&NativeEventOperation>::default()
     }
 }
 
@@ -56,11 +56,11 @@ pub enum Event {
 
 pub struct EventMessage {
     pub event: Event,
-    pub(crate) event_block_sender: Option<Sender<EventBlock>>,
+    pub(crate) event_block_sender: Option<Sender<NativeEventOperation>>,
 }
 
 impl EventMessage {
-    fn new(event: Event, event_block_sender: Sender<EventBlock>) -> Self {
+    fn new(event: Event, event_block_sender: Sender<NativeEventOperation>) -> Self {
         Self {
             event,
             event_block_sender: Some(event_block_sender),
@@ -77,7 +77,7 @@ impl EventMessage {
     /// message.send_event_block(EventBlock::Block);
     /// ```
     ///
-    pub fn send_event_block(&mut self, event_block: EventBlock) {
+    pub fn send_event_block(&mut self, event_block: NativeEventOperation) {
         self.event_block_sender
             .take()
             .expect("EventBlock has already been sent.")
@@ -97,7 +97,7 @@ impl EventMessage {
     /// ```
     ///
     pub fn send_default_event_block(&mut self) {
-        self.send_event_block(EventBlock::default());
+        self.send_event_block(NativeEventOperation::default());
     }
 }
 
@@ -117,8 +117,8 @@ impl EventMessageSender {
         Self(event_sender)
     }
 
-    pub(crate) fn send(&self, event: Event) -> EventBlock {
-        let (tx, rx) = mpsc::channel::<EventBlock>();
+    pub(crate) fn send(&self, event: Event) -> NativeEventOperation {
+        let (tx, rx) = mpsc::channel::<NativeEventOperation>();
         let event_message = EventMessage::new(event, tx);
         self.0.send(event_message).unwrap();
         rx.recv().unwrap()

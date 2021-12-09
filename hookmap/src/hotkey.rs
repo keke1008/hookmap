@@ -1,5 +1,5 @@
 use crate::button::{ButtonSet, ButtonState};
-use hookmap_core::{ButtonEvent, EventBlock};
+use hookmap_core::{ButtonEvent, NativeEventOperation};
 use std::{fmt::Debug, iter, sync::Arc};
 use typed_builder::TypedBuilder;
 
@@ -128,14 +128,14 @@ pub(crate) enum HotkeyAction {
 pub(crate) struct HotkeyInfo {
     pub(crate) trigger: Trigger,
     pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) event_block: EventBlock,
+    pub(crate) event_block: NativeEventOperation,
     pub(crate) action: HotkeyAction,
 }
 
 #[derive(Clone, Debug, TypedBuilder)]
 pub(crate) struct MouseEventHandler<E> {
     pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) event_block: EventBlock,
+    pub(crate) event_block: NativeEventOperation,
     pub(crate) action: Action<E>,
 }
 
