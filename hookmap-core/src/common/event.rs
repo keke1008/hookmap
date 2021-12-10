@@ -119,8 +119,8 @@ impl EventMessageSender {
 
     pub(crate) fn send(&self, event: Event) -> NativeEventOperation {
         let (tx, rx) = mpsc::channel::<NativeEventOperation>();
-        let event_message = UndispatchedEvent::new(event, tx);
-        self.0.send(event_message).unwrap();
+        let undispatched_event = UndispatchedEvent::new(event, tx);
+        self.0.send(undispatched_event).unwrap();
         rx.recv().unwrap()
     }
 }
