@@ -5,7 +5,7 @@ use super::{
 };
 use crate::interface::Hotkey;
 use hookmap_core::ButtonAction;
-use hookmap_core::{common::event::EventMessage, Event, HookHandler, NativeEventOperation};
+use hookmap_core::{common::event::UndispatchedEvent, Event, HookHandler, NativeEventOperation};
 use std::{fmt::Debug, rc::Rc, thread};
 
 pub(crate) struct HookInstaller {
@@ -15,7 +15,7 @@ pub(crate) struct HookInstaller {
 impl HookInstaller {
     fn handle_mouse_event<T: 'static + Debug + Copy + Send>(
         fetcher: &MouseFetcher<T>,
-        event_message: &mut EventMessage,
+        event_message: &mut UndispatchedEvent,
         event: T,
     ) {
         let FetchResult {

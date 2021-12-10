@@ -1,4 +1,4 @@
-use crate::common::event::{EventMessage, EventMessageSender};
+use crate::common::event::{EventMessageSender, UndispatchedEvent};
 use std::{
     sync::atomic::{AtomicBool, Ordering},
     sync::mpsc::{self, Receiver},
@@ -19,7 +19,7 @@ impl HookHandler
 where
     Self: HookInstaller,
 {
-    pub fn install_hook() -> Receiver<EventMessage> {
+    pub fn install_hook() -> Receiver<UndispatchedEvent> {
         assert!(!HOOK_INSTALLED.swap(true, Ordering::SeqCst));
         let (tx, rx) = mpsc::sync_channel(1);
         thread::spawn(move || <Self as HookInstaller>::install(EventMessageSender::new(tx)));

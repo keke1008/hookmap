@@ -54,12 +54,12 @@ pub enum Event {
     MouseCursor(MouseCursorEvent),
 }
 
-pub struct EventMessage {
+pub struct UndispatchedEvent {
     pub event: Event,
     pub(crate) native_event_operation_sender: Option<Sender<NativeEventOperation>>,
 }
 
-impl EventMessage {
+impl UndispatchedEvent {
     fn new(event: Event, native_event_operation_sender: Sender<NativeEventOperation>) -> Self {
         Self {
             event,
@@ -101,7 +101,7 @@ impl EventMessage {
     }
 }
 
-impl Drop for EventMessage {
+impl Drop for UndispatchedEvent {
     fn drop(&mut self) {
         if self.native_event_operation_sender.is_some() {
             self.send_default_native_event_operation();
@@ -110,16 +110,16 @@ impl Drop for EventMessage {
 }
 
 #[derive(Clone, Debug)]
-pub struct EventMessageSender(SyncSender<EventMessage>);
+pub struct EventMessageSender(SyncSender<UndispatchedEvent>);
 
 impl EventMessageSender {
-    pub(crate) fn new(event_sender: SyncSender<EventMessage>) -> Self {
+    pub(crate) fn new(event_sender: SyncSender<UndispatchedEvent>) -> Self {
         Self(event_sender)
     }
 
     pub(crate) fn send(&self, event: Event) -> NativeEventOperation {
         let (tx, rx) = mpsc::channel::<NativeEventOperation>();
-        let event_message = EventMessage::new(event, tx);
+        let event_message = UndispatchedEvent::new(event, tx);
         self.0.send(event_message).unwrap();
         rx.recv().unwrap()
     }
