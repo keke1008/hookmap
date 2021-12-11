@@ -1,5 +1,4 @@
 use super::button::{Button, ButtonAction};
-use std::hash::Hash;
 use std::sync::mpsc::{self, Sender, SyncSender};
 
 /// Indicates whether to pass the generated event to the next program or not .
@@ -56,56 +55,62 @@ pub enum Event {
 
 pub struct UndispatchedEvent {
     pub event: Event,
-    pub(crate) native_event_operation_sender: Option<Sender<NativeEventOperation>>,
+    pub(crate) native_event_operation_sender: Sender<NativeEventOperation>,
 }
 
 impl UndispatchedEvent {
     fn new(event: Event, native_event_operation_sender: Sender<NativeEventOperation>) -> Self {
         Self {
             event,
-            native_event_operation_sender: Some(native_event_operation_sender),
+            native_event_operation_sender,
         }
     }
 
-    /// Sends whether to block this event or not.
+    /// Dispatches or Blocks events to the OS.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap_core::*;
-    /// let mut message = HookHandler::install_hook().recv().unwrap();
-    /// message.send_native_event_operation(NativeEventOperation::Block);
+    /// let mut event = HookHandler::install_hook().recv().unwrap();
+    /// event.operate(NativeEventOperation::Block);
     /// ```
-    ///
-    pub fn send_native_event_operation(&mut self, operation: NativeEventOperation) {
-        self.native_event_operation_sender
-            .take()
-            .expect("The native event operation has already been sent.")
-            .send(operation)
-            .unwrap();
+    pub fn operate(self, operation: NativeEventOperation) {
+        self.native_event_operation_sender.send(operation).unwrap();
     }
 
-    /// Sends the default value of `NativeEventOperation`.
-    /// The feature flag `block-input-event` can set the default value of `NativeEventOperation`.
+    /// Dispatches this event to the OS.
     ///
     /// # Examples
     ///
     /// ```no_run
     /// use hookmap_core::*;
-    /// let mut message = HookHandler::install_hook().recv().unwrap();
-    /// message.send_default_native_event_operation();
+    /// let mut event = HookHandler::install_hook().recv().unwrap();
+    /// event.dispatch();
     /// ```
+    pub fn dispatch(self) {
+        self.operate(NativeEventOperation::Dispatch);
+    }
+
+    /// Blocks events from being dispatched to the OS.
     ///
-    pub fn send_default_native_event_operation(&mut self) {
-        self.send_native_event_operation(NativeEventOperation::default());
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap_core::*;
+    /// let mut event = HookHandler::install_hook().recv().unwrap();
+    /// event.block();
+    /// ```
+    pub fn block(self) {
+        self.operate(NativeEventOperation::Block);
     }
 }
 
 impl Drop for UndispatchedEvent {
     fn drop(&mut self) {
-        if self.native_event_operation_sender.is_some() {
-            self.send_default_native_event_operation();
-        }
+        self.native_event_operation_sender
+            .send(NativeEventOperation::default())
+            .unwrap();
     }
 }
 
