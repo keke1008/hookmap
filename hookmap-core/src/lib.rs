@@ -27,6 +27,8 @@ mod macros;
 #[cfg(target_os = "windows")]
 mod windows;
 
+mod sys;
+
 pub use common::{
     button::{Button, ButtonAction, ButtonKind, ButtonOperation},
     event::{ButtonEvent, Event, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
