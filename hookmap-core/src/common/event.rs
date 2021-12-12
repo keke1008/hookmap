@@ -1,5 +1,5 @@
 use super::button::{Button, ButtonAction};
-use std::sync::mpsc::{self, Sender, SyncSender};
+use std::sync::mpsc::{self, Receiver, Sender, SyncSender};
 
 /// Indicates whether to pass the generated event to the next program or not .
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -114,18 +114,41 @@ impl Drop for UndispatchedEvent {
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct EventMessageSender(SyncSender<UndispatchedEvent>);
+pub(crate) fn connection() -> (EventProvider, EventConsumer) {
+    const BOUND: usize = 1;
+    let (event_tx, event_rx) = mpsc::sync_channel(BOUND);
+    (EventProvider::new(event_tx), EventConsumer::new(event_rx))
+}
 
-impl EventMessageSender {
-    pub(crate) fn new(event_sender: SyncSender<UndispatchedEvent>) -> Self {
-        Self(event_sender)
+#[derive(Clone, Debug)]
+pub(crate) struct EventProvider {
+    event_tx: SyncSender<UndispatchedEvent>,
+}
+
+impl EventProvider {
+    fn new(event_tx: SyncSender<UndispatchedEvent>) -> Self {
+        Self { event_tx }
     }
 
     pub(crate) fn send(&self, event: Event) -> NativeEventOperation {
-        let (tx, rx) = mpsc::channel::<NativeEventOperation>();
-        let undispatched_event = UndispatchedEvent::new(event, tx);
-        self.0.send(undispatched_event).unwrap();
-        rx.recv().unwrap()
+        let (operation_tx, operation_rx) = mpsc::channel();
+        let undispatched_event = UndispatchedEvent::new(event, operation_tx);
+        self.event_tx.send(undispatched_event).unwrap();
+        operation_rx.recv().unwrap()
+    }
+}
+
+#[derive(Debug)]
+pub struct EventConsumer {
+    event_rx: Receiver<UndispatchedEvent>,
+}
+
+impl EventConsumer {
+    fn new(event_rx: Receiver<UndispatchedEvent>) -> Self {
+        Self { event_rx }
+    }
+
+    pub fn recv(&self) -> UndispatchedEvent {
+        self.event_rx.recv().unwrap()
     }
 }
