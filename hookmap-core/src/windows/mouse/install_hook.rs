@@ -1,7 +1,7 @@
 use super::{call_next_hook, IGNORED_DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
-    event::{ButtonEvent, Event, EventMessageSender, NativeEventOperation},
+    event::{ButtonEvent, Event, EventProvider, NativeEventOperation},
     mouse::{EmulateMouseCursor, Mouse},
 };
 use once_cell::sync::{Lazy, OnceCell};
@@ -19,7 +19,7 @@ use winapi::um::winuser::*;
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
-static EVENT_SENDER: OnceCell<EventMessageSender> = OnceCell::new();
+static EVENT_PROVIDER: OnceCell<EventProvider> = OnceCell::new();
 
 fn to_hook_struct(l_param: LPARAM) -> MSLLHOOKSTRUCT {
     let ptr = l_param as *const MSLLHOOKSTRUCT;
@@ -79,15 +79,15 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
                 ButtonAction::Press => target.assume_pressed(),
                 ButtonAction::Release => target.assume_released(),
             }
-            EVENT_SENDER.get().unwrap().send(Event::Button(event))
+            EVENT_PROVIDER.get().unwrap().send(Event::Button(event))
         }
         MouseEventTarget::Wheel => {
             let speed = to_wheel_delta(w_param);
-            EVENT_SENDER.get().unwrap().send(Event::MouseWheel(speed))
+            EVENT_PROVIDER.get().unwrap().send(Event::MouseWheel(speed))
         }
         MouseEventTarget::Cursor => {
             let pos = Mouse::get_pos();
-            EVENT_SENDER.get().unwrap().send(Event::MouseCursor(pos))
+            EVENT_PROVIDER.get().unwrap().send(Event::MouseCursor(pos))
         }
     };
     match operation {
@@ -96,8 +96,8 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-pub(in crate::windows) fn install_hook(event_message_sender: EventMessageSender) {
-    EVENT_SENDER.set(event_message_sender).unwrap();
+pub(in crate::windows) fn install_hook(event_provider: EventProvider) {
+    EVENT_PROVIDER.set(event_provider).unwrap();
     let handler =
         unsafe { winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
     HHOOK_HANDLER.store(handler, Ordering::SeqCst);

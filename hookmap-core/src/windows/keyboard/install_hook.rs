@@ -1,7 +1,7 @@
 use super::{call_next_hook, IGNORED_DW_EXTRA_INFO};
 use crate::common::{
     button::{Button, ButtonAction},
-    event::{ButtonEvent, Event, EventMessageSender, NativeEventOperation},
+    event::{ButtonEvent, Event, EventProvider, NativeEventOperation},
 };
 use once_cell::sync::{Lazy, OnceCell};
 use std::sync::atomic::{AtomicPtr, Ordering};
@@ -16,7 +16,7 @@ use winapi::{
 
 static HHOOK_HANDLER: Lazy<AtomicPtr<HHOOK__>> = Lazy::new(AtomicPtr::default);
 
-static EVENT_SENDER: OnceCell<EventMessageSender> = OnceCell::new();
+static EVENT_PROVIDER: OnceCell<EventProvider> = OnceCell::new();
 
 pub(super) fn into_button_action(event_info: KBDLLHOOKSTRUCT) -> ButtonAction {
     match event_info.flags >> 7 {
@@ -41,15 +41,15 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
         ButtonAction::Release => target.assume_released(),
     };
     let event = ButtonEvent::new(target, action);
-    let operation = EVENT_SENDER.get().unwrap().send(Event::Button(event));
+    let operation = EVENT_PROVIDER.get().unwrap().send(Event::Button(event));
     match operation {
         NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
         NativeEventOperation::Block => 1,
     }
 }
 
-pub(in crate::windows) fn install_hook(event_message_sender: EventMessageSender) {
-    EVENT_SENDER.set(event_message_sender).unwrap();
+pub(in crate::windows) fn install_hook(event_provider: EventProvider) {
+    EVENT_PROVIDER.set(event_provider).unwrap();
     let handler =
         unsafe { winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0) };
     HHOOK_HANDLER.store(handler, Ordering::SeqCst);

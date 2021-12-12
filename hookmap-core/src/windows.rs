@@ -4,7 +4,7 @@ mod mouse;
 
 use crate::common::{
     button::{Button, ButtonKind, ButtonOperation},
-    event::EventMessageSender,
+    event::EventProvider,
     handler::{HookHandler, HookInstaller},
 };
 use bitmaps::Bitmap;
@@ -65,9 +65,9 @@ impl Button {
 }
 
 impl HookInstaller for HookHandler {
-    fn install(event_sender: EventMessageSender) {
-        keyboard::install_hook(event_sender.clone());
-        mouse::install_hook(event_sender);
+    fn install(event_provider: EventProvider) {
+        keyboard::install_hook(event_provider.clone());
+        mouse::install_hook(event_provider);
         unsafe {
             winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
         }
