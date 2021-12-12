@@ -26,7 +26,7 @@ fn send_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32, recursive:
     }
 }
 
-pub(in crate::windows) fn press(button: &Button, recursive: bool) {
+pub(in crate::sys::windows) fn press(button: &Button, recursive: bool) {
     let (mouse_data, dw_flags) = match button {
         Button::LeftButton => (0, MOUSEEVENTF_LEFTDOWN),
         Button::RightButton => (0, MOUSEEVENTF_RIGHTDOWN),
@@ -38,7 +38,7 @@ pub(in crate::windows) fn press(button: &Button, recursive: bool) {
     send_mouse_input(0, 0, mouse_data as u32, dw_flags as u32, recursive);
 }
 
-pub(in crate::windows) fn release(button: &Button, recursive: bool) {
+pub(in crate::sys::windows) fn release(button: &Button, recursive: bool) {
     let (mouse_data, dw_flags) = match button {
         Button::LeftButton => (0, MOUSEEVENTF_LEFTUP),
         Button::RightButton => (0, MOUSEEVENTF_RIGHTUP),

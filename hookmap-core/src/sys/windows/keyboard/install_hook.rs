@@ -48,7 +48,7 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     }
 }
 
-pub(in crate::windows) fn install_hook(event_provider: EventProvider) {
+pub(in crate::sys::windows) fn install_hook(event_provider: EventProvider) {
     EVENT_PROVIDER.set(event_provider).unwrap();
     let handler =
         unsafe { winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_proc), 0 as HINSTANCE, 0) };

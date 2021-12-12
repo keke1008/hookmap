@@ -24,9 +24,6 @@
 pub mod common;
 mod macros;
 
-#[cfg(target_os = "windows")]
-mod windows;
-
 mod sys;
 
 pub use common::{
