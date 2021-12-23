@@ -23,7 +23,6 @@ impl HookInstaller {
             native_event_operation,
         } = fetcher.fetch();
         event_message.send_native_event_operation(native_event_operation);
-        }
         thread::spawn(move || actions.iter().for_each(|action| action.call(event)));
     }
 
