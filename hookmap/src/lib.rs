@@ -9,6 +9,7 @@
 //! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod button;
+pub mod hook;
 pub mod interface;
 pub mod macros;
 
