@@ -15,14 +15,14 @@ pub(crate) struct HookInstaller {
 impl HookInstaller {
     fn handle_mouse_event<T: 'static + Debug + Copy + Send>(
         fetcher: &MouseFetcher<T>,
-        event_message: &mut UndispatchedEvent,
+        event_message: UndispatchedEvent,
         event: T,
     ) {
         let FetchResult {
             actions,
             native_event_operation,
         } = fetcher.fetch();
-        event_message.send_native_event_operation(native_event_operation);
+        event_message.operate(native_event_operation);
         thread::spawn(move || actions.iter().for_each(|action| action.call(event)));
     }
 
@@ -35,23 +35,22 @@ impl HookInstaller {
         } = self.storage.into();
 
         let event_receiver = HookHandler::install_hook();
-        while let Ok(mut event_message) = event_receiver.recv() {
+        loop {
+            let event_message = event_receiver.recv();
             match event_message.event {
                 Event::Button(event) => {
                     if event_sender::send(event) == NativeEventOperation::Block {
-                        event_message.send_native_event_operation(NativeEventOperation::Block);
+                        event_message.block();
                     } else {
                         let actions = match event.action {
                             ButtonAction::Press => {
                                 let result = on_press_fetcher.fetch(&event);
-                                event_message
-                                    .send_native_event_operation(result.native_event_operation);
+                                event_message.operate(result.native_event_operation);
                                 result.actions
                             }
                             ButtonAction::Release => {
                                 // If the release event is not blocked, the button will remain pressed.
-                                event_message
-                                    .send_native_event_operation(NativeEventOperation::Dispatch);
+                                event_message.dispatch();
                                 on_release_fetcher.fetch(&event).actions
                             }
                         };
@@ -59,18 +58,10 @@ impl HookInstaller {
                     }
                 }
                 Event::MouseCursor(event) => {
-                    HookInstaller::handle_mouse_event(
-                        &mouse_cursor_fetcher,
-                        &mut event_message,
-                        event,
-                    );
+                    HookInstaller::handle_mouse_event(&mouse_cursor_fetcher, event_message, event);
                 }
                 Event::MouseWheel(event) => {
-                    HookInstaller::handle_mouse_event(
-                        &mouse_wheel_fetcher,
-                        &mut event_message,
-                        event,
-                    );
+                    HookInstaller::handle_mouse_event(&mouse_wheel_fetcher, event_message, event);
                 }
             }
         }
