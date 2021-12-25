@@ -55,14 +55,14 @@ pub enum Event {
 
 pub struct UndispatchedEvent {
     pub event: Event,
-    pub(crate) native_event_operation_sender: Sender<NativeEventOperation>,
+    pub(crate) native_event_operation_sender: Option<Sender<NativeEventOperation>>,
 }
 
 impl UndispatchedEvent {
     fn new(event: Event, native_event_operation_sender: Sender<NativeEventOperation>) -> Self {
         Self {
             event,
-            native_event_operation_sender,
+            native_event_operation_sender: Some(native_event_operation_sender),
         }
     }
 
@@ -75,8 +75,12 @@ impl UndispatchedEvent {
     /// let mut event = HookHandler::install_hook().recv().unwrap();
     /// event.operate(NativeEventOperation::Block);
     /// ```
-    pub fn operate(self, operation: NativeEventOperation) {
-        self.native_event_operation_sender.send(operation).unwrap();
+    pub fn operate(mut self, operation: NativeEventOperation) {
+        self.native_event_operation_sender
+            .take()
+            .unwrap()
+            .send(operation)
+            .unwrap();
     }
 
     /// Dispatches this event to the OS.
@@ -108,9 +112,9 @@ impl UndispatchedEvent {
 
 impl Drop for UndispatchedEvent {
     fn drop(&mut self) {
-        self.native_event_operation_sender
-            .send(NativeEventOperation::default())
-            .unwrap();
+        if let Some(sender) = self.native_event_operation_sender.take() {
+            sender.send(NativeEventOperation::default()).unwrap();
+        }
     }
 }
 
