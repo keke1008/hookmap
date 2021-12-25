@@ -14,11 +14,14 @@ Input emulation and global hooks for keyboard and mouse.
 ## Eample
 
 ```rust
+use hookmap_core::*;
+
 fn main() {
     let event_receiver = HookHandler::install_hook();
 
-    while let Ok(mut event_message) = event_receiver.recv() {
-        match event_message.event {
+    loop {
+        let undispatched_event = event_receiver.recv();
+        match undispatched_event.event {
             Event::Button(event) => {
                 match event.target {
                     Button::RightArrow => println!("Left"),
@@ -26,19 +29,19 @@ fn main() {
                     Button::LeftArrow => println!("Right"),
                     Button::DownArrow => println!("Down"),
                     _ => {
-                        event_message.send_event_block(EventBlock::Unblock);
+                        undispatched_event.dispatch();
                         continue;
                     }
                 };
-                event_message.send_event_block(EventBlock::Block);
+                undispatched_event.block();
             }
             Event::MouseCursor(cursor) => {
                 println!("position: {:?}", cursor);
-                event_message.send_event_block(EventBlock::Unblock);
+                undispatched_event.dispatch();
             }
             Event::MouseWheel(speed) => {
                 println!("speed: {}", speed);
-                event_message.send_event_block(EventBlock::Unblock);
+                undispatched_event.dispatch()
             }
         }
     }
