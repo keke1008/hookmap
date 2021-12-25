@@ -1,7 +1,7 @@
 use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 
 pub(crate) trait Hook<E> {
-    fn native_event_operation() -> NativeEventOperation;
+    fn native_event_operation(&self) -> NativeEventOperation;
     fn run(&self, event: E);
 }
 
