@@ -42,9 +42,14 @@ extern "system" fn hook_proc(code: c_int, w_param: WPARAM, l_param: LPARAM) -> L
     };
     let event = ButtonEvent::new(target, action);
     let operation = EVENT_PROVIDER.get().unwrap().send(Event::Button(event));
-    match operation {
-        NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
-        NativeEventOperation::Block => 1,
+    if action == ButtonAction::Release {
+        // If the release event is blocked, the button will remain pressed.
+        call_next_hook(code, w_param, l_param)
+    } else {
+        match operation {
+            NativeEventOperation::Dispatch => call_next_hook(code, w_param, l_param),
+            NativeEventOperation::Block => 1,
+        }
     }
 }
 
