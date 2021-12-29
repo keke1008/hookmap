@@ -1,4 +1,5 @@
 mod hook;
+mod storage;
 
 use crate::button::{ButtonSet, ButtonState};
 use hookmap_core::{ButtonEvent, NativeEventOperation};
