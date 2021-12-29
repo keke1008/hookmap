@@ -1,3 +1,5 @@
+mod hook;
+
 use crate::button::{ButtonSet, ButtonState};
 use hookmap_core::{ButtonEvent, NativeEventOperation};
 use std::{fmt::Debug, iter, sync::Arc};
