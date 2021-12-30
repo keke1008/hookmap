@@ -1,16 +1,13 @@
-use super::hook::{
-    ButtonHook, ExecutableHook, HotkeyOnPressHook, HotkeyOnReleaseHook, MouseHook,
-    RemapOnPressHook, RemapOnReleaseHook,
-};
+use super::hook::{ButtonHook, ExecutableHook, HotkeyHook, MouseHook, RemapHook};
 use crate::hook::HookStorage;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, MouseCursorEvent, MouseWheelEvent};
 use std::collections::HashMap;
 
 pub(super) struct HotkeyStorage {
-    remap_on_press: HashMap<Button, Vec<RemapOnPressHook>>,
-    remap_on_release: HashMap<Button, Vec<RemapOnReleaseHook>>,
-    hotkey_on_press: HashMap<Button, Vec<HotkeyOnPressHook>>,
-    hotkey_on_release: HashMap<Button, Vec<HotkeyOnReleaseHook>>,
+    remap_on_press: HashMap<Button, Vec<RemapHook>>,
+    remap_on_release: HashMap<Button, Vec<RemapHook>>,
+    hotkey_on_press: HashMap<Button, Vec<HotkeyHook>>,
+    hotkey_on_release: HashMap<Button, Vec<HotkeyHook>>,
     mouse_cursor: Vec<MouseHook<MouseCursorEvent>>,
     mouse_wheel: Vec<MouseHook<MouseWheelEvent>>,
 }

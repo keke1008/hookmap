@@ -1,112 +1,68 @@
-use crate::{button::ButtonSet, hook::Hook, ButtonInput};
 use super::modifier_keys::ModifierKeys;
-use hookmap_core::{ButtonEvent, NativeEventOperation};
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use crate::{button::ButtonSet, hook::Hook, ButtonInput};
+use hookmap_core::{ButtonAction, ButtonEvent, NativeEventOperation};
+use std::sync::Arc;
 
 type HookProcess<E> = Arc<dyn Fn(E)>;
 
 #[derive(Clone)]
-pub(super) struct HotkeyOnPressHook {
+pub(super) struct HotkeyHook {
     modifier_keys: ModifierKeys,
-    is_active: Arc<AtomicBool>,
     process: HookProcess<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 #[derive(Clone)]
-pub(super) struct HotkeyOnReleaseHook {
-    is_active: Arc<AtomicBool>,
-    process: HookProcess<ButtonEvent>,
-    native_event_operation: NativeEventOperation,
-}
-#[derive(Clone)]
-pub(super) struct RemapOnPressHook {
+pub(super) struct RemapHook {
     modifier_keys: ModifierKeys,
-    is_active: Arc<AtomicBool>,
-    button: ButtonSet,
-}
-#[derive(Clone)]
-pub(super) struct RemapOnReleaseHook {
-    is_active: Arc<AtomicBool>,
     button: ButtonSet,
 }
 
-fn is_on_press_hook_executable(is_active: &AtomicBool, modifier_keys: &ModifierKeys) -> bool {
-    let res = is_active.fetch_update(Ordering::SeqCst, Ordering::SeqCst, |old| {
-        (!old && modifier_keys.meets_conditions()).then(|| true)
-    });
-    matches!(res, Ok(_))
-}
 pub(super) trait ExecutableHook {
     fn is_executable(&self) -> bool;
 }
-impl ExecutableHook for HotkeyOnPressHook {
+impl ExecutableHook for HotkeyHook {
     fn is_executable(&self) -> bool {
-        is_on_press_hook_executable(&self.is_active, &self.modifier_keys)
+        self.modifier_keys.meets_conditions()
     }
 }
-impl ExecutableHook for HotkeyOnReleaseHook {
+impl ExecutableHook for RemapHook {
     fn is_executable(&self) -> bool {
-        self.is_active.swap(false, Ordering::SeqCst)
-    }
-}
-impl ExecutableHook for RemapOnPressHook {
-    fn is_executable(&self) -> bool {
-        is_on_press_hook_executable(&self.is_active, &self.modifier_keys)
-    }
-}
-impl ExecutableHook for RemapOnReleaseHook {
-    fn is_executable(&self) -> bool {
-        self.is_active.swap(false, Ordering::SeqCst)
+        self.modifier_keys.meets_conditions()
     }
 }
 
 #[derive(Clone)]
 pub(super) enum ButtonHook {
-    HotkeyOnPress(HotkeyOnPressHook),
-    HotkeyOnRelease(HotkeyOnReleaseHook),
-    RemapOnPress(RemapOnPressHook),
-    RemapOnRelease(RemapOnReleaseHook),
+    Hotkey(HotkeyHook),
+    Remap(RemapHook),
 }
 
 impl Hook<ButtonEvent> for ButtonHook {
     fn native_event_operation(&self) -> NativeEventOperation {
         match self {
-            ButtonHook::HotkeyOnPress(hook) => hook.native_event_operation,
-            ButtonHook::HotkeyOnRelease(hook) => hook.native_event_operation,
+            ButtonHook::Hotkey(hook) => hook.native_event_operation,
             _ => NativeEventOperation::Block,
         }
     }
 
     fn run(&self, event: ButtonEvent) {
         match self {
-            ButtonHook::HotkeyOnPress(hook) => (hook.process)(event),
-            ButtonHook::HotkeyOnRelease(hook) => (hook.process)(event),
-            ButtonHook::RemapOnPress(hook) => hook.button.press(),
-            ButtonHook::RemapOnRelease(hook) => hook.button.release(),
+            ButtonHook::Hotkey(hook) => (hook.process)(event),
+            ButtonHook::Remap(hook) => match event.action {
+                ButtonAction::Press => hook.button.press(),
+                ButtonAction::Release => hook.button.release(),
+            },
         }
     }
 }
-impl From<HotkeyOnPressHook> for ButtonHook {
-    fn from(hook: HotkeyOnPressHook) -> Self {
-        ButtonHook::HotkeyOnPress(hook)
+impl From<HotkeyHook> for ButtonHook {
+    fn from(hook: HotkeyHook) -> Self {
+        ButtonHook::Hotkey(hook)
     }
 }
-impl From<HotkeyOnReleaseHook> for ButtonHook {
-    fn from(hook: HotkeyOnReleaseHook) -> Self {
-        ButtonHook::HotkeyOnRelease(hook)
-    }
-}
-impl From<RemapOnPressHook> for ButtonHook {
-    fn from(remap: RemapOnPressHook) -> Self {
-        ButtonHook::RemapOnPress(remap)
-    }
-}
-impl From<RemapOnReleaseHook> for ButtonHook {
-    fn from(remap: RemapOnReleaseHook) -> Self {
-        ButtonHook::RemapOnRelease(remap)
+impl From<RemapHook> for ButtonHook {
+    fn from(remap: RemapHook) -> Self {
+        ButtonHook::Remap(remap)
     }
 }
 
