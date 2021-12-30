@@ -16,6 +16,9 @@ pub trait RegisterHotkey {
     fn on_release(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static);
     fn mouse_wheel(&mut self, process: impl Fn(MouseWheelEvent) + 'static);
     fn mouse_cursor(&mut self, process: impl Fn(MouseCursorEvent) + 'static);
+    fn disable(&mut self, target: impl Into<ButtonSet>);
+    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey;
+    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey;
 }
 
 fn register_each_target(
@@ -118,5 +121,113 @@ impl RegisterHotkey for Hotkey {
             NativeEventOperation::default(),
         );
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
+    }
+
+    fn disable(&mut self, target: impl Into<ButtonSet>) {
+        let target = target.into();
+        self.on_press(target.clone(), |_| {});
+        self.on_press(target, |_| {});
+    }
+
+    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+        ModifierHotkey::new(
+            &self.storage,
+            modifier_keys.to_owned(),
+            NativeEventOperation::default(),
+        )
+    }
+
+    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey {
+        ModifierHotkey::new(&self.storage, ModifierKeys::default(), operation)
+    }
+}
+
+pub struct ModifierHotkey<'a> {
+    storage: &'a RefCell<HotkeyStorage>,
+    modifier_keys: ModifierKeys,
+    native_event_operation: NativeEventOperation,
+}
+
+impl<'a> ModifierHotkey<'a> {
+    fn new(
+        storage: &'a RefCell<HotkeyStorage>,
+        modifier_keys: ModifierKeys,
+        native_event_operation: NativeEventOperation,
+    ) -> Self {
+        ModifierHotkey {
+            storage,
+            modifier_keys,
+            native_event_operation,
+        }
+    }
+}
+
+impl RegisterHotkey for ModifierHotkey<'_> {
+    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
+        let behavior = behavior.into();
+        register_each_target(target.into(), &self.modifier_keys, |key, modifier_keys| {
+            let hook = RemapHook::new(modifier_keys, behavior.clone());
+            self.storage.borrow_mut().register_remap(key, hook);
+        });
+    }
+
+    fn on_press(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static) {
+        register_button_hotkey(
+            target.into(),
+            HotkeyStorage::register_hotkey_on_press,
+            &self.storage,
+            &self.modifier_keys,
+            Arc::new(process),
+            self.native_event_operation,
+        );
+    }
+
+    fn on_release(
+        &mut self,
+        target: impl Into<ButtonSet>,
+        process: impl Fn(ButtonEvent) + 'static,
+    ) {
+        register_button_hotkey(
+            target.into(),
+            HotkeyStorage::register_hotkey_on_release,
+            &self.storage,
+            &self.modifier_keys,
+            Arc::new(process),
+            self.native_event_operation,
+        );
+    }
+
+    fn mouse_wheel(&mut self, process: impl Fn(MouseWheelEvent) + 'static) {
+        let hook = MouseHook::new(
+            self.modifier_keys.clone(),
+            Arc::new(process),
+            self.native_event_operation,
+        );
+        self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
+    }
+
+    fn mouse_cursor(&mut self, process: impl Fn(MouseCursorEvent) + 'static) {
+        let hook = MouseHook::new(
+            self.modifier_keys.clone(),
+            Arc::new(process),
+            self.native_event_operation,
+        );
+        self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
+    }
+
+    fn disable(&mut self, target: impl Into<ButtonSet>) {
+        let target = target.into();
+        self.on_press(target.clone(), |_| {});
+        self.on_press(target, |_| {});
+    }
+
+    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+        let mut modifier_keys = modifier_keys.clone();
+        modifier_keys.merge(&mut self.modifier_keys);
+        ModifierHotkey::new(self.storage, modifier_keys, self.native_event_operation)
+    }
+
+    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey {
+        ModifierHotkey::new(self.storage, self.modifier_keys.clone(), operation)
     }
 }
