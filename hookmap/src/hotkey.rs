@@ -174,7 +174,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_press,
-            &self.storage,
+            self.storage,
             &self.modifier_keys,
             process,
             self.native_event_operation,
@@ -185,7 +185,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_release,
-            &self.storage,
+            self.storage,
             &self.modifier_keys,
             process,
             self.native_event_operation,
@@ -220,7 +220,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
     fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
         ModifierHotkey::new(
             self.storage,
-            Arc::new(self.modifier_keys.merge(&modifier_keys)),
+            Arc::new(self.modifier_keys.merge(modifier_keys)),
             self.native_event_operation,
         )
     }

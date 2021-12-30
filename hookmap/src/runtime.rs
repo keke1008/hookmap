@@ -4,13 +4,6 @@ use crate::hook::{Hook, HookStorage};
 use hookmap_core::{common::event::UndispatchedEvent, HookHandler, NativeEventOperation};
 use std::thread;
 
-fn compute_native_event_operation(operations: &[NativeEventOperation]) -> NativeEventOperation {
-    *operations
-        .iter()
-        .find(|&&operation| operation == NativeEventOperation::Block)
-        .unwrap_or(&NativeEventOperation::Dispatch)
-}
-
 #[derive(Debug)]
 pub(crate) struct Runtime<T>
 where
