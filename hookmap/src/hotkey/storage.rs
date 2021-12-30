@@ -7,8 +7,8 @@ use hookmap_core::{Button, ButtonAction, ButtonEvent, MouseCursorEvent, MouseWhe
 use std::collections::HashMap;
 
 pub(super) struct HotkeyStorage {
-    remap_on_press: HashMap<Button, RemapOnPressHook>,
-    remap_on_release: HashMap<Button, RemapOnReleaseHook>,
+    remap_on_press: HashMap<Button, Vec<RemapOnPressHook>>,
+    remap_on_release: HashMap<Button, Vec<RemapOnReleaseHook>>,
     hotkey_on_press: HashMap<Button, Vec<HotkeyOnPressHook>>,
     hotkey_on_release: HashMap<Button, Vec<HotkeyOnReleaseHook>>,
     mouse_cursor: Vec<MouseHook<MouseCursorEvent>>,
@@ -33,17 +33,20 @@ impl HookStorage for HotkeyStorage {
     fn fetch_button_hook(&self, event: ButtonEvent) -> Vec<ButtonHook> {
         fn fetch_inner<T, U>(
             event: ButtonEvent,
-            remap: &HashMap<Button, T>,
+            remap: &HashMap<Button, Vec<T>>,
             hotkey: &HashMap<Button, Vec<U>>,
         ) -> Vec<ButtonHook>
         where
             T: ExecutableHook + Into<ButtonHook> + Clone,
             U: ExecutableHook + Into<ButtonHook> + Clone,
         {
-            if let Some(remap_hook) = remap.get(&event.target) {
-                if remap_hook.is_executable() {
-                    return vec![remap_hook.clone().into()];
-                }
+            let remap_hook = remap
+                .get(&event.target)
+                .into_iter()
+                .flatten()
+                .find_map(|hook| hook.is_executable().then(|| hook.clone().into()));
+            if let Some(hook) = remap_hook {
+                return vec![hook];
             }
             hotkey
                 .get(&event.target)
