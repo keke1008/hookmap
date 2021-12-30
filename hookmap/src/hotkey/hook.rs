@@ -11,10 +11,34 @@ pub(super) struct HotkeyHook {
     process: HookProcess<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
+
+impl HotkeyHook {
+    pub(super) fn new(
+        modifier_keys: ModifierKeys,
+        process: HookProcess<ButtonEvent>,
+        native_event_operation: NativeEventOperation,
+    ) -> Self {
+        HotkeyHook {
+            modifier_keys,
+            process,
+            native_event_operation,
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct RemapHook {
     modifier_keys: ModifierKeys,
     button: ButtonSet,
+}
+
+impl RemapHook {
+    pub(super) fn new(modifier_keys: ModifierKeys, button: ButtonSet) -> Self {
+        RemapHook {
+            modifier_keys,
+            button,
+        }
+    }
 }
 
 pub(super) trait ExecutableHook {
