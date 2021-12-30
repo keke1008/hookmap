@@ -7,8 +7,11 @@ pub struct ModifierKeys {
 }
 
 impl ModifierKeys {
-    pub fn new(pressed: Vec<ButtonSet>, released: Vec<ButtonSet>) -> Self {
-        Self { pressed, released }
+    pub fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
+        Self {
+            pressed: pressed.to_owned(),
+            released: released.to_owned(),
+        }
     }
 
     pub fn merge(&self, other: &Self) -> Self {
