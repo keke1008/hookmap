@@ -1,19 +1,8 @@
-mod fetcher;
-mod startup;
-
-pub(crate) mod register;
-pub(crate) mod storage;
-
-use std::thread;
-
-pub(crate) use register::Register;
-pub(crate) use startup::HookInstaller;
-
 pub mod interceptor;
 
-use hookmap_core::{common::event::UndispatchedEvent, HookHandler, NativeEventOperation};
-
 use crate::hook::{Hook, HookStorage};
+use hookmap_core::{common::event::UndispatchedEvent, HookHandler, NativeEventOperation};
+use std::thread;
 
 fn compute_native_event_operation(operations: &[NativeEventOperation]) -> NativeEventOperation {
     *operations

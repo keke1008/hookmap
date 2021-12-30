@@ -10,21 +10,13 @@
 
 pub mod button;
 pub mod hook;
-pub mod interface;
 pub mod macros;
 
 mod hotkey;
 mod runtime;
-mod utils;
+// mod utils;
 
 pub use button::{ButtonInput, ButtonState, ALT, CTRL, META, SHIFT};
 pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
-pub use interface::{Hotkey, SelectHandleTarget, SetNativeEventOpereation};
 pub use runtime::interceptor;
-pub use utils::Utils;
-
-pub mod register {
-    pub use super::interface::{
-        ButtonEventHandlerEntry, MouseCursorHotKeyEntry, MouseWheelHotkeyEntry,
-    };
-}
+// pub use utils::Utils;
