@@ -20,7 +20,11 @@ pub static META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 pub struct ButtonSet(Vec<Button>);
 
 impl ButtonSet {
-    pub(crate) fn iter<'a>(&'a mut self) -> impl Iterator<Item = Button> + 'a {
+    pub(crate) fn new(v: &[Button]) -> Self {
+        ButtonSet(v.to_owned())
+    }
+
+    pub(crate) fn iter<'a>(&'a self) -> impl Iterator<Item = Button> + 'a {
         self.0.iter().copied()
     }
 }
@@ -31,7 +35,7 @@ impl<I: Iterator<Item = Button>> FromIterator<I> for ButtonSet {
     }
 }
 
-pub(crate) trait ExpandButton {
+pub trait ExpandButton {
     fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a>;
 }
 

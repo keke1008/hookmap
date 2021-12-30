@@ -1,13 +1,14 @@
-use crate::button::{ButtonSet, ButtonState};
+use crate::button::ButtonState;
+use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
 pub struct ModifierKeys {
-    pub pressed: Vec<ButtonSet>,
-    pub released: Vec<ButtonSet>,
+    pub pressed: Vec<Button>,
+    pub released: Vec<Button>,
 }
 
 impl ModifierKeys {
-    pub fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
+    pub fn new(pressed: &[Button], released: &[Button]) -> Self {
         Self {
             pressed: pressed.to_owned(),
             released: released.to_owned(),
