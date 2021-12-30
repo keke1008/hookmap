@@ -63,6 +63,10 @@ where
             let message = event_receiver.recv();
             match message.event {
                 hookmap_core::Event::Button(event) => {
+                    if interceptor::event_sender::send(event) == NativeEventOperation::Block {
+                        message.block();
+                        return;
+                    }
                     self.handle_event(HookStorage::fetch_button_hook, message, event);
                 }
                 hookmap_core::Event::MouseWheel(event) => {
