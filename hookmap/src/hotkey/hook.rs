@@ -97,6 +97,20 @@ pub(super) struct MouseHook<E> {
     native_event_operation: NativeEventOperation,
 }
 
+impl<E> MouseHook<E> {
+    pub(super) fn new(
+        modifier_keys: ModifierKeys,
+        process: HookProcess<E>,
+        native_event_operation: NativeEventOperation,
+    ) -> Self {
+        MouseHook {
+            modifier_keys,
+            process,
+            native_event_operation,
+        }
+    }
+}
+
 impl<E> Hook<E> for MouseHook<E> {
     fn native_event_operation(&self) -> NativeEventOperation {
         self.native_event_operation
