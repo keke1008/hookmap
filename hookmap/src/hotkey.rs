@@ -26,7 +26,7 @@ pub trait RegisterHotkey {
     /// hotkey.remap(Button::A, Button::B);
     /// ```
     ///
-    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>);
+    fn remap(&self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>);
 
     /// Run `process` when `target` is pressed.
     ///
@@ -43,7 +43,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_press(Button::A, Arc::new(|e| println!("Pressed: {:?}")));
     /// ```
     ///
-    fn on_press(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
+    fn on_press(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when `target` is released.
     ///
@@ -60,7 +60,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_release(Button::A, Arc::new(|_| println!("Released: {:?}")));
     /// ```
     ///
-    fn on_release(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
+    fn on_release(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when a mouse wheel is rotated.
     ///
@@ -74,7 +74,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_wheel(Arc::new(|delta| println!("Delta: {:?}", delta)));
     /// ```
     ///
-    fn mouse_wheel(&mut self, process: HookProcess<MouseWheelEvent>);
+    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>);
 
     /// Run `process` when a mouse cursor is moved.
     ///
@@ -88,7 +88,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_cursor(Arc::new(|(x, y)| println!("Cursor: ({}, {})", x, y)));
     /// ```
     ///
-    fn mouse_cursor(&mut self, process: HookProcess<MouseCursorEvent>);
+    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>);
 
     /// Disables the button and blocks events.
     ///
@@ -105,7 +105,7 @@ pub trait RegisterHotkey {
     /// hotkey.disable(Button::A);
     /// ```
     ///
-    fn disable(&mut self, target: impl Into<ButtonSet>);
+    fn disable(&self, target: impl Into<ButtonSet>);
 
     /// Adds modifier keys.
     ///
@@ -119,10 +119,10 @@ pub trait RegisterHotkey {
     ///
     /// let hotkey = Hotkey::new();
     /// let modifier_keys = ModifierKeys::new(vec![ButtonSet::Any(vec![Button::A, Button::B])], vec![]);
-    /// let a_or_b = hotkey.add_modifier_keys(modifier_keys);
+    /// let a_or_b = hotkey.add_modifier_keys(&modifier_keys);
     /// a_or_b.remap(Button::C, Button::D);
     /// ```
-    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey;
+    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey;
 
     /// Changes the operation for native events to block or dispatch.
     ///
@@ -140,7 +140,7 @@ pub trait RegisterHotkey {
     /// blocking_hotkey.on_press(Button::A, Arc::new(|e| println!("Press: {:?}", e)));
     /// ```
     ///
-    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey;
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey;
 }
 
 fn register_each_target(
@@ -219,7 +219,7 @@ impl Hotkey {
 }
 
 impl RegisterHotkey for Hotkey {
-    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
+    fn remap(&self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
         let behavior = behavior.into();
         register_each_target(target.into(), &self.modifier_keys, |key, modifier_keys| {
             let hook = RemapHook::new(modifier_keys, behavior.clone());
@@ -227,7 +227,7 @@ impl RegisterHotkey for Hotkey {
         });
     }
 
-    fn on_press(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_press,
@@ -238,7 +238,7 @@ impl RegisterHotkey for Hotkey {
         );
     }
 
-    fn on_release(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_release,
@@ -249,7 +249,7 @@ impl RegisterHotkey for Hotkey {
         );
     }
 
-    fn mouse_wheel(&mut self, process: HookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>) {
         let hook = MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
@@ -258,7 +258,7 @@ impl RegisterHotkey for Hotkey {
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    fn mouse_cursor(&mut self, process: HookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>) {
         let hook = MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
@@ -267,14 +267,14 @@ impl RegisterHotkey for Hotkey {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&mut self, target: impl Into<ButtonSet>) {
+    fn disable(&self, target: impl Into<ButtonSet>) {
         let process = Arc::new(|_| {}) as Arc<dyn Fn(_) + Send + Sync>;
         let target = target.into();
         self.on_press(target.clone(), Arc::clone(&process));
         self.on_press(target, process);
     }
 
-    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
         ModifierHotkey::new(
             &self.storage,
             Arc::new(modifier_keys.to_owned()),
@@ -282,7 +282,7 @@ impl RegisterHotkey for Hotkey {
         )
     }
 
-    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey {
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
         ModifierHotkey::new(&self.storage, Arc::clone(&self.modifier_keys), operation)
     }
 }
@@ -309,7 +309,7 @@ impl<'a> ModifierHotkey<'a> {
 }
 
 impl RegisterHotkey for ModifierHotkey<'_> {
-    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
+    fn remap(&self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
         let behavior = behavior.into();
         register_each_target(target.into(), &self.modifier_keys, |key, modifier_keys| {
             let hook = RemapHook::new(modifier_keys, behavior.clone());
@@ -317,7 +317,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         });
     }
 
-    fn on_press(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_press,
@@ -328,7 +328,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         );
     }
 
-    fn on_release(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>) {
         register_button_hotkey(
             target.into(),
             HotkeyStorage::register_hotkey_on_release,
@@ -339,7 +339,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         );
     }
 
-    fn mouse_wheel(&mut self, process: HookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>) {
         let hook = MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
@@ -348,7 +348,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    fn mouse_cursor(&mut self, process: HookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>) {
         let hook = MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
@@ -357,14 +357,14 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&mut self, target: impl Into<ButtonSet>) {
+    fn disable(&self, target: impl Into<ButtonSet>) {
         let process = Arc::new(|_| {}) as Arc<dyn Fn(_) + Send + Sync>;
         let target = target.into();
         self.on_press(target.clone(), Arc::clone(&process));
         self.on_press(target, process);
     }
 
-    fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
         ModifierHotkey::new(
             self.storage,
             Arc::new(self.modifier_keys.merge(modifier_keys)),
@@ -372,7 +372,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         )
     }
 
-    fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey {
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
         ModifierHotkey::new(self.storage, Arc::clone(&self.modifier_keys), operation)
     }
 }
