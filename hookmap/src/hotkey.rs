@@ -122,7 +122,7 @@ pub trait RegisterHotkey {
     /// let a_or_b = hotkey.add_modifier_keys(&modifier_keys);
     /// a_or_b.remap(Button::C, Button::D);
     /// ```
-    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey;
+    fn add_modifier_keys(&self, modifier_keys: ModifierKeys) -> ModifierHotkey;
 
     /// Changes the operation for native events to block or dispatch.
     ///
@@ -262,10 +262,10 @@ impl RegisterHotkey for Hotkey {
         self.on_press(target, process);
     }
 
-    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: ModifierKeys) -> ModifierHotkey {
         ModifierHotkey::new(
             &self.storage,
-            Arc::new(modifier_keys.to_owned()),
+            Arc::new(modifier_keys),
             NativeEventOperation::default(),
         )
     }
@@ -350,7 +350,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.on_press(target, process);
     }
 
-    fn add_modifier_keys(&self, modifier_keys: &ModifierKeys) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: ModifierKeys) -> ModifierHotkey {
         ModifierHotkey::new(
             self.storage,
             Arc::new(self.modifier_keys.merge(modifier_keys)),
