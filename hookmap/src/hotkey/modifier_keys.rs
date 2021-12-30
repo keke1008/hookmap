@@ -11,22 +11,12 @@ impl ModifierKeys {
         Self { pressed, released }
     }
 
-    pub(super) fn add_pressed(&self, button: ButtonSet) -> Self {
-        let mut pressed = self.pressed.clone();
-        pressed.push(button);
-        Self {
-            pressed,
-            released: self.released.clone(),
-        }
+    pub(super) fn push_pressed(&mut self, button: ButtonSet) {
+        self.pressed.push(button);
     }
 
-    pub(super) fn add_released(&self, button: ButtonSet) -> Self {
-        let mut released = self.released.clone();
-        released.push(button);
-        Self {
-            pressed: self.pressed.clone(),
-            released,
-        }
+    pub(super) fn push_released(&mut self, button: ButtonSet) {
+        self.released.push(button);
     }
 
     pub(super) fn meets_conditions(&self) -> bool {
