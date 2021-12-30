@@ -10,14 +10,136 @@ use crate::{button::ButtonSet, runtime::Runtime};
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::{cell::RefCell, sync::Arc};
 
+/// Methods for registering hotkeys.
 pub trait RegisterHotkey {
+    /// Makes `target` behave like a `behavior`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey},
+    ///     button::Button,
+    /// };
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.remap(Button::A, Button::B);
+    /// ```
+    ///
     fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>);
+
+    /// Run `process` when `target` is pressed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey},
+    ///     button::Button,
+    /// };
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.on_press(Button::A, Arc::new(|e| println!("Pressed: {:?}")));
+    /// ```
+    ///
     fn on_press(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
+
+    /// Run `process` when `target` is released.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey},
+    ///     button::Button,
+    /// };
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.on_release(Button::A, Arc::new(|_| println!("Released: {:?}")));
+    /// ```
+    ///
     fn on_release(&mut self, target: impl Into<ButtonSet>, process: HookProcess<ButtonEvent>);
+
+    /// Run `process` when a mouse wheel is rotated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{hotkey::Hotkey, RegisterHotkey}
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.mouse_wheel(Arc::new(|delta| println!("Delta: {:?}", delta)));
+    /// ```
+    ///
     fn mouse_wheel(&mut self, process: HookProcess<MouseWheelEvent>);
+
+    /// Run `process` when a mouse cursor is moved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{hotkey::Hotkey, RegisterHotkey};
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.mouse_cursor(Arc::new(|(x, y)| println!("Cursor: ({}, {})", x, y)));
+    /// ```
+    ///
     fn mouse_cursor(&mut self, process: HookProcess<MouseCursorEvent>);
+
+    /// Disables the button and blocks events.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey},
+    ///     button::Button,
+    /// };
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.disable(Button::A);
+    /// ```
+    ///
     fn disable(&mut self, target: impl Into<ButtonSet>);
+
+    /// Adds modifier keys.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey, ModifierKeys},
+    ///     button::{Button, ButtonSet},
+    /// };
+    ///
+    /// let hotkey = Hotkey::new();
+    /// let modifier_keys = ModifierKeys::new(vec![ButtonSet::Any(vec![Button::A, Button::B])], vec![]);
+    /// let a_or_b = hotkey.add_modifier_keys(modifier_keys);
+    /// a_or_b.remap(Button::C, Button::D);
+    /// ```
     fn add_modifier_keys(&mut self, modifier_keys: &ModifierKeys) -> ModifierHotkey;
+
+    /// Changes the operation for native events to block or dispatch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{
+    ///     hotkey::{Hotkey, RegisterHotkey, ModifierKeys},
+    ///     button::Button,
+    ///     hook::NativeEventBlock,
+    /// };
+    ///
+    /// let hotkey = Hotkey::new();
+    /// let blocking_hotkey = hotkey.change_native_event_operation(NativeEventOperation::Block);
+    /// blocking_hotkey.on_press(Button::A, Arc::new(|e| println!("Press: {:?}", e)));
+    /// ```
+    ///
     fn change_native_event_operation(&mut self, operation: NativeEventOperation) -> ModifierHotkey;
 }
 
@@ -55,6 +177,18 @@ fn register_button_hotkey(
     });
 }
 
+/// Registering Hotkeys.
+///
+/// # Examples
+///
+/// ```no_run
+/// use hookmap::{hotkey::Hotkey, button::Button};
+///
+/// let hotkey = Hotkey::new();
+/// hotkey.remap(Button::A, Button::B);
+/// hotkey.install();
+/// ```
+///
 #[derive(Default)]
 pub struct Hotkey {
     storage: RefCell<HotkeyStorage>,
@@ -62,10 +196,22 @@ pub struct Hotkey {
 }
 
 impl Hotkey {
+    /// Creates a new insgance of `Hotkey`.
     pub fn new() -> Self {
         Hotkey::default()
     }
 
+    /// Installs registered hotkeys.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap::hotkey::Hotkey;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.install();
+    /// ```
+    ///
     pub fn install(self) {
         let runtime = Runtime::new(self.storage.into_inner());
         runtime.start();
@@ -141,6 +287,7 @@ impl RegisterHotkey for Hotkey {
     }
 }
 
+/// Registers Hotkeys with modifier keys.
 pub struct ModifierHotkey<'a> {
     storage: &'a RefCell<HotkeyStorage>,
     modifier_keys: Arc<ModifierKeys>,
