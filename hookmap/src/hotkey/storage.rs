@@ -3,9 +3,9 @@ use crate::hook::HookStorage;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, MouseCursorEvent, MouseWheelEvent};
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub(super) struct HotkeyStorage {
-    remap_on_press: HashMap<Button, Vec<RemapHook>>,
-    remap_on_release: HashMap<Button, Vec<RemapHook>>,
+    remap: HashMap<Button, Vec<RemapHook>>,
     hotkey_on_press: HashMap<Button, Vec<HotkeyHook>>,
     hotkey_on_release: HashMap<Button, Vec<HotkeyHook>>,
     mouse_cursor: Vec<MouseHook<MouseCursorEvent>>,
@@ -20,6 +20,26 @@ impl HotkeyStorage {
             .cloned()
             .collect()
     }
+
+    pub(super) fn register_remap(&mut self, target: Button, hook: RemapHook) {
+        self.remap.entry(target).or_default().push(hook);
+    }
+
+    pub(super) fn register_hotkey_on_press(&mut self, target: Button, hook: HotkeyHook) {
+        self.hotkey_on_press.entry(target).or_default().push(hook);
+    }
+
+    pub(super) fn register_hotkey_on_release(&mut self, target: Button, hook: HotkeyHook) {
+        self.hotkey_on_release.entry(target).or_default().push(hook);
+    }
+
+    pub(super) fn register_mouse_cursor_hotkey(&mut self, hook: MouseHook<MouseCursorEvent>) {
+        self.mouse_cursor.push(hook);
+    }
+
+    pub(super) fn register_mouse_wheel_hotkey(&mut self, hook: MouseHook<MouseWheelEvent>) {
+        self.mouse_wheel.push(hook);
+    }
 }
 
 impl HookStorage for HotkeyStorage {
@@ -28,15 +48,11 @@ impl HookStorage for HotkeyStorage {
     type MouseWheelHook = MouseHook<MouseWheelEvent>;
 
     fn fetch_button_hook(&self, event: ButtonEvent) -> Vec<ButtonHook> {
-        fn fetch_inner<T, U>(
+        fn fetch_inner(
             event: ButtonEvent,
-            remap: &HashMap<Button, Vec<T>>,
-            hotkey: &HashMap<Button, Vec<U>>,
-        ) -> Vec<ButtonHook>
-        where
-            T: ExecutableHook + Into<ButtonHook> + Clone,
-            U: ExecutableHook + Into<ButtonHook> + Clone,
-        {
+            remap: &HashMap<Button, Vec<RemapHook>>,
+            hotkey: &HashMap<Button, Vec<HotkeyHook>>,
+        ) -> Vec<ButtonHook> {
             let remap_hook = remap
                 .get(&event.target)
                 .into_iter()
@@ -53,10 +69,8 @@ impl HookStorage for HotkeyStorage {
                 .collect()
         }
         match event.action {
-            ButtonAction::Press => fetch_inner(event, &self.remap_on_press, &self.hotkey_on_press),
-            ButtonAction::Release => {
-                fetch_inner(event, &self.remap_on_release, &self.hotkey_on_release)
-            }
+            ButtonAction::Press => fetch_inner(event, &self.remap, &self.hotkey_on_press),
+            ButtonAction::Release => fetch_inner(event, &self.remap, &self.hotkey_on_release),
         }
     }
 
