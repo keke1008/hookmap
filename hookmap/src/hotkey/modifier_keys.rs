@@ -1,4 +1,4 @@
-use crate::{button::ButtonSet, ButtonState};
+use crate::button::{ButtonSet, ButtonState};
 
 #[derive(Clone, Debug, Default)]
 pub struct ModifierKeys {

@@ -3,7 +3,7 @@ mod modifier_keys;
 mod storage;
 
 use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
-use modifier_keys::ModifierKeys;
+pub use modifier_keys::ModifierKeys;
 use storage::HotkeyStorage;
 
 use crate::{button::ButtonSet, runtime::Runtime};

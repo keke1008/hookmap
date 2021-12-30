@@ -1,5 +1,8 @@
 use super::modifier_keys::ModifierKeys;
-use crate::{button::ButtonSet, hook::Hook, ButtonInput};
+use crate::{
+    button::{ButtonInput, ButtonSet},
+    hook::Hook,
+};
 use hookmap_core::{ButtonAction, ButtonEvent, NativeEventOperation};
 use std::sync::Arc;
 
