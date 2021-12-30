@@ -1,151 +1,102 @@
-mod modifier_keys;
 mod hook;
+mod modifier_keys;
 mod storage;
 
-use crate::button::{ButtonSet, ButtonState};
-use hookmap_core::{ButtonEvent, NativeEventOperation};
-use std::{fmt::Debug, iter, sync::Arc};
-use typed_builder::TypedBuilder;
+use hook::{HotkeyHook, RemapHook};
+use modifier_keys::ModifierKeys;
+use storage::HotkeyStorage;
 
-type ActionFn<E> = Arc<dyn Fn(E) + Send + Sync>;
+use crate::button::ButtonSet;
+use hookmap_core::{Button, ButtonEvent, NativeEventOperation};
+use std::{cell::RefCell, sync::Arc};
 
-#[derive(Clone)]
-pub(crate) enum Action<E> {
-    Single(ActionFn<E>),
-    Vec(Vec<ActionFn<E>>),
-    Noop,
+pub trait RegisterHotkey {
+    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>);
+    fn on_press(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static);
+    fn on_release(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static);
 }
 
-impl<E: Copy> Action<E> {
-    fn iter(&self) -> Box<dyn Iterator<Item = ActionFn<E>> + '_> {
-        match self {
-            Action::Single(callback) => Box::new(iter::once(Arc::clone(callback))),
-            Action::Vec(callbacks) => Box::new(callbacks.iter().cloned()),
-            Action::Noop => Box::new(iter::empty()),
+fn register_each_target(
+    target: ButtonSet,
+    modifier_keys: &ModifierKeys,
+    mut f: impl FnMut(Button, ModifierKeys),
+) {
+    if let ButtonSet::All(keys) = &target {
+        for (index, &key) in keys.iter().enumerate() {
+            let mut keys = keys.clone();
+            keys.remove(index);
+            let mut modifier_keys = modifier_keys.clone();
+            modifier_keys.pressed.push(ButtonSet::All(keys));
+            f(key, modifier_keys);
         }
+        return;
     }
-
-    pub(super) fn call(&self, event: E) {
-        match self {
-            Action::Single(callback) => callback(event),
-            Action::Vec(callbacks) => callbacks.iter().for_each(move |f| f(event)),
-            Action::Noop => {}
-        }
+    for &key in target.iter() {
+        f(key, modifier_keys.clone());
     }
 }
 
-impl<E, T: Fn(E) + Send + Sync + 'static> From<T> for Action<E> {
-    fn from(callback: T) -> Self {
-        Action::Single(Arc::new(callback))
+fn register_button_hotkey(
+    target: ButtonSet,
+    register: fn(&mut HotkeyStorage, Button, HotkeyHook),
+    storage: &RefCell<HotkeyStorage>,
+    modifier_keys: &ModifierKeys,
+    process: Arc<dyn Fn(ButtonEvent)>,
+    native_event_operation: NativeEventOperation,
+) {
+    register_each_target(target, &modifier_keys, move |key, modifier_keys| {
+        let hook = HotkeyHook::new(modifier_keys, Arc::clone(&process), native_event_operation);
+        register(&mut storage.borrow_mut(), key, hook);
+    });
+}
+
+#[derive(Default)]
+pub struct Hotkey {
+    storage: RefCell<HotkeyStorage>,
+}
+
+impl Hotkey {
+    pub fn new() -> Self {
+        Hotkey::default()
     }
 }
 
-impl<E: Copy> From<Vec<Action<E>>> for Action<E> {
-    fn from(actions: Vec<Action<E>>) -> Self {
-        let actions = actions
-            .iter()
-            .map(Action::iter)
-            .flatten()
-            .collect::<Vec<_>>();
-        Action::Vec(actions)
-    }
-}
-
-impl<E> Debug for Action<E> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_str(std::any::type_name::<Arc<dyn Fn(E) + Send + Sync>>())
-    }
-}
-
-#[derive(Clone, Debug, Default, Hash, PartialEq, Eq)]
-struct ModifierKeysInner {
-    pressed: Vec<ButtonSet>,
-    released: Vec<ButtonSet>,
-}
-
-impl ModifierKeysInner {
-    pub(crate) fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
-        Self {
-            pressed: pressed.into(),
-            released: released.into(),
-        }
+impl RegisterHotkey for Hotkey {
+    fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>) {
+        let behavior = behavior.into();
+        register_each_target(
+            target.into(),
+            &ModifierKeys::default(),
+            |key, modifier_keys| {
+                let hook = RemapHook::new(modifier_keys, behavior.clone());
+                self.storage.borrow_mut().register_remap(key, hook);
+            },
+        );
     }
 
-    pub(crate) fn add(&self, pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
-        let mut result = self.clone();
-        result.pressed.extend_from_slice(pressed);
-        result.released.extend_from_slice(released);
-        result
+    fn on_press(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static) {
+        register_button_hotkey(
+            target.into(),
+            HotkeyStorage::register_hotkey_on_press,
+            &self.storage,
+            &ModifierKeys::default(),
+            Arc::new(process),
+            NativeEventOperation::default(),
+        );
     }
 
-    pub(crate) fn satisfies_condition(&self) -> bool {
-        self.pressed.iter().all(ButtonState::is_pressed)
-            && self.released.iter().all(ButtonState::is_released)
+    fn on_release(
+        &mut self,
+        target: impl Into<ButtonSet>,
+        process: impl Fn(ButtonEvent) + 'static,
+    ) {
+        register_button_hotkey(
+            target.into(),
+            HotkeyStorage::register_hotkey_on_release,
+            &self.storage,
+            &ModifierKeys::default(),
+            Arc::new(process),
+            NativeEventOperation::default(),
+        );
     }
-}
-
-#[doc(hidden)]
-#[derive(Debug, Default, Hash, PartialEq, Eq)]
-pub struct ModifierKeys(Option<ModifierKeysInner>);
-
-impl ModifierKeys {
-    pub(crate) fn new(pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
-        Self::default().add(pressed, released)
-    }
-
-    pub(crate) fn add(&self, pressed: &[ButtonSet], released: &[ButtonSet]) -> Self {
-        let inner = self
-            .0
-            .as_ref()
-            .map(|inner| inner.add(pressed, released))
-            .unwrap_or_else(|| ModifierKeysInner::new(pressed, released));
-        Self(Some(inner))
-    }
-
-    pub(crate) fn satisfies_condition(&self) -> bool {
-        self.0
-            .as_ref()
-            .map(ModifierKeysInner::satisfies_condition)
-            .unwrap_or(true)
-    }
-}
-
-#[doc(hidden)]
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum Trigger {
-    All,
-    Just(ButtonSet),
-}
-
-#[derive(Debug, Clone)]
-pub(crate) enum HotkeyAction {
-    Press(Action<ButtonEvent>),
-    Release(Action<ButtonEvent>),
-    PressOrRelease(Action<ButtonEvent>),
-    PressAndRelease {
-        on_press: Action<ButtonEvent>,
-        on_release: Action<ButtonEvent>,
-    },
-}
-
-#[derive(Debug, TypedBuilder)]
-pub(crate) struct HotkeyInfo {
-    pub(crate) trigger: Trigger,
-    pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) native_event_operation: NativeEventOperation,
-    pub(crate) action: HotkeyAction,
-}
-
-#[derive(Clone, Debug, TypedBuilder)]
-pub(crate) struct MouseEventHandler<E> {
-    pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) native_event_operation: NativeEventOperation,
-    pub(crate) action: Action<E>,
-}
-
-#[derive(Clone, Debug, TypedBuilder)]
-pub(crate) struct RemapInfo {
-    pub(crate) modifier_keys: Arc<ModifierKeys>,
-    pub(crate) trigger: ButtonSet,
-    pub(crate) target: ButtonSet,
 }
