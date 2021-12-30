@@ -11,6 +11,23 @@ impl ModifierKeys {
         Self { pressed, released }
     }
 
+    pub fn merge(&mut self, other: &Self) {
+        self.pressed = self
+            .pressed
+            .iter()
+            .chain(other.pressed.iter())
+            .cloned()
+            .collect();
+        self.pressed.dedup();
+        self.released = self
+            .released
+            .iter()
+            .chain(other.released.iter())
+            .cloned()
+            .collect();
+        self.released.dedup();
+    }
+
     pub(super) fn meets_conditions(&self) -> bool {
         self.pressed.iter().all(|button| button.is_pressed())
             && self.released.iter().all(|button| button.is_released())
