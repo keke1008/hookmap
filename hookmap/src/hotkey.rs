@@ -2,18 +2,20 @@ mod hook;
 mod modifier_keys;
 mod storage;
 
-use hook::{HotkeyHook, RemapHook};
+use hook::{HotkeyHook, MouseHook, RemapHook};
 use modifier_keys::ModifierKeys;
 use storage::HotkeyStorage;
 
 use crate::button::ButtonSet;
-use hookmap_core::{Button, ButtonEvent, NativeEventOperation};
+use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::{cell::RefCell, sync::Arc};
 
 pub trait RegisterHotkey {
     fn remap(&mut self, target: impl Into<ButtonSet>, behavior: impl Into<ButtonSet>);
     fn on_press(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static);
     fn on_release(&mut self, target: impl Into<ButtonSet>, process: impl Fn(ButtonEvent) + 'static);
+    fn mouse_wheel(&mut self, process: impl Fn(MouseWheelEvent) + 'static);
+    fn mouse_cursor(&mut self, process: impl Fn(MouseCursorEvent) + 'static);
 }
 
 fn register_each_target(
@@ -98,5 +100,23 @@ impl RegisterHotkey for Hotkey {
             Arc::new(process),
             NativeEventOperation::default(),
         );
+    }
+
+    fn mouse_wheel(&mut self, process: impl Fn(MouseWheelEvent) + 'static) {
+        let hook = MouseHook::new(
+            ModifierKeys::default(),
+            Arc::new(process),
+            NativeEventOperation::default(),
+        );
+        self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
+    }
+
+    fn mouse_cursor(&mut self, process: impl Fn(MouseCursorEvent) + 'static) {
+        let hook = MouseHook::new(
+            ModifierKeys::default(),
+            Arc::new(process),
+            NativeEventOperation::default(),
+        );
+        self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 }
