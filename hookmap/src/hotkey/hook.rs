@@ -1,9 +1,6 @@
 use super::modifier_keys::ModifierKeys;
-use crate::{
-    button::{ButtonInput, ButtonSet},
-    hook::Hook,
-};
-use hookmap_core::{ButtonAction, ButtonEvent, NativeEventOperation};
+use crate::{button::ButtonInput, hook::Hook};
+use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
 use std::sync::Arc;
 
 pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
@@ -32,11 +29,11 @@ impl HotkeyHook {
 #[derive(Clone)]
 pub(super) struct RemapHook {
     modifier_keys: Arc<ModifierKeys>,
-    button: ButtonSet,
+    button: Button,
 }
 
 impl RemapHook {
-    pub(super) fn new(modifier_keys: Arc<ModifierKeys>, button: ButtonSet) -> Self {
+    pub(super) fn new(modifier_keys: Arc<ModifierKeys>, button: Button) -> Self {
         RemapHook {
             modifier_keys,
             button,
