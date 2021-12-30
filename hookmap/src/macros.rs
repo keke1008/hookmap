@@ -36,80 +36,6 @@ macro_rules! button_name {
 
 }
 
-#[allow(non_camel_case_types)]
-pub enum HotkeyCommandCompletion {
-    /// ```ignore
-    /// remap <Key> => <Key>;
-    /// ```
-    remap,
-
-    /// ```ignore
-    /// on_press <Key> => |_| {};
-    /// ```
-    on_press,
-
-    /// ```ignore
-    /// on_release <Key> => |_| {};
-    /// ```
-    on_release,
-
-    /// ```ignore
-    /// on_press_or_release <Key> => |_| {};
-    /// ```
-    on_press_or_release,
-
-    /// ```ignore
-    /// on_press_and_release <Key> => {
-    ///     on_press => |_| {};
-    ///     on_release => |_| {};
-    /// }
-    /// ```
-    on_press_and_release,
-
-    /// ```ignore
-    /// disable <Key>;
-    /// disable MouseMove;
-    /// disable MouseWheel;
-    /// ```
-    disable,
-
-    /// ```ignore
-    /// mouse_cursor |_| {};
-    /// ```
-    mouse_cursor,
-
-    /// ```ignore
-    /// mouse_wheel |_| {};
-    /// ```
-    mouse_wheel,
-
-    /// ```ignore
-    /// modifier ( <Key>, ... ) {
-    ///     remap A => B;
-    /// }
-    /// ```
-    modifier,
-
-    /// ```ignore
-    /// block_event {
-    ///     remap A => B;
-    /// }
-    /// ```
-    block_event,
-
-    /// ```ignore
-    /// unblock_event {
-    ///     remap A => B;
-    /// }
-    /// ```
-    unblock_event,
-
-    /// ```ignore
-    /// call remap_alt_tab(A, T);
-    /// ```
-    call,
-}
-
 /// Registers hotkeys.
 ///
 /// # Commands
@@ -117,14 +43,12 @@ pub enum HotkeyCommandCompletion {
 /// * [remap](#remap)
 /// * [on_press](#on_press)
 /// * [on_release](#on_release)
-/// * [on_press_or_release](#on_press_or_release)
-/// * [on_press_and_release](#on_press_and_release)
 /// * [disable](#disable)
 /// * [mouse_cursor](#mouse_cursor)
 /// * [mouse_wheel](#mouse_wheel)
 /// * [modifier](#modifier)
-/// * [block_event](#block_event)
-/// * [unblock_event](#unblock_event)
+/// * [block](#block)
+/// * [dispatch](#dispatch)
 /// * [call](#call)
 ///
 /// ## remap
@@ -163,44 +87,15 @@ pub enum HotkeyCommandCompletion {
 /// });
 /// ```
 ///
-/// ## on_press_or_release
-///
-/// Registers a function to be called when the specified button is pressed or releaesd.
-///
-/// ```no_run
-/// use hookmap::*;
-/// let hotkey = Hotkey::new();
-/// hotkey!(hotkey => {
-///     on_press_or_release A => |event| {};
-/// });
-/// ```
-///
-/// ## on_press_and_release
-///
-/// Registers a function to be called when the specified button is pressed or releaesd, respectively.
-///
-/// ```no_run
-/// use hookmap::*;
-/// let hotkey = Hotkey::new();
-/// hotkey!(hotkey => {
-///     on_press_and_release A => {
-///         on_press => |event| {};
-///         on_release => |event| {};
-///     };
-/// });
-/// ```
-///
 /// ## disable
 ///
-/// Disables the specified button, `MouseMove`, or `MouseWheel`.
+/// Disables the specified button.
 ///
 /// ```no_run
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     disable A;
-///     disable MouseMove;
-///     disable MouseWheel;
 /// });
 /// ```
 ///
@@ -228,7 +123,7 @@ pub enum HotkeyCommandCompletion {
 /// });
 /// ```
 ///
-/// ## modifier (modifier, ...) { ... }
+/// ## modifier
 ///
 /// Adds modifier keys to hotkeys defined enclosed in Curly brackets.
 /// The "!" in front of the button indicates that the button is released.
@@ -243,7 +138,7 @@ pub enum HotkeyCommandCompletion {
 /// })
 /// ```
 ///
-/// ## block_event
+/// ## block
 ///
 /// The button/mouse event will be blocked if the hotkey defined in this statement is executed.
 ///
@@ -251,13 +146,13 @@ pub enum HotkeyCommandCompletion {
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     block_event {
+///     block {
 ///         on_press A => |_| {};
 ///     }
 /// });
 /// ```
 ///
-/// ## unblock_event
+/// ## dispatch
 ///
 /// The button/mouse event will not be blocked if the hotkey defined in this statement is executed.
 ///
@@ -268,7 +163,7 @@ pub enum HotkeyCommandCompletion {
 /// use hookmap::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     unblock_event {
+///     dispatch {
 ///         on_press A => |_| {};
 ///     }
 /// });
@@ -297,21 +192,6 @@ pub enum HotkeyCommandCompletion {
 /// });
 /// ```
 ///
-/// # The difference between on_press_and_release and (on_press, on_release)
-///
-/// These will behave differently when the trigger key is released with the modifier key specified.
-///
-/// In the case of normal `on_release`, the specified function will be called when the trigger key
-/// is released while the modifier key is pressed.
-///
-///
-/// On the other hand, the function specified as on_release in `on_press_or_release` will be
-/// called when the following conditions are met.
-///
-/// 1. The trigger key was pressed while the modifier key was pressed.
-/// 2. Neither the trigger key nor the modifier key has been released since then.
-/// 3. And when the trigger key or modifier key was released.
-///
 #[macro_export]
 macro_rules! hotkey {
     {
@@ -319,99 +199,62 @@ macro_rules! hotkey {
             $($cmd:tt)*
         }
     } => {{
-        #[allow(unused_variables)]
         let hotkey = &$hotkey;
-        $crate::hotkey!(@command_completion hotkey $($cmd)*);
+        $crate::hotkey!(@command hotkey $($cmd)*);
     }};
 
-    (@command_completion $hotkey:ident) => {};
-
-    (@command_completion $hotkey:ident $command:ident $($rest:tt)*) => {
-        let _ = $crate::macros::HotkeyCommandCompletion::$command;
-        $crate::hotkey!(@command $hotkey $command $($rest)*);
-    };
-
-    (@bind $hotkey:ident all) => {
-        $hotkey.bind_all()
-    };
-
-    (@bind $hotkey:ident $target:tt) => {
-        $hotkey.bind($crate::button_name!($target))
-    };
-
+    // Terminate
+    (@command $hotkey:ident) => {};
 
     // Matches `remap`.
     (@command $hotkey:ident remap $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.remap($crate::button_name!($lhs)).to($crate::button_name!($rhs));
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
+        $hotkey.remap($crate::button_name!($lhs), $crate::button_name!($rhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
     (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $lhs).on_press($rhs);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
+        $hotkey.on_press($crate::button_name!($lhs), std::sync::Arc::new($rhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
     (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $lhs).on_release($rhs);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
+        $hotkey.on_release($crate::button_name!($lhs), std::sync::Arc::new($rhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
-    // Matches `on_press_or_release`.
-    (@command $hotkey:ident on_press_or_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $lhs).on_press_or_release($rhs);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
-    };
-
-    //Matches `on_press_and_release`
-    (@command $hotkey:ident
-     on_press_and_release $button:tt => {
-        on_press => $press:expr;
-        on_release => $release:expr;
-    };
-    $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $button).on_press_and_release($press, $release);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
-    };
-
-    // Matches `disable MouseMove`.
-    (@command $hotkey:ident disable MouseMove; $($rest:tt)*) => {
-        $hotkey.bind_mouse_cursor().disable();
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
-    };
-
-    // Matches `disable MouseWheel`.
-    (@command $hotkey:ident disable MouseWheel; $($rest:tt)*) => {
-        $hotkey.bind_mouse_wheel().disable();
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
-    };
-
-    // Matches `disable $button`.
+    // Matches `disable`.
     (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
-        $crate::hotkey!(@bind $hotkey $lhs).disable();
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
+        $hotkey.disable($crate::button_name!($lhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `mouse_cursor`.
     (@command $hotkey:ident mouse_cursor => $lhs:expr; $($rest:tt)*) => {
-        $hotkey.bind_mouse_cursor().on_move($lhs);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
+        $hotkey.mouse_cursor(std::sync::Arc::new($lhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
+    };
+
+    // Matches `mouse_wheel`.
+    (@command $hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
+        $hotkey.mouse_wheel(std::sync::Arc::new($lhs));
+        $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `modifier`.
     (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.add_modifiers($crate::hotkey!(@modifier ([], []) $($button)*));
-            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
+            let $hotkey = $hotkey.add_modifier_keys($crate::hotkey!(@modifier ([], []) $($button)*));
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command_completion $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        (
+        &$crate::hotkey::ModifierKeys::new(
             &[$($crate::button::ButtonSet::from($pressed)),*],
             &[$($crate::button::ButtonSet::from($released)),*]
         )
@@ -427,30 +270,24 @@ macro_rules! hotkey {
         $crate::hotkey!(@modifier ([$($pressed,)* ($crate::button_name!($button))], [$($released),*]) $($($rest)*)?)
     };
 
-    // Matches `mouse_wheel`.
-    (@command $hotkey:ident mouse_wheel => $lhs:expr; $($rest:tt)*) => {
-        $hotkey.bind_mouse_wheel().on_rotate($lhs);
-        $crate::hotkey!(@command_completion $hotkey $($rest)*)
-    };
-
-    // Matches `block_event`.
-    (@command $hotkey:ident block_event { $($cmd:tt)* } $($rest:tt)*) => {
+    // Matches `block`.
+    (@command $hotkey:ident block { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.block();
-            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
+            let $hotkey = $hotkey.change_native_event_operation($crate::hook::NativeEventOperation::Block);
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command_completion $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
-    // Matches `unblock_event`.
-    (@command $hotkey:ident unblock_event { $($cmd:tt)* } $($rest:tt)*) => {
+    // Matches `dispatch`.
+    (@command $hotkey:ident dispatch { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.unblock();
-            $crate::hotkey!(@command_completion $hotkey $($cmd)*);
+            let $hotkey = $hotkey.change_native_event_operation($crate::hook::NativeEventOperation::Dispatch);
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
-        $crate::hotkey!(@command_completion $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `call`.
@@ -458,7 +295,7 @@ macro_rules! hotkey {
         $hotkey.$name(
             $($crate::button_name!($arg)),*
         );
-        $crate::hotkey!(@command_completion $hotkey $($rest)*);
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 }
 
@@ -611,7 +448,11 @@ macro_rules! all {
 
 #[cfg(test)]
 mod tests {
-    use crate::*;
+    use crate::{
+        button::*,
+        hotkey::{Hotkey, RegisterHotkey},
+        Button,
+    };
 
     #[test]
     fn remap() {
@@ -628,29 +469,15 @@ mod tests {
             on_press A => |_| {};
             on_press [Button::A] => |_| {};
             on_press [&SHIFT] => |_| {};
-            on_press all => |_| {};
         });
     }
 
     #[test]
-    fn on_press_and_release_command() {
+    fn on_release_command() {
         hotkey!(Hotkey::new() => {
-            on_press_and_release A => {
-                on_press => |_| {};
-                on_release => |_| {};
-            };
-            on_press_and_release [Button::A] => {
-                on_press => |_| {};
-                on_release => |_| {};
-            };
-            on_press_and_release [&SHIFT] => {
-                on_press => |_| {};
-                on_release => |_| {};
-            };
-            on_press_and_release all => {
-                on_press => |_| {};
-                on_release => |_|{};
-            };
+            on_release A => |_| {};
+            on_release [Button::A] => |_| {};
+            on_release [&SHIFT] => |_| {};
         });
     }
 
@@ -660,7 +487,20 @@ mod tests {
             disable A;
             disable [Button::A];
             disable [&SHIFT];
-            disable all;
+        });
+    }
+
+    #[test]
+    fn mouse_cursor_command() {
+        hotkey!(Hotkey::new() => {
+            mouse_cursor => |_| {};
+        });
+    }
+
+    #[test]
+    fn mouse_wheel_command() {
+        hotkey!(Hotkey::new() => {
+            mouse_wheel => |_| {};
         });
     }
 
@@ -683,11 +523,11 @@ mod tests {
     }
 
     #[test]
-    fn block_event_command() {
+    fn block_command() {
         hotkey!(Hotkey::new() => {
-            block_event {}
-            block_event {
-                unblock_event {
+            block {}
+            block {
+                dispatch {
                     remap A => B;
                 }
             }
@@ -695,11 +535,11 @@ mod tests {
     }
 
     #[test]
-    fn unblock_event_command() {
+    fn dispatch_command() {
         hotkey!(Hotkey::new() => {
-            unblock_event {}
-            unblock_event {
-                block_event {
+            dispatch {}
+            dispatch {
+                block {
                     remap A => B;
                 }
             }
