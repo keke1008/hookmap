@@ -7,14 +7,14 @@ type HookProcess<E> = Arc<dyn Fn(E)>;
 
 #[derive(Clone)]
 pub(super) struct HotkeyHook {
-    modifier_keys: ModifierKeys,
+    modifier_keys: Arc<ModifierKeys>,
     process: HookProcess<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
 impl HotkeyHook {
     pub(super) fn new(
-        modifier_keys: ModifierKeys,
+        modifier_keys: Arc<ModifierKeys>,
         process: HookProcess<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
@@ -28,12 +28,12 @@ impl HotkeyHook {
 
 #[derive(Clone)]
 pub(super) struct RemapHook {
-    modifier_keys: ModifierKeys,
+    modifier_keys: Arc<ModifierKeys>,
     button: ButtonSet,
 }
 
 impl RemapHook {
-    pub(super) fn new(modifier_keys: ModifierKeys, button: ButtonSet) -> Self {
+    pub(super) fn new(modifier_keys: Arc<ModifierKeys>, button: ButtonSet) -> Self {
         RemapHook {
             modifier_keys,
             button,
@@ -92,14 +92,14 @@ impl From<RemapHook> for ButtonHook {
 
 #[derive(Clone)]
 pub(super) struct MouseHook<E> {
-    modifier_keys: ModifierKeys,
+    modifier_keys: Arc<ModifierKeys>,
     process: HookProcess<E>,
     native_event_operation: NativeEventOperation,
 }
 
 impl<E> MouseHook<E> {
     pub(super) fn new(
-        modifier_keys: ModifierKeys,
+        modifier_keys: Arc<ModifierKeys>,
         process: HookProcess<E>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
