@@ -3,7 +3,7 @@ use crate::{button::ButtonSet, hook::Hook, ButtonInput};
 use hookmap_core::{ButtonAction, ButtonEvent, NativeEventOperation};
 use std::sync::Arc;
 
-type HookProcess<E> = Arc<dyn Fn(E)>;
+pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
 
 #[derive(Clone)]
 pub(super) struct HotkeyHook {
