@@ -1,5 +1,5 @@
 use hookmap_core::{Button, ButtonOperation};
-use std::iter;
+use std::iter::{self, FromIterator};
 
 #[derive(Debug, Clone)]
 pub struct ConstantAny<const N: usize>([Button; N]);
@@ -17,37 +17,39 @@ pub static ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 pub static META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub enum ButtonSet {
-    Single(Button),
-    Any(Vec<Button>),
-    All(Vec<Button>),
-}
+pub struct ButtonSet(Vec<Button>);
 
 impl ButtonSet {
-    pub(crate) fn iter(&self) -> Box<dyn Iterator<Item = &Button> + '_> {
-        match self {
-            ButtonSet::Single(ref button) => Box::new(iter::once(button)),
-            ButtonSet::Any(ref buttons) => Box::new(buttons.iter()),
-            ButtonSet::All(ref buttons) => Box::new(buttons.iter()),
-        }
+    pub(crate) fn iter<'a>(&'a mut self) -> impl Iterator<Item = Button> + 'a {
+        self.0.iter().copied()
     }
 }
 
-impl From<Button> for ButtonSet {
-    fn from(button: Button) -> Self {
-        Self::Single(button)
+impl<I: Iterator<Item = Button>> FromIterator<I> for ButtonSet {
+    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
+        ButtonSet(Vec::from_iter(iter.into_iter().flatten()))
     }
 }
 
-impl<T: Into<ButtonSet> + Clone> From<&T> for ButtonSet {
-    fn from(button: &T) -> Self {
-        <T as Into<ButtonSet>>::into(button.clone())
+pub(crate) trait ExpandButton {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a>;
+}
+
+impl ExpandButton for Button {
+    fn expand(&self) -> Box<dyn Iterator<Item = Button>> {
+        Box::new(iter::once(*self)) as Box<dyn Iterator<Item = Button>>
     }
 }
 
-impl<const N: usize> From<ConstantAny<N>> for ButtonSet {
-    fn from(any: ConstantAny<N>) -> Self {
-        ButtonSet::Any(any.0.into())
+impl ExpandButton for ButtonSet {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
+        Box::new(self.0.iter().copied())
+    }
+}
+
+impl<const N: usize> ExpandButton for ConstantAny<N> {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
+        Box::new(self.0.iter().copied())
     }
 }
 
@@ -116,56 +118,6 @@ impl ButtonInput for Button {
     }
 }
 
-impl ButtonInput for ButtonSet {
-    fn press(&self) {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().for_each(Button::press),
-            ButtonSet::Any(buttons) => {
-                if let Some(button) = buttons.iter().next() {
-                    button.press();
-                }
-            }
-            ButtonSet::Single(button) => button.press(),
-        }
-    }
-
-    fn release(&self) {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().for_each(Button::release),
-            ButtonSet::Any(buttons) => {
-                if let Some(button) = buttons.iter().next() {
-                    button.release();
-                }
-            }
-            ButtonSet::Single(button) => button.release(),
-        }
-    }
-
-    fn press_recursive(&self) {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().for_each(Button::press_recursive),
-            ButtonSet::Any(buttons) => {
-                if let Some(button) = buttons.iter().next() {
-                    button.press_recursive();
-                }
-            }
-            ButtonSet::Single(button) => button.press_recursive(),
-        }
-    }
-
-    fn release_recursive(&self) {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().for_each(Button::release_recursive),
-            ButtonSet::Any(buttons) => {
-                if let Some(button) = buttons.iter().next() {
-                    button.release_recursive();
-                }
-            }
-            ButtonSet::Single(button) => button.release_recursive(),
-        }
-    }
-}
-
 impl<const N: usize> ButtonInput for ConstantAny<N> {
     fn press(&self) {
         if let Some(button) = self.0.get(0) {
@@ -216,24 +168,6 @@ impl<T: ButtonState> ButtonState for &T {
 impl ButtonState for Button {
     fn is_pressed(&self) -> bool {
         self.read_is_pressed()
-    }
-}
-
-impl ButtonState for ButtonSet {
-    fn is_pressed(&self) -> bool {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().all(Button::is_pressed),
-            ButtonSet::Any(buttons) => buttons.iter().any(Button::is_pressed),
-            ButtonSet::Single(button) => button.is_pressed(),
-        }
-    }
-
-    fn is_released(&self) -> bool {
-        match self {
-            ButtonSet::All(buttons) => buttons.iter().all(Button::is_released),
-            ButtonSet::Any(buttons) => buttons.iter().any(Button::is_released),
-            ButtonSet::Single(button) => button.is_released(),
-        }
     }
 }
 
