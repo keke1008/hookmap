@@ -1,22 +1,14 @@
 use crate::{button::ButtonSet, ButtonState};
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub(super) struct ModifierKeys {
-    pressed: Vec<ButtonSet>,
-    released: Vec<ButtonSet>,
+    pub(super) pressed: Vec<ButtonSet>,
+    pub(super) released: Vec<ButtonSet>,
 }
 
 impl ModifierKeys {
     pub(super) fn new(pressed: Vec<ButtonSet>, released: Vec<ButtonSet>) -> Self {
         Self { pressed, released }
-    }
-
-    pub(super) fn push_pressed(&mut self, button: ButtonSet) {
-        self.pressed.push(button);
-    }
-
-    pub(super) fn push_released(&mut self, button: ButtonSet) {
-        self.released.push(button);
     }
 
     pub(super) fn meets_conditions(&self) -> bool {
