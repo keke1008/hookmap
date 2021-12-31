@@ -206,27 +206,41 @@ macro_rules! hotkey {
     // Terminate
     (@command $hotkey:ident) => {};
 
+    (@count) => {0usize};
+
+    (@count $t:tt $(, $rest:tt)*) => {
+        1usize + $crate::hotkey!(@count $($rest),*)
+    };
+
+    (@button_set $($button:tt),*) => {
+        IntoIterator::into_iter(
+            [ $( $crate::button::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
+                as [Box<dyn Iterator<Item = Button>>; $crate::hotkey!(@count $($button),*)]
+        )
+        .collect::<$crate::button::ButtonSet>()
+    };
+
     // Matches `remap`.
-    (@command $hotkey:ident remap $lhs:tt => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.remap($crate::button_name!($lhs), $crate::button_name!($rhs));
+    (@command $hotkey:ident remap $($lhs:tt),* => $rhs:tt; $($rest:tt)*) => {
+        $hotkey.remap($crate::hotkey!(@button_set $($lhs),*), $crate::button_name!($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
-    (@command $hotkey:ident on_press $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.on_press($crate::button_name!($lhs), std::sync::Arc::new($rhs));
+    (@command $hotkey:ident on_press $($lhs:tt),* => $rhs:expr; $($rest:tt)*) => {
+        $hotkey.on_press($crate::hotkey!(@button_set $($lhs),*), std::sync::Arc::new($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
-    (@command $hotkey:ident on_release $lhs:tt => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.on_release($crate::button_name!($lhs), std::sync::Arc::new($rhs));
+    (@command $hotkey:ident on_release $($lhs:tt),* => $rhs:expr; $($rest:tt)*) => {
+        $hotkey.on_release($crate::hotkey!(@button_set $($lhs),*), std::sync::Arc::new($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable`.
-    (@command $hotkey:ident disable $lhs:tt; $($rest:tt)*) => {
-        $hotkey.disable($crate::button_name!($lhs));
+    (@command $hotkey:ident disable $($lhs:tt),*; $($rest:tt)*) => {
+        $hotkey.disable($crate::hotkey!(@button_set $($lhs),*));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
@@ -245,8 +259,9 @@ macro_rules! hotkey {
     // Matches `modifier`.
     (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
         {
+            let modifier_keys = $crate::hotkey!(@modifier ([], []) $($button)*);
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.add_modifier_keys($crate::hotkey!(@modifier ([], []) $($button)*));
+            let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
         $crate::hotkey!(@command $hotkey $($rest)*);
@@ -254,20 +269,20 @@ macro_rules! hotkey {
 
     // Matches `modifier(...)`
     (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        &$crate::hotkey::ModifierKeys::new(
-            &[$($crate::button::ButtonSet::from($pressed)),*],
-            &[$($crate::button::ButtonSet::from($released)),*]
+        $crate::hotkey::ModifierKeys::new(
+            $crate::hotkey!(@button_set $($pressed),*),
+            $crate::hotkey!(@button_set $($released),*),
         )
     };
 
     // Matches `modifier(...)`
-    (@modifier ([$($pressed:tt),*], [$($released:tt),*]) !$button:tt $(, $($rest:tt)*)?) => {
-        $crate::hotkey!(@modifier ([$($pressed),*], [$($released,)* ($crate::button_name!($button))]) $($($rest)*)?)
+    (@modifier ([ $($pressed:tt),* ], [ $($released:tt),* ]) !$button:tt $(, $($rest:tt)*)?) => {
+        $crate::hotkey!(@modifier ([ $($pressed),* ], [ $($released,)* $button ]) $($($rest)*)?)
     };
 
     // Matches `modifier(...)`
-    (@modifier ([$($pressed:tt),*], [$($released:tt),*]) $button:tt $(,)? $(, $($rest:tt)*)?) => {
-        $crate::hotkey!(@modifier ([$($pressed,)* ($crate::button_name!($button))], [$($released),*]) $($($rest)*)?)
+    (@modifier ([ $($pressed:tt),* ], [ $($released:tt),* ]) $button:tt $(, $($rest:tt)*)?) => {
+        $crate::hotkey!(@modifier ([ $($pressed,)* $button ], [ $($released),* ]) $($($rest)*)?)
     };
 
     // Matches `block`.
@@ -455,11 +470,24 @@ mod tests {
     };
 
     #[test]
+    fn expand_button_set() {
+        assert_eq!(
+            hotkey!(@button_set A),
+            ButtonSet::new(&[Button::A, Button::B])
+        );
+        assert_eq!(
+            hotkey!(@button_set [Button::A], [SHIFT]),
+            ButtonSet::new(&[Button::A, Button::LShift, Button::RShift])
+        );
+    }
+
+    #[test]
     fn remap() {
         hotkey!(Hotkey::new() => {
             remap A => B;
-            remap [Button::A] => [Button::B];
-            remap [&SHIFT] => [&CTRL];
+            remap A, B => C;
+            remap [Button::A], [SHIFT] => [Button::B];
+            remap A, [Button::B], [SHIFT] => A;
         });
     }
 
@@ -467,17 +495,23 @@ mod tests {
     fn on_press_command() {
         hotkey!(Hotkey::new() => {
             on_press A => |_| {};
+            on_press A, B => |_| {};
             on_press [Button::A] => |_| {};
-            on_press [&SHIFT] => |_| {};
+            on_press [Button::A], [Button::B] => |_| {};
+            on_press [SHIFT] => |_| {};
+            on_press A, [Button::B], [SHIFT] => |_| {};
         });
     }
 
     #[test]
     fn on_release_command() {
         hotkey!(Hotkey::new() => {
-            on_release A => |_| {};
-            on_release [Button::A] => |_| {};
-            on_release [&SHIFT] => |_| {};
+            on_press A => |_| {};
+            on_press A, B => |_| {};
+            on_press [Button::A] => |_| {};
+            on_press [Button::A], [Button::B] => |_| {};
+            on_press [SHIFT] => |_| {};
+            on_press A, [Button::B], [SHIFT] => |_| {};
         });
     }
 
@@ -485,8 +519,11 @@ mod tests {
     fn disable_command() {
         hotkey!(Hotkey::new() => {
             disable A;
+            disable A, B;
             disable [Button::A];
-            disable [&SHIFT];
+            disable [Button::A], [Button::B];
+            disable [SHIFT];
+            disable A, [Button::B], [SHIFT];
         });
     }
 
@@ -512,8 +549,8 @@ mod tests {
             modifier (!A) {}
             modifier (A, !A) {}
             modifier ([Button::A], ![Button::B]) {}
-            modifier (![&SHIFT], [&CTRL], ![&ALT]) {}
-            modifier (![&META]) {
+            modifier (![SHIFT], [CTRL], ![ALT]) {}
+            modifier (![META]) {
                 modifier (A) {}
             }
             modifier () {
@@ -582,23 +619,5 @@ mod tests {
         send!(with(A), C,);
         send!(with(A, B), C);
         send!(with([Button::A], [&SHIFT]), [&CTRL]);
-    }
-
-    #[test]
-    fn any_macro() {
-        use crate::button::ButtonSet;
-        any!();
-        any!(A,);
-        assert_eq!(any!(A, B), ButtonSet::Any(vec![Button::A, Button::B]));
-        assert_eq!(any!([Button::LShift]), ButtonSet::Any(vec![Button::LShift]));
-    }
-
-    #[test]
-    fn all_macro() {
-        use crate::button::ButtonSet;
-        all!();
-        all!(A,);
-        assert_eq!(all!(A, B), ButtonSet::All(vec![Button::A, Button::B]));
-        assert_eq!(all!([Button::LShift]), ButtonSet::All(vec![Button::LShift]));
     }
 }

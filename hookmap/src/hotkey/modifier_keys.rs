@@ -1,4 +1,4 @@
-use crate::button::ButtonState;
+use crate::button::{ButtonSet, ButtonState};
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
@@ -8,14 +8,14 @@ pub struct ModifierKeys {
 }
 
 impl ModifierKeys {
-    pub fn new(pressed: &[Button], released: &[Button]) -> Self {
+    pub fn new(pressed: ButtonSet, released: ButtonSet) -> Self {
         Self {
-            pressed: pressed.to_owned(),
-            released: released.to_owned(),
+            pressed: pressed.iter().collect(),
+            released: released.iter().collect(),
         }
     }
 
-    pub fn merge(&self, other: &Self) -> Self {
+    pub fn merge(&self, other: Self) -> Self {
         ModifierKeys {
             pressed: self
                 .pressed
