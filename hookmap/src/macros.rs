@@ -288,36 +288,34 @@ macro_rules! hotkey {
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
-    // Matches `modifier`.
-    (@command $hotkey:ident modifier ($($button:tt)*) { $($cmd:tt)* } $($rest:tt)*) => {
+    // Matches `modifier`
+    (@modifier $hotkey:ident [ $($pressed:tt),* ] [ $($released:tt),* ] { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let modifier_keys = $crate::hotkey!(@modifier ([], []) $($button)*);
+            let modifier_keys = $crate::hotkey::ModifierKeys::new(
+                $crate::hotkey!(@button_set $($pressed),*),
+                $crate::hotkey!(@button_set $($released),*),
+            );
             #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
-            $crate::hotkey!(@command $hotkey $($cmd)*);
+            $crate::hotkey!(@command $hotkey $($rest)*);
         }
-        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
-    // Matches `modifier(...)`
-    (@modifier ([$($pressed:tt),*], [$($released:tt),*])) => {
-        $crate::hotkey::ModifierKeys::new(
-            $crate::hotkey!(@button_set $($pressed),*),
-            $crate::hotkey!(@button_set $($released),*),
-        )
+    // Matches `modifier`
+    (@modifier $hotkey:ident $pressed:tt [ $($released:tt),* ] !$button:tt $($rest:tt)*) => {
+        $crate::hotkey!(@modifier $hotkey $pressed [ $($released,)* $button ] $($rest)*)
     };
 
-    // Matches `modifier(...)`
-    (@modifier ([ $($pressed:tt),* ], [ $($released:tt),* ]) !$button:tt $(, $($rest:tt)*)?) => {
-        $crate::hotkey!(@modifier ([ $($pressed),* ], [ $($released,)* $button ]) $($($rest)*)?)
+    // Matches `modifier`
+    (@modifier $hotkey:ident [ $($pressed:tt),* ] $released:tt $button:tt $($rest:tt)*) => {
+        $crate::hotkey!(@modifier $hotkey [ $($pressed,)* $button ] $released $($rest)*)
     };
 
-    // Matches `modifier(...)`
-    (@modifier ([ $($pressed:tt),* ], [ $($released:tt),* ]) $button:tt $(, $($rest:tt)*)?) => {
-        $crate::hotkey!(@modifier ([ $($pressed,)* $button ], [ $($released),* ]) $($($rest)*)?)
+    // Matches `modifier`
+    (@command $hotkey:ident modifier $($rest:tt)*) => {
+        $crate::hotkey!(@modifier $hotkey [] [] $($rest)*);
     };
 
-    // Matches `block`.
     (@command $hotkey:ident block { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
@@ -535,16 +533,15 @@ mod tests {
     #[test]
     fn modifier_command() {
         hotkey!(Hotkey::new() => {
-            modifier () {}
-            modifier (A) {}
-            modifier (!A) {}
-            modifier (A, !A) {}
-            modifier ([Button::A], ![Button::B]) {}
-            modifier (![SHIFT], [CTRL], ![ALT]) {}
-            modifier (![META]) {
-                modifier (A) {}
+            modifier A  {}
+            modifier !A {}
+            modifier A !A !B C {}
+            modifier [Button::A] ![Button::B] {}
+            modifier ![SHIFT] [CTRL] ![ALT] {}
+            modifier ![META] {
+                modifier A {}
             }
-            modifier () {
+            modifier A {
                 remap A => B;
             }
         });
