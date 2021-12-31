@@ -1,3 +1,42 @@
+use std::iter::{self, FromIterator};
+
+/// A struct used in macros to pass multiple buttons to a function.
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
+pub struct ButtonSet(Vec<Button>);
+
+impl ButtonSet {
+    pub fn new(v: &[Button]) -> Self {
+        ButtonSet(v.to_owned())
+    }
+
+    pub(crate) fn iter<'a>(&'a self) -> impl Iterator<Item = Button> + 'a {
+        self.0.iter().copied()
+    }
+}
+
+impl<I: Iterator<Item = Button>> FromIterator<I> for ButtonSet {
+    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
+        ButtonSet(Vec::from_iter(iter.into_iter().flatten()))
+    }
+}
+
+/// A Trait to create an iterator to flatten multiple `ButtonSet`s.
+pub trait ExpandButton {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a>;
+}
+
+impl ExpandButton for Button {
+    fn expand(&self) -> Box<dyn Iterator<Item = Button>> {
+        Box::new(iter::once(*self)) as Box<dyn Iterator<Item = Button>>
+    }
+}
+
+impl ExpandButton for ButtonSet {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
+        Box::new(self.0.iter().copied())
+    }
+}
+
 /// Expands button names.
 ///
 /// If the argument is enclosed in square brackets, it will be expanded without any action.
@@ -214,10 +253,10 @@ macro_rules! hotkey {
 
     (@button_set $($button:tt),*) => {
         IntoIterator::into_iter(
-            [ $( $crate::button::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
+            [ $( $crate::macros::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
                 as [Box<dyn Iterator<Item = $crate::button::Button>>; $crate::hotkey!(@count $($button),*)]
         )
-        .collect::<$crate::button::ButtonSet>()
+        .collect::<$crate::macros::ButtonSet>()
     };
 
     // Matches `remap`.
@@ -464,14 +503,15 @@ macro_rules! all {
 #[cfg(test)]
 mod tests {
     use crate::{
-        button::{Button, ButtonSet, ALT, CTRL, META, SHIFT},
+        button::{Button, ALT, CTRL, META, SHIFT},
         hotkey::{Hotkey, RegisterHotkey},
+        macros::ButtonSet,
     };
 
     #[test]
     fn expand_button_set() {
         assert_eq!(
-            hotkey!(@button_set A),
+            hotkey!(@button_set A, B),
             ButtonSet::new(&[Button::A, Button::B])
         );
         assert_eq!(

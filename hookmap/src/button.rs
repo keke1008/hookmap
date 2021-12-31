@@ -1,7 +1,7 @@
 pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
 
+use crate::macros::ExpandButton;
 use hookmap_core::ButtonOperation;
-use std::iter::{self, FromIterator};
 
 #[derive(Debug, Clone)]
 pub struct ConstantAny<const N: usize>([Button; N]);
@@ -17,41 +17,6 @@ pub static ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 
 /// Meta key that does not distinguish between right and left.
 pub static META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
-
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ButtonSet(Vec<Button>);
-
-impl ButtonSet {
-    pub fn new(v: &[Button]) -> Self {
-        ButtonSet(v.to_owned())
-    }
-
-    pub(crate) fn iter<'a>(&'a self) -> impl Iterator<Item = Button> + 'a {
-        self.0.iter().copied()
-    }
-}
-
-impl<I: Iterator<Item = Button>> FromIterator<I> for ButtonSet {
-    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
-        ButtonSet(Vec::from_iter(iter.into_iter().flatten()))
-    }
-}
-
-pub trait ExpandButton {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a>;
-}
-
-impl ExpandButton for Button {
-    fn expand(&self) -> Box<dyn Iterator<Item = Button>> {
-        Box::new(iter::once(*self)) as Box<dyn Iterator<Item = Button>>
-    }
-}
-
-impl ExpandButton for ButtonSet {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
-        Box::new(self.0.iter().copied())
-    }
-}
 
 impl<const N: usize> ExpandButton for ConstantAny<N> {
     fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {

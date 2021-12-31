@@ -6,7 +6,7 @@ use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
 pub use modifier_keys::ModifierKeys;
 use storage::HotkeyStorage;
 
-use crate::{button::ButtonSet, runtime::Runtime};
+use crate::{macros::ButtonSet, runtime::Runtime};
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::{cell::RefCell, sync::Arc};
 

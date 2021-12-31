@@ -1,4 +1,4 @@
-use crate::button::{ButtonSet, ButtonState};
+use crate::{button::ButtonState, macros::ButtonSet};
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
