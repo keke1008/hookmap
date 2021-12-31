@@ -451,48 +451,6 @@ macro_rules! send {
     }};
 }
 
-/// Creates ButtonSet::Any.
-///
-/// # Example
-///
-/// ```no_run
-/// use hookmap::*;
-/// let hotkey = Hotkey::new();
-/// let a_or_b = any!(A, B);
-/// hotkey!(hotkey => {
-///     on_press [a_or_b] => |e| println!("{:?} key was pressed.", e.target);
-/// });
-/// ```
-///
-#[macro_export]
-macro_rules! any {
-    ($($button:tt),* $(,)?) => {
-        $crate::button::ButtonSet::Any(
-            vec![$($crate::button_name!($button)),*]
-        )
-    };
-}
-
-/// Creates ButtonSet::All.
-/// # Example
-///
-/// ```no_run
-/// use hookmap::*;
-/// let hotkey = Hotkey::new();
-/// let a_and_b = all!(A, B);
-/// hotkey!(hotkey => {
-///     on_press [a_and_b] => |_| println!("A key and B key was pressed");
-/// })
-/// ```
-#[macro_export]
-macro_rules! all {
-    ($($button:tt),* $(,)?) => {
-        $crate::button::ButtonSet::All(
-            vec![$($crate::button_name!($button)),*]
-        )
-    };
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
