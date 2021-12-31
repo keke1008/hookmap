@@ -16,6 +16,13 @@ mod hook;
 mod runtime;
 // mod utils;
 
-pub use hookmap_core::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse};
+pub mod event {
+    pub use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
+}
+
+pub mod mouse {
+    pub use hookmap_core::{EmulateMouseCursor, EmulateMouseWheel, Mouse};
+}
+
 pub use runtime::interceptor;
 // pub use utils::Utils;

@@ -1,4 +1,6 @@
-use hookmap_core::{Button, ButtonOperation};
+pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
+
+use hookmap_core::ButtonOperation;
 use std::iter::{self, FromIterator};
 
 #[derive(Debug, Clone)]
@@ -20,7 +22,7 @@ pub static META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 pub struct ButtonSet(Vec<Button>);
 
 impl ButtonSet {
-    pub(crate) fn new(v: &[Button]) -> Self {
+    pub fn new(v: &[Button]) -> Self {
         ButtonSet(v.to_owned())
     }
 

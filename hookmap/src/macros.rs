@@ -19,20 +19,20 @@
 #[macro_export]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
-    ($button:ident)  => ($crate::Button::$button);
-    (0)              => ($crate::Button::Key0);
-    (1)              => ($crate::Button::Key1);
-    (2)              => ($crate::Button::Key2);
-    (3)              => ($crate::Button::Key3);
-    (4)              => ($crate::Button::Key4);
-    (5)              => ($crate::Button::Key5);
-    (6)              => ($crate::Button::Key6);
-    (7)              => ($crate::Button::Key7);
-    (8)              => ($crate::Button::Key8);
-    (9)              => ($crate::Button::Key9);
-    (;)              => ($crate::Button::SemiColon);
-    (-)              => ($crate::Button::Minus);
-    (/)              => ($crate::Button::Slash);
+    ($button:ident)  => ($crate::button::Button::$button);
+    (0)              => ($crate::button::Button::Key0);
+    (1)              => ($crate::button::Button::Key1);
+    (2)              => ($crate::button::Button::Key2);
+    (3)              => ($crate::button::Button::Key3);
+    (4)              => ($crate::button::Button::Key4);
+    (5)              => ($crate::button::Button::Key5);
+    (6)              => ($crate::button::Button::Key6);
+    (7)              => ($crate::button::Button::Key7);
+    (8)              => ($crate::button::Button::Key8);
+    (9)              => ($crate::button::Button::Key9);
+    (;)              => ($crate::button::Button::SemiColon);
+    (-)              => ($crate::button::Button::Minus);
+    (/)              => ($crate::button::Button::Slash);
 
 }
 
@@ -215,7 +215,7 @@ macro_rules! hotkey {
     (@button_set $($button:tt),*) => {
         IntoIterator::into_iter(
             [ $( $crate::button::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
-                as [Box<dyn Iterator<Item = Button>>; $crate::hotkey!(@count $($button),*)]
+                as [Box<dyn Iterator<Item = $crate::button::Button>>; $crate::hotkey!(@count $($button),*)]
         )
         .collect::<$crate::button::ButtonSet>()
     };
@@ -289,7 +289,7 @@ macro_rules! hotkey {
     (@command $hotkey:ident block { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.change_native_event_operation($crate::hook::NativeEventOperation::Block);
+            let $hotkey = $hotkey.change_native_event_operation($crate::event::NativeEventOperation::Block);
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
         $crate::hotkey!(@command $hotkey $($rest)*);
@@ -299,7 +299,7 @@ macro_rules! hotkey {
     (@command $hotkey:ident dispatch { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.change_native_event_operation($crate::hook::NativeEventOperation::Dispatch);
+            let $hotkey = $hotkey.change_native_event_operation($crate::event::NativeEventOperation::Dispatch);
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
         $crate::hotkey!(@command $hotkey $($rest)*);
@@ -464,9 +464,8 @@ macro_rules! all {
 #[cfg(test)]
 mod tests {
     use crate::{
-        button::*,
+        button::{Button, ButtonSet, ALT, CTRL, META, SHIFT},
         hotkey::{Hotkey, RegisterHotkey},
-        Button,
     };
 
     #[test]
