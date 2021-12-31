@@ -14,8 +14,8 @@ impl ButtonSet {
     }
 }
 
-impl<I: Iterator<Item = Button>> FromIterator<I> for ButtonSet {
-    fn from_iter<T: IntoIterator<Item = I>>(iter: T) -> Self {
+impl FromIterator<Box<dyn Iterator<Item = Button>>> for ButtonSet {
+    fn from_iter<T: IntoIterator<Item = Box<dyn Iterator<Item = Button>>>>(iter: T) -> Self {
         ButtonSet(Vec::from_iter(iter.into_iter().flatten()))
     }
 }
@@ -245,16 +245,9 @@ macro_rules! hotkey {
     // Terminate
     (@command $hotkey:ident) => {};
 
-    (@count) => {0usize};
-
-    (@count $t:tt $(, $rest:tt)*) => {
-        1usize + $crate::hotkey!(@count $($rest),*)
-    };
-
     (@button_set $($button:tt),*) => {
         IntoIterator::into_iter(
             [ $( $crate::macros::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
-                as [Box<dyn Iterator<Item = $crate::button::Button>>; $crate::hotkey!(@count $($button),*)]
         )
         .collect::<$crate::macros::ButtonSet>()
     };
@@ -510,6 +503,7 @@ mod tests {
 
     #[test]
     fn expand_button_set() {
+        assert_eq!(hotkey!(@button_set), ButtonSet::new(&[]));
         assert_eq!(
             hotkey!(@button_set A, B),
             ButtonSet::new(&[Button::A, Button::B])
