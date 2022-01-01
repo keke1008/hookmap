@@ -1,10 +1,10 @@
-use crate::{button::ButtonSet, *};
+use crate::{hotkey, hotkey::RegisterHotkey, macros::ButtonArgs, seq};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
 
 /// Utility function.
-pub trait Utils: SelectHandleTarget + Sized {
+pub trait Utils: RegisterHotkey {
     /// Alt-Tab hotkey.
     ///
     /// # Arguments
@@ -22,18 +22,14 @@ pub trait Utils: SelectHandleTarget + Sized {
     // fn bind_alt_tab<B: EmulateButtonState>(&self, alt: &B, tab: &B) {
     //     alt_tab(self, alt, tab, &Button::Tab);
     // }
-    fn bind_alt_tab<T>(&self, alt: T, tab: Button)
-    where
-        T: Clone,
-        ButtonSet: From<T>,
-    {
+    fn bind_alt_tab(&self, alt: ButtonArgs, tab: ButtonArgs) {
         hotkey!(self => {
-            on_release [&alt] => move |_| {
+            on_release [alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
                 seq!(LAlt up);
             };
 
-            modifier([alt]) {
+            modifier [alt] {
                 disable [tab];
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
@@ -59,18 +55,14 @@ pub trait Utils: SelectHandleTarget + Sized {
     /// let hotkey = Hotkey::new();
     /// hotkey.bind_shift_alt_tab(Button::A, Button::R);
     /// ```
-    fn bind_shift_alt_tab<T>(&self, alt: T, tab: Button)
-    where
-        T: Clone,
-        ButtonSet: From<T>,
-    {
+    fn bind_shift_alt_tab(&self, alt: ButtonArgs, tab: ButtonArgs) {
         hotkey!(self => {
-            on_release [&alt] => move |_| {
+            on_release [alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
                 seq!(LAlt up);
             };
 
-            modifier([alt]) {
+            modifier [alt] {
                 disable [tab];
                 on_press [tab] => move |_| {
                     if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
@@ -83,4 +75,4 @@ pub trait Utils: SelectHandleTarget + Sized {
     }
 }
 
-impl<T: SelectHandleTarget> Utils for T {}
+impl<T: RegisterHotkey> Utils for T {}

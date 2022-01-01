@@ -1,4 +1,8 @@
-use hookmap::*;
+use hookmap::{
+    hotkey,
+    hotkey::{Hotkey, RegisterHotkey},
+    send,
+};
 
 fn main() {
     let hotkey = Hotkey::new();
@@ -13,24 +17,21 @@ fn main() {
 
 
         // if left ctrl is pressed and right shift is not pressed.
-        modifier(LCtrl, !RShift) {
-
-            // Disables the Mouse cursor movement.
-            disable MouseMove;
+        modifier LCtrl, !RShift {
 
             // Disable the event so that it does not reach other processes.
-            block_event {
+            block {
 
                 // Send Ctrl+A when the Shift and the Space key are pressed.
                 on_press Space => |_| send!(with(LCtrl), A);
 
                 // Sends an uppercase A or B when the A or B key is pressed.
-                on_release [any!(A, B)] => |event| {
+                on_release A, B => |event| {
                     send!(with(LShift, [event.target]));
                 };
             }
         }
     });
 
-    hotkey.handle_input();
+    hotkey.install();
 }

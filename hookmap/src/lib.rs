@@ -11,10 +11,10 @@
 pub mod button;
 pub mod hotkey;
 pub mod macros;
+pub mod utils;
 
 mod hook;
 mod runtime;
-// mod utils;
 
 pub mod event {
     pub use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
@@ -25,4 +25,3 @@ pub mod mouse {
 }
 
 pub use runtime::interceptor;
-// pub use utils::Utils;

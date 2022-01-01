@@ -1,7 +1,9 @@
 use hookmap::{
-    button::ButtonSet,
+    button::{Button, ButtonAction},
+    hotkey,
+    hotkey::{Hotkey, RegisterHotkey},
     interceptor::{Filter, Interceptor},
-    *,
+    seq,
 };
 use std::collections::HashSet;
 use std::sync::{
@@ -9,43 +11,44 @@ use std::sync::{
     Arc,
 };
 
-fn emulate_sands<T, U>(hook: &T, space: U, ignore: HashSet<Button>)
-where
-    T: SelectHandleTarget + SetNativeEventOpereation,
-    U: ButtonInput + Into<ButtonSet> + Clone + Send + Sync + 'static,
-{
+fn emulate_sands(hotkey: &Hotkey, space: Button, ingored: HashSet<Button>) {
     let is_alone = Arc::new(AtomicBool::new(true));
 
-    hotkey!(hook => {
-        block_event {
-            on_press [&space] => {
-                let is_alone = Arc::clone(&is_alone);
-                move |_| {
-                    is_alone.store(true, Ordering::SeqCst);
-                    seq!(LShift down);
-                }
-            };
+    let on_press_space = {
+        let is_alone = Arc::clone(&is_alone);
+        move |_| {
+            is_alone.store(true, Ordering::SeqCst);
+            seq!(LShift down);
+        }
+    };
 
-            on_release [&space] => {
-                let is_alone = Arc::clone(&is_alone);
-                move |_| {
-                    if is_alone.load(Ordering::SeqCst) { space.click(); }
-                    seq!(LShift up);
-                }
-            };
+    let on_release_space = {
+        let is_alone = Arc::clone(&is_alone);
+        move |_| {
+            seq!(LShift up);
+            if is_alone.load(Ordering::SeqCst) {
+                seq!([space]);
+            }
+        }
+    };
+
+    hotkey!(hotkey => {
+        block {
+            on_press [space] => on_press_space;
+            on_release [space] => on_release_space;
         }
     });
 
-    let filter = Filter::new().action(ButtonAction::Press);
-    Interceptor::unblock(filter).then_iter(move |iter| {
-        iter.filter(|e| !ignore.contains(&e.target))
-            .for_each(|_| is_alone.store(false, Ordering::SeqCst));
-    });
+    let filter = Filter::new()
+        .action(ButtonAction::Press)
+        .callback(move |e| !ingored.contains(&e.target));
+    Interceptor::unblock(filter)
+        .then_iter(move |iter| iter.for_each(|_| is_alone.store(false, Ordering::SeqCst)));
 }
 
 fn main() {
     let hotkey = Hotkey::new();
-    let ignore = [
+    let ignored = [
         Button::Space,
         Button::LShift,
         Button::RShift,
@@ -60,7 +63,7 @@ fn main() {
     .copied()
     .collect();
 
-    emulate_sands(&hotkey, Button::Space, ignore);
+    emulate_sands(&hotkey, Button::Space, ignored);
 
-    hotkey.handle_input();
+    hotkey.install();
 }
