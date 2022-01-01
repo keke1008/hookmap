@@ -1,6 +1,6 @@
 pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
 
-use crate::macros::ExpandButton;
+use crate::macros::{ButtonArg, ExpandButtonArg};
 use hookmap_core::ButtonOperation;
 
 #[derive(Debug, Clone)]
@@ -18,9 +18,9 @@ pub const ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 /// Meta key that does not distinguish between right and left.
 pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
-impl<const N: usize> ExpandButton for ConstantAny<N> {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
-        Box::new(self.0.iter().copied())
+impl<const N: usize> ExpandButtonArg for ConstantAny<N> {
+    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = ButtonArg> + 'a> {
+        Box::new(self.0.iter().copied().map(ButtonArg::Direct))
     }
 }
 

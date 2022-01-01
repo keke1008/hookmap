@@ -1,4 +1,7 @@
-use crate::{button::ButtonState, macros::ButtonSet};
+use crate::{
+    button::ButtonState,
+    macros::{ButtonArg, ButtonArgs},
+};
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
@@ -8,11 +11,16 @@ pub struct ModifierKeys {
 }
 
 impl ModifierKeys {
-    pub fn new(pressed: ButtonSet, released: ButtonSet) -> Self {
-        Self {
-            pressed: pressed.iter().collect(),
-            released: released.iter().collect(),
+    pub fn new(args: ButtonArgs) -> Self {
+        let mut pressed = vec![];
+        let mut released = vec![];
+        for arg in args.iter() {
+            match arg {
+                ButtonArg::Direct(button) => pressed.push(button),
+                ButtonArg::Inversion(button) => released.push(button),
+            }
         }
+        Self { pressed, released }
     }
 
     pub fn merge(&self, other: Self) -> Self {
