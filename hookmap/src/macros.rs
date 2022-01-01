@@ -594,7 +594,7 @@ mod tests {
         seq!(A, B);
         seq!(A,);
         seq!([Button::A], [Button::B]);
-        seq!([&CTRL], [&SHIFT]);
+        seq!([CTRL], [SHIFT]);
         seq!(A up, B down, [&CTRL] up);
         seq!(with(A));
         seq!(with(A),);
@@ -610,8 +610,8 @@ mod tests {
         send!(A, B);
         send!(A,);
         send!([Button::A], [Button::B]);
-        send!([&CTRL], [&SHIFT]);
-        send!(A up, B down, [&CTRL] up);
+        send!([CTRL], [SHIFT]);
+        send!(A up, B down, [CTRL] up);
         send!(with(A));
         send!(with(A),);
         send!(with(A), C,);
