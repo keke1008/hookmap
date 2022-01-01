@@ -36,22 +36,22 @@ impl FromIterator<Box<dyn Iterator<Item = ButtonArg>>> for ButtonArgs {
     }
 }
 
-pub trait ExpandButtonArg {
-    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_>;
-    fn expand_inverse(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
+pub trait ExpandButtonArg: Sized {
+    fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>>;
+    fn expand_inverse(self) -> Box<dyn Iterator<Item = ButtonArg>> {
         Box::new(self.expand().map(|e| e.invert()))
     }
 }
 
 impl ExpandButtonArg for ButtonArgs {
-    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
-        Box::new(self.0.iter().copied())
+    fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
+        Box::new(self.0.into_iter())
     }
 }
 
 impl ExpandButtonArg for Button {
-    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
-        Box::new(iter::once(ButtonArg::Direct(*self)))
+    fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
+        Box::new(iter::once(ButtonArg::Direct(self)))
     }
 }
 
@@ -62,11 +62,25 @@ macro_rules! button_args {
     };
 
     (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
-        $crate::button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand_inverse(&$crate::button_name!($button))) ] $($rest)*)
+        $crate::button_args!(
+            @inner
+            [
+                $($parsed)*
+                ($crate::macros::ExpandButtonArg::expand_inverse($crate::button_name!($button).clone()))
+            ]
+            $($rest)*
+        )
     };
 
     (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
-        $crate::button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand(&$crate::button_name!($button))) ] $($rest)*)
+        $crate::button_args!(
+            @inner
+            [
+                $($parsed)*
+                ($crate::macros::ExpandButtonArg::expand($crate::button_name!($button).clone()))
+            ]
+            $($rest)*
+        )
     };
 
     (@inner [ $($parsed:tt)* ]) => {

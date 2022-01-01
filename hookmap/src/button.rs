@@ -19,8 +19,8 @@ pub const ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
 impl<const N: usize> ExpandButtonArg for ConstantAny<N> {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = ButtonArg> + 'a> {
-        Box::new(self.0.iter().copied().map(ButtonArg::Direct))
+    fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
+        Box::new(IntoIterator::into_iter(self.0).map(ButtonArg::Direct))
     }
 }
 
