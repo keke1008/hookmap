@@ -1,41 +1,84 @@
 use crate::button::Button;
 use std::iter::{self, FromIterator};
 
-/// A struct used in macros to pass multiple buttons to a function.
-#[derive(Debug, Clone, Hash, PartialEq, Eq)]
-pub struct ButtonSet(Vec<Button>);
+#[derive(Clone, Copy)]
+pub enum ButtonArg {
+    Direct(Button),
+    Inversion(Button),
+}
 
-impl ButtonSet {
-    pub fn new(v: &[Button]) -> Self {
-        ButtonSet(v.to_owned())
+impl ButtonArg {
+    fn invert(&self) -> Self {
+        match *self {
+            ButtonArg::Direct(button) => ButtonArg::Inversion(button),
+            ButtonArg::Inversion(button) => ButtonArg::Direct(button),
+        }
     }
+}
 
-    pub(crate) fn iter<'a>(&'a self) -> impl Iterator<Item = Button> + 'a {
+/// A struct used in macros to pass multiple buttons to a function.
+#[derive(Clone)]
+pub struct ButtonArgs(Vec<ButtonArg>);
+
+impl ButtonArgs {
+    pub fn iter(&self) -> impl Iterator<Item = ButtonArg> + '_ {
         self.0.iter().copied()
     }
-}
 
-impl FromIterator<Box<dyn Iterator<Item = Button>>> for ButtonSet {
-    fn from_iter<T: IntoIterator<Item = Box<dyn Iterator<Item = Button>>>>(iter: T) -> Self {
-        ButtonSet(Vec::from_iter(iter.into_iter().flatten()))
+    pub fn iter_inverse(&self) -> impl Iterator<Item = ButtonArg> + '_ {
+        self.iter().map(|arg| arg.invert())
     }
 }
 
-/// A Trait to create an iterator to flatten multiple `ButtonSet`s.
-pub trait ExpandButton {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a>;
-}
-
-impl ExpandButton for Button {
-    fn expand(&self) -> Box<dyn Iterator<Item = Button>> {
-        Box::new(iter::once(*self)) as Box<dyn Iterator<Item = Button>>
+impl FromIterator<Box<dyn Iterator<Item = ButtonArg>>> for ButtonArgs {
+    fn from_iter<T: IntoIterator<Item = Box<dyn Iterator<Item = ButtonArg>>>>(iter: T) -> Self {
+        ButtonArgs(Vec::from_iter(iter.into_iter().flatten()))
     }
 }
 
-impl ExpandButton for ButtonSet {
-    fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
+pub trait ExpandButtonArg {
+    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_>;
+    fn expand_inverse(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
+        Box::new(self.expand().map(|e| e.invert()))
+    }
+}
+
+impl ExpandButtonArg for ButtonArgs {
+    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
         Box::new(self.0.iter().copied())
     }
+}
+
+impl ExpandButtonArg for Button {
+    fn expand(&self) -> Box<dyn Iterator<Item = ButtonArg> + '_> {
+        Box::new(iter::once(ButtonArg::Direct(*self)))
+    }
+}
+
+#[macro_export]
+macro_rules! parse_button_args {
+    (@inner $parsed:tt , $($rest:tt)*) => {
+        $crate::parse_button_args!(@inner $parsed $($rest)*)
+    };
+
+    (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
+        $crate::parse_button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand_inverse(&$crate::button_name!($button))) ] $($rest)*)
+    };
+
+    (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
+        $crate::parse_button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand(&$crate::button_name!($button))) ] $($rest)*)
+    };
+
+    (@inner [ $($parsed:tt)* ]) => {
+        IntoIterator::into_iter(
+            [ $($parsed),* ]
+        )
+        .collect::<$crate::macros::ButtonArgs>()
+    };
+
+    ($($args:tt)*) => {
+        $crate::parse_button_args!(@inner [] $($args)*)
+    };
 }
 
 /// Expands button names.
@@ -249,35 +292,68 @@ macro_rules! hotkey {
     // Terminate
     (@command $hotkey:ident) => {};
 
-    (@button_set $($button:tt)*) => {
-        IntoIterator::into_iter(
-            [ $( $crate::macros::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
-        )
-        .collect::<$crate::macros::ButtonSet>()
+    // Ignored token: =>
+    (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] => $($rest:tt)*) => {
+        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) $($rest)*)
+    };
+
+    // Ignored token: ;
+    (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ]; $($rest:tt)*) => {
+        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) $($rest)*)
+    };
+
+    // Ignored token: { }
+    (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] { $($rest1:tt)* } $($rest2:tt)*) => {
+        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) { $($rest1)* } $($rest2)*)
+    };
+
+    // Munch tokens
+    (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] $button:tt $($rest:tt)*) => {
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey $command [ $($collected)* $button ] $($rest)*)
+    };
+
+    // Matches `remap`
+    (@remap $hotkey:ident $parsed:tt $rhs:tt; $($rest:tt)*) => {
+        $hotkey.remap($parsed, $crate::button_name!($rhs));
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `remap`.
-    (@command $hotkey:ident remap $($lhs:tt),* => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.remap($crate::hotkey!(@button_set $($lhs)*), $crate::button_name!($rhs));
+    (@command $hotkey:ident remap $($rest:tt)*) => {
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey remap [] $($rest)*)
+    };
+
+    // Matches `on_perss`.
+    (@on_press $hotkey:ident $parsed:tt $rhs:expr; $($rest:tt)*) => {
+        $hotkey.on_press($parsed, std::sync::Arc::new($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
-    (@command $hotkey:ident on_press $($lhs:tt),* => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.on_press($crate::hotkey!(@button_set $($lhs)*), std::sync::Arc::new($rhs));
+    (@command $hotkey:ident on_press $($rest:tt)*) => {
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey on_press [] $($rest)*)
+    };
+
+    // Matches `on_release`.
+    (@on_release $hotkey:ident $parsed:tt $rhs:expr; $($rest:tt)*) => {
+        $hotkey.on_release($parsed, std::sync::Arc::new($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_release`.
-    (@command $hotkey:ident on_release $($lhs:tt),* => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.on_release($crate::hotkey!(@button_set $($lhs),*), std::sync::Arc::new($rhs));
+    (@command $hotkey:ident on_release $($rest:tt)*) => {
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey on_release [] $($rest)*)
+    };
+
+    // Matches `disable`.
+    (@disable $hotkey:ident $parsed:tt $($rest:tt)*) => {
+        $hotkey.disable($parsed);
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `disable`.
-    (@command $hotkey:ident disable $($lhs:tt),*; $($rest:tt)*) => {
-        $hotkey.disable($crate::hotkey!(@button_set $($lhs)*));
-        $crate::hotkey!(@command $hotkey $($rest)*)
+    (@command $hotkey:ident disable $($rest:tt)*) => {
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey disable [] $($rest)*)
     };
 
     // Matches `mouse_cursor`.
@@ -293,12 +369,9 @@ macro_rules! hotkey {
     };
 
     // Matches `modifier`
-    (@modifier $hotkey:ident [ $($pressed:tt),* ] [ $($released:tt),* ] { $($cmd:tt)* } $($rest:tt)*) => {
+    (@modifier $hotkey:ident $parsed:tt { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let modifier_keys = $crate::hotkey::ModifierKeys::new(
-                $crate::hotkey!(@button_set $($pressed)*),
-                $crate::hotkey!(@button_set $($released)*),
-            );
+            let modifier_keys = $crate::hotkey::ModifierKeys::new($parsed);
             #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
             $crate::hotkey!(@command $hotkey $($cmd)*);
@@ -307,23 +380,8 @@ macro_rules! hotkey {
     };
 
     // Matches `modifier`
-    (@modifier $hotkey:ident $pressed:tt $released:tt , $($rest:tt)*) => {
-        $crate::hotkey!(@modifier $hotkey $pressed $released $($rest)*)
-    };
-
-    // Matches `modifier`
-    (@modifier $hotkey:ident $pressed:tt [ $($released:tt),* ] !$button:tt $($rest:tt)*) => {
-        $crate::hotkey!(@modifier $hotkey $pressed [ $($released,)* $button ] $($rest)*)
-    };
-
-    // Matches `modifier`
-    (@modifier $hotkey:ident [ $($pressed:tt),* ] $released:tt $button:tt $($rest:tt)*) => {
-        $crate::hotkey!(@modifier $hotkey [ $($pressed,)* $button ] $released $($rest)*)
-    };
-
-    // Matches `modifier`
     (@command $hotkey:ident modifier $($rest:tt)*) => {
-        $crate::hotkey!(@modifier $hotkey [] [] $($rest)*);
+        $crate::hotkey!(@parse_button_args_until_ignored_tokens $hotkey modifier [] $($rest)*)
     };
 
     // Matches `block`
@@ -463,21 +521,7 @@ mod tests {
     use crate::{
         button::{Button, ALT, CTRL, META, SHIFT},
         hotkey::{Hotkey, RegisterHotkey},
-        macros::ButtonSet,
     };
-
-    #[test]
-    fn expand_button_set() {
-        assert_eq!(hotkey!(@button_set), ButtonSet::new(&[]));
-        assert_eq!(
-            hotkey!(@button_set A B),
-            ButtonSet::new(&[Button::A, Button::B])
-        );
-        assert_eq!(
-            hotkey!(@button_set [Button::A] [SHIFT]),
-            ButtonSet::new(&[Button::A, Button::LShift, Button::RShift])
-        );
-    }
 
     #[test]
     fn remap() {
@@ -596,12 +640,12 @@ mod tests {
         seq!(A,);
         seq!([Button::A], [Button::B]);
         seq!([CTRL], [SHIFT]);
-        seq!(A up, B down, [&CTRL] up);
+        seq!(A up, B down, [CTRL] up);
         seq!(with(A));
         seq!(with(A),);
         seq!(with(A), C,);
         seq!(with(A, B), C);
-        seq!(with([Button::A], [&SHIFT]), [&CTRL]);
+        seq!(with([Button::A], [SHIFT]), [CTRL]);
     }
 
     #[test]
@@ -617,6 +661,6 @@ mod tests {
         send!(with(A),);
         send!(with(A), C,);
         send!(with(A, B), C);
-        send!(with([Button::A], [&SHIFT]), [&CTRL]);
+        send!(with([Button::A], [SHIFT]), [CTRL]);
     }
 }
