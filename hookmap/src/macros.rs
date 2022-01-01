@@ -1,3 +1,4 @@
+use crate::button::Button;
 use std::iter::{self, FromIterator};
 
 /// A struct used in macros to pass multiple buttons to a function.
@@ -408,9 +409,7 @@ macro_rules! seq {
     };
 }
 
-use hookmap_core::Button;
-
-pub static MODIFIER_LIST: [Button; 8] = [
+pub const MODIFIER_LIST: [Button; 8] = [
     Button::LShift,
     Button::RShift,
     Button::LCtrl,

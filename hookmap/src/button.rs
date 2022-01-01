@@ -7,16 +7,16 @@ use hookmap_core::ButtonOperation;
 pub struct ConstantAny<const N: usize>([Button; N]);
 
 /// Shift key that does not distinguish between right and left.
-pub static SHIFT: ConstantAny<2> = ConstantAny([Button::LShift, Button::RShift]);
+pub const SHIFT: ConstantAny<2> = ConstantAny([Button::LShift, Button::RShift]);
 
 /// Control key that does not distinguish between right and left.
-pub static CTRL: ConstantAny<2> = ConstantAny([Button::LCtrl, Button::RCtrl]);
+pub const CTRL: ConstantAny<2> = ConstantAny([Button::LCtrl, Button::RCtrl]);
 
 /// Alt key that does not distinguish between right and left.
-pub static ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
+pub const ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 
 /// Meta key that does not distinguish between right and left.
-pub static META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
+pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
 impl<const N: usize> ExpandButton for ConstantAny<N> {
     fn expand<'a>(&'a self) -> Box<dyn Iterator<Item = Button> + 'a> {
