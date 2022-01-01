@@ -245,7 +245,7 @@ macro_rules! hotkey {
     // Terminate
     (@command $hotkey:ident) => {};
 
-    (@button_set $($button:tt),*) => {
+    (@button_set $($button:tt)*) => {
         IntoIterator::into_iter(
             [ $( $crate::macros::ExpandButton::expand(&$crate::button_name!($button)) ),* ]
         )
@@ -254,13 +254,13 @@ macro_rules! hotkey {
 
     // Matches `remap`.
     (@command $hotkey:ident remap $($lhs:tt),* => $rhs:tt; $($rest:tt)*) => {
-        $hotkey.remap($crate::hotkey!(@button_set $($lhs),*), $crate::button_name!($rhs));
+        $hotkey.remap($crate::hotkey!(@button_set $($lhs)*), $crate::button_name!($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
     // Matches `on_perss`.
     (@command $hotkey:ident on_press $($lhs:tt),* => $rhs:expr; $($rest:tt)*) => {
-        $hotkey.on_press($crate::hotkey!(@button_set $($lhs),*), std::sync::Arc::new($rhs));
+        $hotkey.on_press($crate::hotkey!(@button_set $($lhs)*), std::sync::Arc::new($rhs));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
@@ -272,7 +272,7 @@ macro_rules! hotkey {
 
     // Matches `disable`.
     (@command $hotkey:ident disable $($lhs:tt),*; $($rest:tt)*) => {
-        $hotkey.disable($crate::hotkey!(@button_set $($lhs),*));
+        $hotkey.disable($crate::hotkey!(@button_set $($lhs)*));
         $crate::hotkey!(@command $hotkey $($rest)*)
     };
 
@@ -292,13 +292,18 @@ macro_rules! hotkey {
     (@modifier $hotkey:ident [ $($pressed:tt),* ] [ $($released:tt),* ] { $($cmd:tt)* } $($rest:tt)*) => {
         {
             let modifier_keys = $crate::hotkey::ModifierKeys::new(
-                $crate::hotkey!(@button_set $($pressed),*),
-                $crate::hotkey!(@button_set $($released),*),
+                $crate::hotkey!(@button_set $($pressed)*),
+                $crate::hotkey!(@button_set $($released)*),
             );
             #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
             $crate::hotkey!(@command $hotkey $($rest)*);
         }
+    };
+
+    // Matches `modifier`
+    (@modifier $hotkey:ident $pressed:tt $released:tt , $($rest:tt)*) => {
+        $crate::hotkey!(@modifier $hotkey $pressed $released $($rest)*)
     };
 
     // Matches `modifier`
@@ -316,6 +321,7 @@ macro_rules! hotkey {
         $crate::hotkey!(@modifier $hotkey [] [] $($rest)*);
     };
 
+    // Matches `block`
     (@command $hotkey:ident block { $($cmd:tt)* } $($rest:tt)*) => {
         {
             #[allow(unused_variables)]
@@ -461,11 +467,11 @@ mod tests {
     fn expand_button_set() {
         assert_eq!(hotkey!(@button_set), ButtonSet::new(&[]));
         assert_eq!(
-            hotkey!(@button_set A, B),
+            hotkey!(@button_set A B),
             ButtonSet::new(&[Button::A, Button::B])
         );
         assert_eq!(
-            hotkey!(@button_set [Button::A], [SHIFT]),
+            hotkey!(@button_set [Button::A] [SHIFT]),
             ButtonSet::new(&[Button::A, Button::LShift, Button::RShift])
         );
     }
@@ -473,10 +479,10 @@ mod tests {
     #[test]
     fn remap() {
         hotkey!(Hotkey::new() => {
-            remap A => B;
+            // remap A => B;
             remap A, B => C;
-            remap [Button::A], [SHIFT] => [Button::B];
-            remap A, [Button::B], [SHIFT] => A;
+            // remap [Button::A], [SHIFT] => [Button::B];
+            // remap A, [Button::B], [SHIFT] => A;
         });
     }
 
@@ -533,11 +539,12 @@ mod tests {
     #[test]
     fn modifier_command() {
         hotkey!(Hotkey::new() => {
-            modifier A  {}
+            modifier A {}
+            modifier A, B {}
             modifier !A {}
-            modifier A !A !B C {}
-            modifier [Button::A] ![Button::B] {}
-            modifier ![SHIFT] [CTRL] ![ALT] {}
+            modifier A, !A, !B, C {}
+            modifier [Button::A], ![Button::B] {}
+            modifier ![SHIFT], [CTRL], ![ALT] {}
             modifier ![META] {
                 modifier A {}
             }
