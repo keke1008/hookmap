@@ -11,15 +11,7 @@ pub struct ModifierKeys {
 }
 
 impl ModifierKeys {
-    pub fn new(args: ButtonArgs) -> Self {
-        let mut pressed = vec![];
-        let mut released = vec![];
-        for arg in args.iter() {
-            match arg {
-                ButtonArg::Direct(button) => pressed.push(button),
-                ButtonArg::Inversion(button) => released.push(button),
-            }
-        }
+    pub fn new(pressed: Vec<Button>, released: Vec<Button>) -> Self {
         Self { pressed, released }
     }
 
@@ -43,5 +35,19 @@ impl ModifierKeys {
     pub(super) fn meets_conditions(&self) -> bool {
         self.pressed.iter().all(|button| button.is_pressed())
             && self.released.iter().all(|button| button.is_released())
+    }
+}
+
+impl From<ButtonArgs> for ModifierKeys {
+    fn from(args: ButtonArgs) -> Self {
+        let mut pressed = vec![];
+        let mut released = vec![];
+        for arg in args.iter() {
+            match arg {
+                ButtonArg::Direct(button) => pressed.push(button),
+                ButtonArg::Inversion(button) => released.push(button),
+            }
+        }
+        Self { pressed, released }
     }
 }

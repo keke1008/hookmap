@@ -371,9 +371,8 @@ macro_rules! hotkey {
     // Matches `modifier`
     (@modifier $hotkey:ident $parsed:tt { $($cmd:tt)* } $($rest:tt)*) => {
         {
-            let modifier_keys = $crate::hotkey::ModifierKeys::new($parsed);
             #[allow(unused_variables)]
-            let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
+            let $hotkey = $hotkey.add_modifier_keys($parsed);
             $crate::hotkey!(@command $hotkey $($cmd)*);
         }
         $crate::hotkey!(@command $hotkey $($rest)*);
