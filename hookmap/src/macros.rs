@@ -58,6 +58,10 @@ impl ExpandButton for ButtonSet {
 #[macro_export]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
+    (Shift)          => ($crate::button::SHIFT);
+    (Ctrl)           => ($crate::button::Ctrl);
+    (Alt)            => ($crate::button::Alt);
+    (Meta)           => ($crate::button::Meta);
     ($button:ident)  => ($crate::button::Button::$button);
     (0)              => ($crate::button::Button::Key0);
     (1)              => ($crate::button::Button::Key1);
@@ -72,7 +76,6 @@ macro_rules! button_name {
     (;)              => ($crate::button::Button::SemiColon);
     (-)              => ($crate::button::Button::Minus);
     (/)              => ($crate::button::Button::Slash);
-
 }
 
 /// Registers hotkeys.
@@ -479,10 +482,11 @@ mod tests {
     #[test]
     fn remap() {
         hotkey!(Hotkey::new() => {
-            // remap A => B;
+            remap A => B;
             remap A, B => C;
-            // remap [Button::A], [SHIFT] => [Button::B];
-            // remap A, [Button::B], [SHIFT] => A;
+            remap Shift => B;
+            remap [Button::A], [SHIFT] => [Button::B];
+            remap A, [Button::B], [SHIFT] => A;
         });
     }
 
