@@ -1,7 +1,7 @@
 use crate::button::Button;
 use std::iter::{self, FromIterator};
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ButtonArg {
     Direct(Button),
     Inversion(Button),
@@ -17,7 +17,7 @@ impl ButtonArg {
 }
 
 /// A struct used in macros to pass multiple buttons to a function.
-#[derive(Clone)]
+#[derive(Clone, PartialEq, Eq, Debug)]
 pub struct ButtonArgs(Vec<ButtonArg>);
 
 impl ButtonArgs {
@@ -531,10 +531,37 @@ macro_rules! send {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::{
         button::{Button, ALT, CTRL, META, SHIFT},
         hotkey::{Hotkey, RegisterHotkey},
     };
+
+    #[test]
+    fn button_args() {
+        use Button::*;
+        use ButtonArg::{Direct, Inversion};
+        assert_eq!(button_args!(A), ButtonArgs(vec![Direct(A)]));
+        assert_eq!(button_args!(!A), ButtonArgs(vec![Inversion(A)]));
+        assert_eq!(
+            button_args!(A, !B),
+            ButtonArgs(vec![Direct(A), Inversion(B)])
+        );
+        assert_eq!(
+            button_args!(A, !B),
+            ButtonArgs(vec![Direct(A), Inversion(B)])
+        );
+        let button_args = ButtonArgs(vec![Direct(A), Inversion(B)]);
+        assert_eq!(button_args!([button_args]), button_args);
+        assert_eq!(
+            button_args!([button_args], C, !D),
+            ButtonArgs(vec![Direct(A), Inversion(B), Direct(C), Inversion(D)])
+        );
+        assert_eq!(
+            button_args!(C, !D, [button_args]),
+            ButtonArgs(vec![Direct(C), Inversion(D), Direct(A), Inversion(B)]),
+        );
+    }
 
     #[test]
     fn remap() {
@@ -552,6 +579,7 @@ mod tests {
         hotkey!(Hotkey::new() => {
             on_press A => |_| {};
             on_press A, B => |_| {};
+            on_press A, !B => |_| {};
             on_press [Button::A] => |_| {};
             on_press [Button::A], [Button::B] => |_| {};
             on_press [SHIFT] => |_| {};
@@ -562,12 +590,13 @@ mod tests {
     #[test]
     fn on_release_command() {
         hotkey!(Hotkey::new() => {
-            on_press A => |_| {};
-            on_press A, B => |_| {};
-            on_press [Button::A] => |_| {};
-            on_press [Button::A], [Button::B] => |_| {};
-            on_press [SHIFT] => |_| {};
-            on_press A, [Button::B], [SHIFT] => |_| {};
+            on_release A => |_| {};
+            on_release A, B => |_| {};
+            on_release A, !B => |_| {};
+            on_release [Button::A] => |_| {};
+            on_release [Button::A], [Button::B] => |_| {};
+            on_release [SHIFT] => |_| {};
+            on_release A, [Button::B], [SHIFT] => |_| {};
         });
     }
 
