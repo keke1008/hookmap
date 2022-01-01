@@ -301,8 +301,9 @@ macro_rules! hotkey {
             );
             #[allow(unused_variables)]
             let $hotkey = $hotkey.add_modifier_keys(modifier_keys);
-            $crate::hotkey!(@command $hotkey $($rest)*);
+            $crate::hotkey!(@command $hotkey $($cmd)*);
         }
+        $crate::hotkey!(@command $hotkey $($rest)*);
     };
 
     // Matches `modifier`
