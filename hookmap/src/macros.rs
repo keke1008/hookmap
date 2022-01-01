@@ -56,17 +56,17 @@ impl ExpandButtonArg for Button {
 }
 
 #[macro_export]
-macro_rules! parse_button_args {
+macro_rules! button_args {
     (@inner $parsed:tt , $($rest:tt)*) => {
-        $crate::parse_button_args!(@inner $parsed $($rest)*)
+        $crate::button_args!(@inner $parsed $($rest)*)
     };
 
     (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
-        $crate::parse_button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand_inverse(&$crate::button_name!($button))) ] $($rest)*)
+        $crate::button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand_inverse(&$crate::button_name!($button))) ] $($rest)*)
     };
 
     (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
-        $crate::parse_button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand(&$crate::button_name!($button))) ] $($rest)*)
+        $crate::button_args!(@inner [ $($parsed)* ($crate::macros::ExpandButtonArg::expand(&$crate::button_name!($button))) ] $($rest)*)
     };
 
     (@inner [ $($parsed:tt)* ]) => {
@@ -77,7 +77,7 @@ macro_rules! parse_button_args {
     };
 
     ($($args:tt)*) => {
-        $crate::parse_button_args!(@inner [] $($args)*)
+        $crate::button_args!(@inner [] $($args)*)
     };
 }
 
@@ -294,17 +294,17 @@ macro_rules! hotkey {
 
     // Ignored token: =>
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] => $($rest:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) $($rest)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) $($rest)*)
     };
 
     // Ignored token: ;
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ]; $($rest:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) $($rest)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) $($rest)*)
     };
 
     // Ignored token: { }
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] { $($rest1:tt)* } $($rest2:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::parse_button_args!($($collected)*) ) { $($rest1)* } $($rest2)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) { $($rest1)* } $($rest2)*)
     };
 
     // Munch tokens
