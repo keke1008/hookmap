@@ -164,6 +164,7 @@ pub trait RegisterHotkey {
 pub struct Hotkey {
     storage: RefCell<HotkeyStorage>,
     modifier_keys: Arc<ModifierKeys>,
+    native_event_operation: NativeEventOperation,
 }
 
 impl Hotkey {
@@ -209,7 +210,7 @@ impl RegisterHotkey for Hotkey {
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
             HotkeyProcess::Callback(process),
-            NativeEventOperation::default(),
+            self.native_event_operation,
         ));
 
         for arg in target.iter() {
@@ -229,7 +230,7 @@ impl RegisterHotkey for Hotkey {
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
             HotkeyProcess::Callback(process),
-            NativeEventOperation::default(),
+            self.native_event_operation,
         ));
 
         for arg in target.iter() {
@@ -248,7 +249,7 @@ impl RegisterHotkey for Hotkey {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
-            NativeEventOperation::default(),
+            self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
@@ -257,7 +258,7 @@ impl RegisterHotkey for Hotkey {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
             process,
-            NativeEventOperation::default(),
+            self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
@@ -267,7 +268,7 @@ impl RegisterHotkey for Hotkey {
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
             HotkeyProcess::Noop,
-            NativeEventOperation::default(),
+            self.native_event_operation,
         ));
 
         for arg in target.iter() {
@@ -280,7 +281,7 @@ impl RegisterHotkey for Hotkey {
         ModifierHotkey::new(
             &self.storage,
             Arc::new(ModifierKeys::from(modifier_keys)),
-            NativeEventOperation::default(),
+            self.native_event_operation,
         )
     }
 
