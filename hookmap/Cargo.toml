@@ -14,7 +14,6 @@ documentation = "https://docs.rs/hookmap"
 [dependencies]
 hookmap-core = { version = "0.1.11", path = "../hookmap-core" }
 once_cell = "1.8.0"
-typed-builder = "0.9.1"
 
 [features]
 block-input-event = [ "hookmap-core/block-input-event" ]
