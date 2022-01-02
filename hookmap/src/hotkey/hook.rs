@@ -57,8 +57,8 @@ impl ExecutableHook for RemapHook {
 
 #[derive(Clone)]
 pub(super) enum ButtonHook {
-    Hotkey(HotkeyHook),
-    Remap(RemapHook),
+    Hotkey(Arc<HotkeyHook>),
+    Remap(Arc<RemapHook>),
 }
 
 impl Hook<ButtonEvent> for ButtonHook {
@@ -79,13 +79,13 @@ impl Hook<ButtonEvent> for ButtonHook {
         }
     }
 }
-impl From<HotkeyHook> for ButtonHook {
-    fn from(hook: HotkeyHook) -> Self {
+impl From<Arc<HotkeyHook>> for ButtonHook {
+    fn from(hook: Arc<HotkeyHook>) -> Self {
         ButtonHook::Hotkey(hook)
     }
 }
-impl From<RemapHook> for ButtonHook {
-    fn from(remap: RemapHook) -> Self {
+impl From<Arc<RemapHook>> for ButtonHook {
+    fn from(remap: Arc<RemapHook>) -> Self {
         ButtonHook::Remap(remap)
     }
 }
@@ -124,5 +124,15 @@ impl<E> Hook<E> for MouseHook<E> {
 impl<E> ExecutableHook for MouseHook<E> {
     fn is_executable(&self) -> bool {
         self.modifier_keys.meets_conditions()
+    }
+}
+
+impl<E, T: Hook<E>> Hook<E> for Arc<T> {
+    fn native_event_operation(&self) -> NativeEventOperation {
+        (**self).native_event_operation()
+    }
+
+    fn run(&self, event: E) {
+        (**self).run(event);
     }
 }
