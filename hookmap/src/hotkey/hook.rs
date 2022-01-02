@@ -1,25 +1,55 @@
 use super::modifier_keys::ModifierKeys;
 use crate::{button::ButtonInput, hook::Hook};
 use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
-use std::sync::Arc;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc,
+};
 
 pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
 
+pub(super) trait ExecutableHook {
+    fn is_executable(&self) -> bool;
+}
+
+#[derive(Clone)]
+pub(super) enum HotkeyCondition {
+    Any,
+    Activation(Arc<AtomicBool>),
+    Modifier(Arc<ModifierKeys>),
+}
+
+impl HotkeyCondition {
+    fn is_executable(&self) -> bool {
+        match self {
+            HotkeyCondition::Any => true,
+            HotkeyCondition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
+            HotkeyCondition::Modifier(modifier_keys) => modifier_keys.meets_conditions(),
+        }
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct HotkeyHook {
-    modifier_keys: Arc<ModifierKeys>,
+    condition: HotkeyCondition,
     process: HookProcess<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
+impl ExecutableHook for HotkeyHook {
+    fn is_executable(&self) -> bool {
+        self.condition.is_executable()
+    }
+}
+
 impl HotkeyHook {
     pub(super) fn new(
-        modifier_keys: Arc<ModifierKeys>,
+        condition: HotkeyCondition,
         process: HookProcess<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         HotkeyHook {
-            modifier_keys,
+            condition,
             process,
             native_event_operation,
         }
@@ -41,14 +71,6 @@ impl RemapHook {
     }
 }
 
-pub(super) trait ExecutableHook {
-    fn is_executable(&self) -> bool;
-}
-impl ExecutableHook for HotkeyHook {
-    fn is_executable(&self) -> bool {
-        self.modifier_keys.meets_conditions()
-    }
-}
 impl ExecutableHook for RemapHook {
     fn is_executable(&self) -> bool {
         self.modifier_keys.meets_conditions()
@@ -65,7 +87,7 @@ impl Hook<ButtonEvent> for ButtonHook {
     fn native_event_operation(&self) -> NativeEventOperation {
         match self {
             ButtonHook::Hotkey(hook) => hook.native_event_operation,
-            _ => NativeEventOperation::Block,
+            ButtonHook::Remap(_) => NativeEventOperation::Block,
         }
     }
 
