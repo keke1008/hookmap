@@ -28,9 +28,25 @@ impl HotkeyCondition {
     }
 }
 
+pub(super) enum HotkeyProcess<E> {
+    Callback(HookProcess<E>),
+    Activate(Arc<AtomicBool>),
+    Noop,
+}
+
+impl<E> HotkeyProcess<E> {
+    pub(super) fn run(&self, event: E) {
+        match self {
+            HotkeyProcess::Callback(callback) => callback(event),
+            HotkeyProcess::Activate(is_active) => is_active.store(true, Ordering::SeqCst),
+            HotkeyProcess::Noop => {}
+        }
+    }
+}
+
 pub(super) struct HotkeyHook {
     condition: HotkeyCondition,
-    process: HookProcess<ButtonEvent>,
+    process: HotkeyProcess<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
@@ -43,7 +59,7 @@ impl ExecutableHook for HotkeyHook {
 impl HotkeyHook {
     pub(super) fn new(
         condition: HotkeyCondition,
-        process: HookProcess<ButtonEvent>,
+        process: HotkeyProcess<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         HotkeyHook {
@@ -89,7 +105,7 @@ impl Hook<ButtonEvent> for ButtonHook {
 
     fn run(&self, event: ButtonEvent) {
         match self {
-            ButtonHook::Hotkey(hook) => (hook.process)(event),
+            ButtonHook::Hotkey(hook) => hook.process.run(event),
             ButtonHook::Remap(hook) => match event.action {
                 ButtonAction::Press => hook.button.press(),
                 ButtonAction::Release => hook.button.release(),
