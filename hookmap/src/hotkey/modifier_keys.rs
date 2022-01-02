@@ -1,6 +1,6 @@
 use crate::{
     button::ButtonState,
-    macros::{ButtonArg, ButtonArgs},
+    macros::{ButtonArgTag, ButtonArgs},
 };
 use hookmap_core::Button;
 
@@ -43,9 +43,9 @@ impl From<ButtonArgs> for ModifierKeys {
         let mut pressed = vec![];
         let mut released = vec![];
         for arg in args.iter() {
-            match arg {
-                ButtonArg::Direct(button) => pressed.push(button),
-                ButtonArg::Inversion(button) => released.push(button),
+            match arg.tag {
+                ButtonArgTag::Direct => pressed.push(arg.button),
+                ButtonArgTag::Inversion => released.push(arg.button),
             }
         }
         Self { pressed, released }

@@ -2,16 +2,36 @@ use crate::button::Button;
 use std::iter::{self, FromIterator};
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum ButtonArg {
-    Direct(Button),
-    Inversion(Button),
+pub enum ButtonArgTag {
+    Direct,
+    Inversion,
+}
+
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub struct ButtonArg {
+    pub tag: ButtonArgTag,
+    pub button: Button,
 }
 
 impl ButtonArg {
-    fn invert(&self) -> Self {
-        match *self {
-            ButtonArg::Direct(button) => ButtonArg::Inversion(button),
-            ButtonArg::Inversion(button) => ButtonArg::Direct(button),
+    pub fn direct(button: Button) -> Self {
+        ButtonArg {
+            tag: ButtonArgTag::Direct,
+            button,
+        }
+    }
+
+    pub fn inversion(button: Button) -> Self {
+        ButtonArg {
+            tag: ButtonArgTag::Inversion,
+            button,
+        }
+    }
+
+    pub fn invert(&self) -> Self {
+        match self.tag {
+            ButtonArgTag::Direct => ButtonArg::inversion(self.button),
+            ButtonArgTag::Inversion => ButtonArg::direct(self.button),
         }
     }
 }
@@ -51,7 +71,7 @@ impl ExpandButtonArg for ButtonArgs {
 
 impl ExpandButtonArg for Button {
     fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
-        Box::new(iter::once(ButtonArg::Direct(self)))
+        Box::new(iter::once(ButtonArg::direct(self)))
     }
 }
 
@@ -540,26 +560,35 @@ mod tests {
     #[test]
     fn button_args() {
         use Button::*;
-        use ButtonArg::{Direct, Inversion};
-        assert_eq!(button_args!(A), ButtonArgs(vec![Direct(A)]));
-        assert_eq!(button_args!(!A), ButtonArgs(vec![Inversion(A)]));
+        assert_eq!(button_args!(A), ButtonArgs(vec![ButtonArg::direct(A)]));
+        assert_eq!(button_args!(!A), ButtonArgs(vec![ButtonArg::inversion(A)]));
         assert_eq!(
             button_args!(A, !B),
-            ButtonArgs(vec![Direct(A), Inversion(B)])
+            ButtonArgs(vec![ButtonArg::direct(A), ButtonArg::inversion(B)])
         );
         assert_eq!(
             button_args!(A, !B),
-            ButtonArgs(vec![Direct(A), Inversion(B)])
+            ButtonArgs(vec![ButtonArg::direct(A), ButtonArg::inversion(B)])
         );
-        let button_args = ButtonArgs(vec![Direct(A), Inversion(B)]);
+        let button_args = ButtonArgs(vec![ButtonArg::direct(A), ButtonArg::inversion(B)]);
         assert_eq!(button_args!([button_args]), button_args);
         assert_eq!(
             button_args!([button_args], C, !D),
-            ButtonArgs(vec![Direct(A), Inversion(B), Direct(C), Inversion(D)])
+            ButtonArgs(vec![
+                ButtonArg::direct(A),
+                ButtonArg::inversion(B),
+                ButtonArg::direct(C),
+                ButtonArg::inversion(D)
+            ])
         );
         assert_eq!(
             button_args!(C, !D, [button_args]),
-            ButtonArgs(vec![Direct(C), Inversion(D), Direct(A), Inversion(B)]),
+            ButtonArgs(vec![
+                ButtonArg::direct(C),
+                ButtonArg::inversion(D),
+                ButtonArg::direct(A),
+                ButtonArg::inversion(B)
+            ]),
         );
     }
 

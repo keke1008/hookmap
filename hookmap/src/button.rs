@@ -20,7 +20,7 @@ pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
 impl<const N: usize> ExpandButtonArg for ConstantAny<N> {
     fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
-        Box::new(IntoIterator::into_iter(self.0).map(ButtonArg::Direct))
+        Box::new(IntoIterator::into_iter(self.0).map(ButtonArg::direct))
     }
 }
 

@@ -5,7 +5,7 @@ mod storage;
 pub use modifier_keys::ModifierKeys;
 
 use crate::{
-    macros::{ButtonArg, ButtonArgs},
+    macros::{ButtonArg, ButtonArgTag, ButtonArgs},
     runtime::Runtime,
 };
 use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
@@ -191,17 +191,17 @@ impl Hotkey {
         target: impl Iterator<Item = ButtonArg>,
         hook: &HotkeyHook,
     ) {
-        for target in target {
-            match target {
-                ButtonArg::Direct(target) => {
+        for arg in target {
+            match arg.tag {
+                ButtonArgTag::Direct => {
                     self.storage
                         .borrow_mut()
-                        .register_hotkey_on_press(target, hook.clone());
+                        .register_hotkey_on_press(arg.button, hook.clone());
                 }
-                ButtonArg::Inversion(target) => {
+                ButtonArgTag::Inversion => {
                     self.storage
                         .borrow_mut()
-                        .register_hotkey_on_release(target, hook.clone());
+                        .register_hotkey_on_release(arg.button, hook.clone());
                 }
             }
         }
@@ -210,12 +210,12 @@ impl Hotkey {
 
 impl RegisterHotkey for Hotkey {
     fn remap(&self, target: ButtonArgs, behavior: Button) {
-        for target in target.iter() {
-            match target {
-                ButtonArg::Inversion(_) => panic!(),
-                ButtonArg::Direct(target) => {
+        for arg in target.iter() {
+            match arg.tag {
+                ButtonArgTag::Inversion => panic!(),
+                ButtonArgTag::Direct => {
                     let hook = RemapHook::new(Arc::clone(&self.modifier_keys), behavior);
-                    self.storage.borrow_mut().register_remap(target, hook);
+                    self.storage.borrow_mut().register_remap(arg.button, hook);
                 }
             }
         }
@@ -301,17 +301,17 @@ impl<'a> ModifierHotkey<'a> {
         target: impl Iterator<Item = ButtonArg>,
         hook: HotkeyHook,
     ) {
-        for target in target {
-            match target {
-                ButtonArg::Direct(target) => {
+        for arg in target {
+            match arg.tag {
+                ButtonArgTag::Direct => {
                     self.storage
                         .borrow_mut()
-                        .register_hotkey_on_press(target, hook.clone());
+                        .register_hotkey_on_press(arg.button, hook.clone());
                 }
-                ButtonArg::Inversion(target) => {
+                ButtonArgTag::Inversion => {
                     self.storage
                         .borrow_mut()
-                        .register_hotkey_on_release(target, hook.clone());
+                        .register_hotkey_on_release(arg.button, hook.clone());
                 }
             }
         }
@@ -320,12 +320,12 @@ impl<'a> ModifierHotkey<'a> {
 
 impl RegisterHotkey for ModifierHotkey<'_> {
     fn remap(&self, target: ButtonArgs, behavior: Button) {
-        for target in target.iter() {
-            match target {
-                ButtonArg::Inversion(_) => panic!(),
-                ButtonArg::Direct(target) => {
+        for arg in target.iter() {
+            match arg.tag {
+                ButtonArgTag::Inversion => panic!(),
+                ButtonArgTag::Direct => {
                     let hook = RemapHook::new(Arc::clone(&self.modifier_keys), behavior);
-                    self.storage.borrow_mut().register_remap(target, hook);
+                    self.storage.borrow_mut().register_remap(arg.button, hook);
                 }
             }
         }
