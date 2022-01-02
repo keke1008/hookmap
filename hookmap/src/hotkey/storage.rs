@@ -21,30 +21,24 @@ impl HotkeyStorage {
             .collect()
     }
 
-    pub(super) fn register_remap(&mut self, target: Button, hook: RemapHook) {
-        self.remap.entry(target).or_default().push(Arc::new(hook));
+    pub(super) fn register_remap(&mut self, target: Button, hook: Arc<RemapHook>) {
+        self.remap.entry(target).or_default().push(hook);
     }
 
-    pub(super) fn register_hotkey_on_press(&mut self, target: Button, hook: HotkeyHook) {
-        self.hotkey_on_press
-            .entry(target)
-            .or_default()
-            .push(Arc::new(hook));
+    pub(super) fn register_hotkey_on_press(&mut self, target: Button, hook: Arc<HotkeyHook>) {
+        self.hotkey_on_press.entry(target).or_default().push(hook);
     }
 
-    pub(super) fn register_hotkey_on_release(&mut self, target: Button, hook: HotkeyHook) {
-        self.hotkey_on_release
-            .entry(target)
-            .or_default()
-            .push(Arc::new(hook));
+    pub(super) fn register_hotkey_on_release(&mut self, target: Button, hook: Arc<HotkeyHook>) {
+        self.hotkey_on_release.entry(target).or_default().push(hook);
     }
 
-    pub(super) fn register_mouse_cursor_hotkey(&mut self, hook: MouseHook<MouseCursorEvent>) {
-        self.mouse_cursor.push(Arc::new(hook));
+    pub(super) fn register_mouse_cursor_hotkey(&mut self, hook: Arc<MouseHook<MouseCursorEvent>>) {
+        self.mouse_cursor.push(hook);
     }
 
-    pub(super) fn register_mouse_wheel_hotkey(&mut self, hook: MouseHook<MouseWheelEvent>) {
-        self.mouse_wheel.push(Arc::new(hook));
+    pub(super) fn register_mouse_wheel_hotkey(&mut self, hook: Arc<MouseHook<MouseWheelEvent>>) {
+        self.mouse_wheel.push(hook);
     }
 }
 
