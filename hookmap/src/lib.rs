@@ -8,19 +8,24 @@
 //!
 //! * `block-input-event`: Set button events to be blocked by default.
 
-pub mod button;
 pub mod hotkey;
 pub mod macros;
 pub mod utils;
 
+mod button;
 mod hook;
 mod runtime;
 
+/// Items used for button and mouse event.
 pub mod event {
     pub use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 }
 
-pub mod mouse {
+/// keyboard and mouse, and their inputs.
+pub mod devices {
+    pub use super::button::{
+        Button, ButtonAction, ButtonInput, ButtonState, ALT, CTRL, META, SHIFT,
+    };
     pub use hookmap_core::{EmulateMouseCursor, EmulateMouseWheel, Mouse};
 }
 
@@ -28,11 +33,14 @@ pub use runtime::interceptor;
 
 pub mod prelude {
     pub use super::{
-        button::{Button, ButtonAction, ButtonInput, ButtonState},
-        button_args, hotkey,
+        button_args,
+        devices::{
+            Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
+            Mouse,
+        },
+        hotkey,
         hotkey::{Hotkey, RegisterHotkey},
         interceptor::{Filter, Interceptor},
-        mouse::{EmulateMouseCursor, EmulateMouseWheel},
         send, seq,
         utils::Utils,
     };

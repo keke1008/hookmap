@@ -117,7 +117,7 @@ macro_rules! button_args {
 ///
 /// # Example
 /// ```no_run
-/// use hookmap::{button_name, button::Button};
+/// use hookmap::{button_name, devices::Button};
 /// assert_eq!(Button::Key0, button_name!(0));
 /// assert_eq!(Button::A, button_name!(A));
 ///
@@ -132,24 +132,24 @@ macro_rules! button_args {
 #[macro_export]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
-    (Shift)          => ($crate::button::SHIFT);
-    (Ctrl)           => ($crate::button::Ctrl);
-    (Alt)            => ($crate::button::Alt);
-    (Meta)           => ($crate::button::Meta);
-    ($button:ident)  => ($crate::button::Button::$button);
-    (0)              => ($crate::button::Button::Key0);
-    (1)              => ($crate::button::Button::Key1);
-    (2)              => ($crate::button::Button::Key2);
-    (3)              => ($crate::button::Button::Key3);
-    (4)              => ($crate::button::Button::Key4);
-    (5)              => ($crate::button::Button::Key5);
-    (6)              => ($crate::button::Button::Key6);
-    (7)              => ($crate::button::Button::Key7);
-    (8)              => ($crate::button::Button::Key8);
-    (9)              => ($crate::button::Button::Key9);
-    (;)              => ($crate::button::Button::SemiColon);
-    (-)              => ($crate::button::Button::Minus);
-    (/)              => ($crate::button::Button::Slash);
+    (Shift)          => ($crate::devices::SHIFT);
+    (Ctrl)           => ($crate::devices::Ctrl);
+    (Alt)            => ($crate::devices::Alt);
+    (Meta)           => ($crate::devices::Meta);
+    ($button:ident)  => ($crate::devices::Button::$button);
+    (0)              => ($crate::devices::Button::Key0);
+    (1)              => ($crate::devices::Button::Key1);
+    (2)              => ($crate::devices::Button::Key2);
+    (3)              => ($crate::devices::Button::Key3);
+    (4)              => ($crate::devices::Button::Key4);
+    (5)              => ($crate::devices::Button::Key5);
+    (6)              => ($crate::devices::Button::Key6);
+    (7)              => ($crate::devices::Button::Key7);
+    (8)              => ($crate::devices::Button::Key8);
+    (9)              => ($crate::devices::Button::Key9);
+    (;)              => ($crate::devices::Button::SemiColon);
+    (-)              => ($crate::devices::Button::Minus);
+    (/)              => ($crate::devices::Button::Slash);
 }
 
 /// Registers hotkeys.
@@ -489,15 +489,15 @@ macro_rules! seq {
     };
 
     (@single $button:expr) => {
-        $crate::button::ButtonInput::click(&$button);
+        $crate::devices::ButtonInput::click(&$button);
     };
 
     (@single $button:expr, down) => {
-        $crate::button::ButtonInput::press(&$button);
+        $crate::devices::ButtonInput::press(&$button);
     };
 
     (@single $button:expr, up) => {
-        $crate::button::ButtonInput::release(&$button);
+        $crate::devices::ButtonInput::release(&$button);
     };
 }
 
@@ -541,11 +541,11 @@ macro_rules! send {
     ($($input:tt)*) => {{
         let pressed_modifiers = $crate::macros::MODIFIER_LIST
             .iter()
-            .filter(|button| $crate::button::ButtonState::is_pressed(button))
+            .filter(|button| $crate::devices::ButtonState::is_pressed(button))
             .collect::<Vec<_>>();
-        pressed_modifiers.iter().for_each(|button| $crate::button::ButtonInput::release(button));
+        pressed_modifiers.iter().for_each(|button| $crate::devices::ButtonInput::release(button));
         $crate::seq!($($input)*);
-        pressed_modifiers.iter().for_each(|button| $crate::button::ButtonInput::press(button));
+        pressed_modifiers.iter().for_each(|button| $crate::devices::ButtonInput::press(button));
     }};
 }
 
