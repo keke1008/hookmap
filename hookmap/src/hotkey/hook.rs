@@ -12,7 +12,6 @@ pub(super) trait ExecutableHook {
     fn is_executable(&self) -> bool;
 }
 
-#[derive(Clone)]
 pub(super) enum HotkeyCondition {
     Any,
     Activation(Arc<AtomicBool>),
@@ -29,7 +28,6 @@ impl HotkeyCondition {
     }
 }
 
-#[derive(Clone)]
 pub(super) struct HotkeyHook {
     condition: HotkeyCondition,
     process: HookProcess<ButtonEvent>,
@@ -56,7 +54,6 @@ impl HotkeyHook {
     }
 }
 
-#[derive(Clone)]
 pub(super) struct RemapHook {
     modifier_keys: Arc<ModifierKeys>,
     button: Button,
@@ -77,7 +74,6 @@ impl ExecutableHook for RemapHook {
     }
 }
 
-#[derive(Clone)]
 pub(super) enum ButtonHook {
     Hotkey(Arc<HotkeyHook>),
     Remap(Arc<RemapHook>),
@@ -112,7 +108,6 @@ impl From<Arc<RemapHook>> for ButtonHook {
     }
 }
 
-#[derive(Clone)]
 pub(super) struct MouseHook<E> {
     modifier_keys: Arc<ModifierKeys>,
     process: HookProcess<E>,
