@@ -150,9 +150,6 @@ macro_rules! button_name {
     (7)              => ($crate::devices::Button::Key7);
     (8)              => ($crate::devices::Button::Key8);
     (9)              => ($crate::devices::Button::Key9);
-    (;)              => ($crate::devices::Button::SemiColon);
-    (-)              => ($crate::devices::Button::Minus);
-    (/)              => ($crate::devices::Button::Slash);
 }
 
 /// Registers hotkeys.
