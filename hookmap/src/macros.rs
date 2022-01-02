@@ -44,10 +44,6 @@ impl ButtonArgs {
     pub fn iter(&self) -> impl Iterator<Item = ButtonArg> + '_ {
         self.0.iter().copied()
     }
-
-    pub fn iter_inverse(&self) -> impl Iterator<Item = ButtonArg> + '_ {
-        self.iter().map(|arg| arg.invert())
-    }
 }
 
 impl FromIterator<Box<dyn Iterator<Item = ButtonArg>>> for ButtonArgs {

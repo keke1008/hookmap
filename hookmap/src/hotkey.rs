@@ -2,7 +2,7 @@ mod hook;
 mod modifier_keys;
 mod storage;
 
-pub use modifier_keys::ModifierKeys;
+use modifier_keys::ModifierKeys;
 
 use crate::{
     macros::{ButtonArgTag, ButtonArgs},

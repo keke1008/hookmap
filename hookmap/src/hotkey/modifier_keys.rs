@@ -5,16 +5,12 @@ use crate::{
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
-pub struct ModifierKeys {
+pub(crate) struct ModifierKeys {
     pub pressed: Vec<Button>,
     pub released: Vec<Button>,
 }
 
 impl ModifierKeys {
-    pub fn new(pressed: Vec<Button>, released: Vec<Button>) -> Self {
-        Self { pressed, released }
-    }
-
     pub fn merge(&self, other: Self) -> Self {
         ModifierKeys {
             pressed: self
