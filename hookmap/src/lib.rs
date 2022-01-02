@@ -25,3 +25,15 @@ pub mod mouse {
 }
 
 pub use runtime::interceptor;
+
+pub mod prelude {
+    pub use super::{
+        button::{Button, ButtonAction, ButtonInput, ButtonState},
+        button_args, hotkey,
+        hotkey::{Hotkey, RegisterHotkey},
+        interceptor::{Filter, Interceptor},
+        mouse::{EmulateMouseCursor, EmulateMouseWheel},
+        send, seq,
+        utils::Utils,
+    };
+}

@@ -12,11 +12,7 @@ Register hotkeys and simulate keyboard and mosue input.
 ## Example
 
 ```rust
-use hookmap::{
-    hotkey,
-    hotkey::{Hotkey, RegisterHotkey},
-    send,
-};
+use hookmap::prelude::*;
 
 fn main() {
     let hotkey = Hotkey::new();

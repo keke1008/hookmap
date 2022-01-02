@@ -1,8 +1,4 @@
-use hookmap::{
-    hotkey,
-    hotkey::{Hotkey, RegisterHotkey},
-    send,
-};
+use hookmap::prelude::*;
 
 fn main() {
     let hotkey = Hotkey::new();

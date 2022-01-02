@@ -12,11 +12,7 @@ A rust library for Register hotkeys and emulate keyboard and mouse input.
 ## Example
 
 ```rust
-use hookmap::{
-    hotkey,
-    hotkey::{Hotkey, RegisterHotkey},
-    send,
-};
+use hookmap::prelude::*;
 
 fn main() {
     let hotkey = Hotkey::new();

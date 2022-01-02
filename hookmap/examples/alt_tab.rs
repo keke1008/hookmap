@@ -1,4 +1,4 @@
-use hookmap::{button_args, hotkey::Hotkey, utils::Utils};
+use hookmap::prelude::*;
 
 // Emulate Alt-tab with a-t
 fn main() {

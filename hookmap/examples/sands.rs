@@ -1,10 +1,4 @@
-use hookmap::{
-    button::{Button, ButtonAction},
-    hotkey,
-    hotkey::{Hotkey, RegisterHotkey},
-    interceptor::{Filter, Interceptor},
-    seq,
-};
+use hookmap::prelude::*;
 use std::collections::HashSet;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
