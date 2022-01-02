@@ -1,3 +1,5 @@
+//! Registering Hotkeys.
+
 mod hook;
 mod modifier_keys;
 mod storage;

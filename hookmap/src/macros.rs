@@ -1,3 +1,5 @@
+//! Items used in macros.
+
 use crate::button::Button;
 use std::iter::{self, FromIterator};
 
@@ -71,6 +73,7 @@ impl ExpandButtonArg for Button {
     }
 }
 
+/// Constructs [`ButtonArgs`].
 #[macro_export]
 macro_rules! button_args {
     (@inner $parsed:tt , $($rest:tt)*) => {
@@ -291,9 +294,9 @@ macro_rules! button_name {
 ///
 /// ## call
 ///
-/// Calls associated functions of [`SelectHandleTarget`].
+/// Calls associated functions of [`RegisterHotkey`].
 ///
-/// [`SelectHandleTarget`]: crate::SelectHandleTarget
+/// [`RegisterHotkey`]: crate::hotkey::RegisterHotkey
 ///
 /// ```no_run
 /// use hookmap::prelude::*;

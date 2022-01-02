@@ -1,9 +1,11 @@
+//! Definition of utility hotkeys.
+
 use crate::{hotkey, hotkey::RegisterHotkey, macros::ButtonArgs, seq};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
 
-/// Utility function.
+/// Utility hotkeys.
 pub trait Utils: RegisterHotkey {
     /// Alt-Tab hotkey.
     ///
