@@ -121,7 +121,7 @@ macro_rules! button_args {
 ///
 /// # Example
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::{button_name, button::Button};
 /// assert_eq!(Button::Key0, button_name!(0));
 /// assert_eq!(Button::A, button_name!(A));
 ///
@@ -176,10 +176,11 @@ macro_rules! button_name {
 /// Remap keys.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     remap A => B;
+///     remap C, D => E;
 /// });
 /// ```
 ///
@@ -188,10 +189,11 @@ macro_rules! button_name {
 /// Registers a function to be called when the specified button is pressed.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     on_press A => |event| {};
+///     on_press B, C => |_| {};
 /// });
 /// ```
 ///
@@ -200,10 +202,11 @@ macro_rules! button_name {
 /// Registers a function to be called when the specified button is released.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     on_release A => |event| {};
+///     on_release B, C => |_| {};
 /// });
 /// ```
 ///
@@ -212,10 +215,11 @@ macro_rules! button_name {
 /// Disables the specified button.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     disable A;
+///     disable B, C;
 /// });
 /// ```
 ///
@@ -224,7 +228,7 @@ macro_rules! button_name {
 /// Registers a function to be called when the mouse cursor is moved.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     mouse_cursor => |(x, y)| {};
@@ -236,7 +240,7 @@ macro_rules! button_name {
 /// Registers a function to be called when the mouse wheel is rotated.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     mouse_wheel => |speed| {};
@@ -249,10 +253,10 @@ macro_rules! button_name {
 /// The "!" in front of the button indicates that the button is released.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
-///     modifier (LShift, !RCtrl) {
+///     modifier LShift, !RCtrl {
 ///         remap A => B;
 ///     }
 /// })
@@ -263,7 +267,7 @@ macro_rules! button_name {
 /// The button/mouse event will be blocked if the hotkey defined in this statement is executed.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     block {
@@ -280,7 +284,7 @@ macro_rules! button_name {
 /// the button event will be blocked.
 ///
 /// ```no_run
-/// use hookmap::*;
+/// use hookmap::prelude::*;
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {
 ///     dispatch {
@@ -296,15 +300,15 @@ macro_rules! button_name {
 /// [`SelectHandleTarget`]: crate::SelectHandleTarget
 ///
 /// ```no_run
-/// use hookmap::*;
-/// trait RemapAsTab: SelectHandleTarget {
+/// use hookmap::prelude::*;
+/// trait RemapAsTab: RegisterHotkey {
 ///     fn remap_as_tab(&self, target: Button) {
 ///         hotkey!(self => {
 ///             remap [target] => Tab;
 ///         });
 ///     }
 /// }
-/// impl<T: SelectHandleTarget> RemapAsTab for T {}
+/// impl<T: RegisterHotkey> RemapAsTab for T {}
 ///
 /// let hotkey = Hotkey::new();
 /// hotkey!(hotkey => {

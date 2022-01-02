@@ -172,7 +172,8 @@ impl Debug for Callback {
 /// # Examples
 ///
 /// ```
-/// use hookmap::{*, interceptor::Filter};
+/// use hookmap::prelude::*;
+///
 /// let filter = Filter::new()
 ///     .target(Button::A)
 ///     .action(ButtonAction::Press);
@@ -192,6 +193,7 @@ impl Filter {
     ///
     /// ```
     /// use hookmap::interceptor::Filter;
+    ///
     /// let filter = Filter::new();
     /// ```
     ///
@@ -205,7 +207,8 @@ impl Filter {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{*, interceptor::Filter};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new().target(Button::A);
     /// ```
     ///
@@ -220,7 +223,8 @@ impl Filter {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{*, interceptor::Filter};
+    /// use hookmap::prelude::*;
+    ///
     /// let targets = [Button::A, Button::B].iter().copied().collect();
     /// let filter = Filter::new().targets(targets);
     /// ```
@@ -234,7 +238,8 @@ impl Filter {
     ///
     /// # Examples
     /// ```
-    /// use hookmap::{*, interceptor::Filter};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new().action(ButtonAction::Press);
     /// ```
     ///
@@ -293,7 +298,8 @@ impl Iterator for Iter {
 /// # Examples
 ///
 /// ```no_run
-/// use hookmap::{*, interceptor::{Interceptor, Filter}};
+/// use hookmap::prelude::*;
+///
 /// let filter = Filter::new().action(ButtonAction::Press);
 /// Interceptor::unblock(filter).then(|event| {
 ///     println!("{:?}, {:?}", event.target, event.action);
@@ -311,7 +317,8 @@ impl Interceptor {
     /// This hook disables keyboard events.
     ///
     /// ```no_run
-    /// use hookmap::{*, interceptor::{Interceptor, Filter}};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new();
     /// Interceptor::block(filter).then(|event| {
     ///     println!("This event was disabled: {:?}", event);
@@ -329,7 +336,8 @@ impl Interceptor {
     /// This hook doen not disable keyboard events.
     ///
     /// ```no_run
-    /// use hookmap::{*, interceptor::{Interceptor, Filter}};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new();
     /// Interceptor::unblock(filter).then(|event| {
     ///     println!("This event was disabled: {:?}", event);
@@ -346,7 +354,8 @@ impl Interceptor {
     /// Receives a single event.
     ///
     /// ```no_run
-    /// use hookmap::{*, interceptor::{Interceptor, Filter}};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new();
     /// Interceptor::block(filter).then(|event| {
     ///     println!("{:?}", event);
@@ -364,7 +373,8 @@ impl Interceptor {
     /// Receives multimple hooks as iterator.
     ///
     /// ```no_run
-    /// use hookmap::{*, interceptor::{Interceptor, Filter}};
+    /// use hookmap::prelude::*;
+    ///
     /// let filter = Filter::new();
     /// Interceptor::block(filter).then_iter(|mut iter| {
     ///     while let Some(event) = iter.next() {

@@ -4,25 +4,13 @@
 //!
 //! This library provides abstracted input emulation and global hooks for keyboard and mouse.
 //!
-//! # Required traits.
-//!
-//! In order to support another OS, these traits need to be implemented.
-//!
-//! * [`ButtonOperation`] for [`Button`]
-//! * [`EmulateMouseCursor`] for [`Mouse`]
-//! * [`EmulateMouseWheel`] for [`Mouse`]
-//! * [`HookInstaller`] for [`HookHandler`]
-//!
-//! [`HookInstaller`]: crate::common::handler::HookInstaller
-//!
 //! ## Feature flags
 //!
-//! * `block-input-event`: Set the default `EventBlock` value to `EventBlock::Block`.
+//! * `block-input-event`: Set button events to be blocked by default.
 //! * `us-keyboard-layout` (default): Set the variants of [`Button`] to the buttons on the us keyboard.
 //! * `japanese-keyboard-layout`: Set the variants of [`Button`] to the buttons on the japanese keyboard.
 
 pub mod common;
-mod macros;
 
 mod sys;
 
