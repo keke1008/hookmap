@@ -30,7 +30,7 @@ pub trait RegisterHotkey {
     /// hotkey.remap(button_args!(A), Button::B);
     /// ```
     ///
-    fn remap(&self, target: ButtonArg, behavior: Button);
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button);
 
     /// Run `process` when `target` is pressed.
     ///
@@ -44,7 +44,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_press(button_args!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
     /// ```
     ///
-    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>);
+    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when `target` is released.
     ///
@@ -58,7 +58,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_release(button_args!(A), Arc::new(|e| println!("Released: {:?}", e)));
     /// ```
     ///
-    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>);
+    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when a mouse wheel is rotated.
     ///
@@ -100,7 +100,7 @@ pub trait RegisterHotkey {
     /// hotkey.disable(button_args!(A));
     /// ```
     ///
-    fn disable(&self, target: ButtonArg);
+    fn disable(&self, target: impl Into<ButtonArg>);
 
     /// Adds modifier keys.
     ///
@@ -113,7 +113,7 @@ pub trait RegisterHotkey {
     /// let a_or_b = hotkey.add_modifier_keys(button_args!(A, B));
     /// a_or_b.remap(button_args!(C), Button::D);
     /// ```
-    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey;
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey;
 
     /// Changes the operation for native events to block or dispatch.
     ///
@@ -174,11 +174,11 @@ impl Hotkey {
 }
 
 impl RegisterHotkey for Hotkey {
-    fn remap(&self, target: ButtonArg, behavior: Button) {
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Inversion => panic!(),
                 ButtonArgElementTag::Direct => {
@@ -188,7 +188,7 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -196,7 +196,7 @@ impl RegisterHotkey for Hotkey {
             self.native_event_operation,
         ));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
@@ -208,7 +208,7 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -216,7 +216,7 @@ impl RegisterHotkey for Hotkey {
             self.native_event_operation,
         ));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
@@ -246,7 +246,7 @@ impl RegisterHotkey for Hotkey {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&self, target: ButtonArg) {
+    fn disable(&self, target: impl Into<ButtonArg>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -254,16 +254,16 @@ impl RegisterHotkey for Hotkey {
             self.native_event_operation,
         ));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
             storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
         }
     }
 
-    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
         ModifierHotkey::new(
             &self.storage,
-            Arc::new(ModifierKeys::from(modifier_keys)),
+            Arc::new(ModifierKeys::from(modifier_keys.into())),
             self.native_event_operation,
         )
     }
@@ -295,11 +295,11 @@ impl<'a> ModifierHotkey<'a> {
 }
 
 impl RegisterHotkey for ModifierHotkey<'_> {
-    fn remap(&self, target: ButtonArg, behavior: Button) {
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Inversion => panic!(),
                 ButtonArgElementTag::Direct => {
@@ -309,7 +309,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
@@ -317,7 +317,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
             self.native_event_operation,
         ));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
@@ -329,10 +329,10 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             let is_active = Arc::default();
             let inactivation_hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Activation(Arc::clone(&is_active)),
@@ -383,7 +383,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&self, target: ButtonArg) {
+    fn disable(&self, target: impl Into<ButtonArg>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
@@ -391,16 +391,19 @@ impl RegisterHotkey for ModifierHotkey<'_> {
             self.native_event_operation,
         ));
 
-        for arg in target.iter() {
+        for arg in target.into().iter() {
             storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
             storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
         }
     }
 
-    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
         ModifierHotkey::new(
             self.storage,
-            Arc::new(self.modifier_keys.merge(ModifierKeys::from(modifier_keys))),
+            Arc::new(
+                self.modifier_keys
+                    .merge(ModifierKeys::from(modifier_keys.into())),
+            ),
             self.native_event_operation,
         )
     }
