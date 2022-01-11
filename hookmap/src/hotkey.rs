@@ -17,6 +17,28 @@ use storage::HotkeyStorage;
 
 use self::hook::{HotkeyCondition, HotkeyProcess};
 
+pub trait IntoHookProcess<E> {
+    fn into(self) -> HookProcess<E>;
+}
+
+impl<E> IntoHookProcess<E> for HookProcess<E> {
+    fn into(self) -> HookProcess<E> {
+        self
+    }
+}
+
+impl<E, F: Fn(E) + Send + Sync + 'static> IntoHookProcess<E> for F {
+    fn into(self) -> HookProcess<E> {
+        Arc::new(self)
+    }
+}
+
+impl<E, F: Fn(E) + Send + Sync + 'static> IntoHookProcess<E> for Arc<F> {
+    fn into(self) -> HookProcess<E> {
+        self
+    }
+}
+
 /// Methods for registering hotkeys.
 pub trait RegisterHotkey {
     /// Makes `target` behave like a `behavior`.
@@ -44,7 +66,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_press(button_args!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
     /// ```
     ///
-    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>);
+    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
 
     /// Run `process` when `target` is released.
     ///
@@ -58,7 +80,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_release(button_args!(A), Arc::new(|e| println!("Released: {:?}", e)));
     /// ```
     ///
-    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>);
+    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
 
     /// Run `process` when a mouse wheel is rotated.
     ///
@@ -72,7 +94,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_wheel(Arc::new(|delta| println!("Delta: {:?}", delta)));
     /// ```
     ///
-    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>);
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>);
 
     /// Run `process` when a mouse cursor is moved.
     ///
@@ -86,7 +108,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_cursor(Arc::new(|(x, y)| println!("Cursor: ({}, {})", x, y)));
     /// ```
     ///
-    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>);
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>);
 
     /// Disables the button and blocks events.
     ///
@@ -188,11 +210,11 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
-            HotkeyProcess::Callback(process),
+            HotkeyProcess::Callback(process.into()),
             self.native_event_operation,
         ));
 
@@ -208,11 +230,11 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
-            HotkeyProcess::Callback(process),
+            HotkeyProcess::Callback(process.into()),
             self.native_event_operation,
         ));
 
@@ -228,19 +250,19 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
-            process,
+            process.into(),
             self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
-            process,
+            process.into(),
             self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
@@ -309,11 +331,11 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_press(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
-            HotkeyProcess::Callback(process),
+            HotkeyProcess::Callback(process.into()),
             self.native_event_operation,
         ));
 
@@ -329,8 +351,9 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_release(&self, target: impl Into<ButtonArg>, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
+        let process = process.into();
 
         for arg in target.into().iter() {
             let is_active = Arc::default();
@@ -365,19 +388,19 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
-            process,
+            process.into(),
             self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
         let hook = Arc::new(MouseHook::new(
             Arc::clone(&self.modifier_keys),
-            process,
+            process.into(),
             self.native_event_operation,
         ));
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
