@@ -332,20 +332,20 @@ impl RegisterHotkey for ModifierHotkey<'_> {
     fn on_release(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
 
-        let is_active = Arc::default();
-        let inactivation_hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Activation(Arc::clone(&is_active)),
-            HotkeyProcess::Callback(process),
-            self.native_event_operation,
-        ));
-        let is_active = Arc::clone(&is_active);
-        let activation_hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
-            HotkeyProcess::Activate(Arc::clone(&is_active)),
-            NativeEventOperation::Dispatch,
-        ));
-
         for arg in target.iter() {
+            let is_active = Arc::default();
+            let inactivation_hook = Arc::new(HotkeyHook::new(
+                HotkeyCondition::Activation(Arc::clone(&is_active)),
+                HotkeyProcess::Callback(Arc::clone(&process)),
+                self.native_event_operation,
+            ));
+            let is_active = Arc::clone(&is_active);
+            let activation_hook = Arc::new(HotkeyHook::new(
+                HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
+                HotkeyProcess::Activate(Arc::clone(&is_active)),
+                NativeEventOperation::Dispatch,
+            ));
+
             match arg.tag {
                 ButtonArgTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&activation_hook));
@@ -356,13 +356,12 @@ impl RegisterHotkey for ModifierHotkey<'_> {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&inactivation_hook));
                 }
             }
-        }
-
-        for target in &self.modifier_keys.pressed {
-            storage.register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
-        }
-        for target in &self.modifier_keys.released {
-            storage.register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
+            for target in &self.modifier_keys.pressed {
+                storage.register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
+            }
+            for target in &self.modifier_keys.released {
+                storage.register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
+            }
         }
     }
 
