@@ -77,13 +77,13 @@ impl ExpandButtonArg for Button {
 
 /// Constructs [`ButtonArgs`].
 #[macro_export]
-macro_rules! button_args {
+macro_rules! arg {
     (@inner $parsed:tt , $($rest:tt)*) => {
-        $crate::button_args!(@inner $parsed $($rest)*)
+        $crate::arg!(@inner $parsed $($rest)*)
     };
 
     (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
-        $crate::button_args!(
+        $crate::arg!(
             @inner
             [
                 $($parsed)*
@@ -94,7 +94,7 @@ macro_rules! button_args {
     };
 
     (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
-        $crate::button_args!(
+        $crate::arg!(
             @inner
             [
                 $($parsed)*
@@ -112,7 +112,7 @@ macro_rules! button_args {
     };
 
     ($($args:tt)*) => {
-        $crate::button_args!(@inner [] $($args)*)
+        $crate::arg!(@inner [] $($args)*)
     };
 }
 
@@ -330,17 +330,17 @@ macro_rules! hotkey {
 
     // Ignored token: =>
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] => $($rest:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) $($rest)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::arg!($($collected)*) ) $($rest)*)
     };
 
     // Ignored token: ;
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ]; $($rest:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) $($rest)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::arg!($($collected)*) ) $($rest)*)
     };
 
     // Ignored token: { }
     (@parse_button_args_until_ignored_tokens $hotkey:ident $command:ident [ $($collected:tt)* ] { $($rest1:tt)* } $($rest2:tt)*) => {
-        $crate::hotkey!(@$command $hotkey ( $crate::button_args!($($collected)*) ) { $($rest1)* } $($rest2)*)
+        $crate::hotkey!(@$command $hotkey ( $crate::arg!($($collected)*) ) { $($rest1)* } $($rest2)*)
     };
 
     // Munch tokens
@@ -562,23 +562,17 @@ mod tests {
     #[test]
     fn button_args() {
         use Button::*;
+        assert_eq!(arg!(A), ButtonArg(vec![ButtonArgElement::direct(A)]));
+        assert_eq!(arg!(!A), ButtonArg(vec![ButtonArgElement::inversion(A)]));
         assert_eq!(
-            button_args!(A),
-            ButtonArg(vec![ButtonArgElement::direct(A)])
-        );
-        assert_eq!(
-            button_args!(!A),
-            ButtonArg(vec![ButtonArgElement::inversion(A)])
-        );
-        assert_eq!(
-            button_args!(A, !B),
+            arg!(A, !B),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B)
             ])
         );
         assert_eq!(
-            button_args!(A, !B),
+            arg!(A, !B),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B)
@@ -588,9 +582,9 @@ mod tests {
             ButtonArgElement::direct(A),
             ButtonArgElement::inversion(B),
         ]);
-        assert_eq!(button_args!([button_args]), button_args);
+        assert_eq!(arg!([button_args]), button_args);
         assert_eq!(
-            button_args!([button_args], C, !D),
+            arg!([button_args], C, !D),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B),
@@ -599,7 +593,7 @@ mod tests {
             ])
         );
         assert_eq!(
-            button_args!(C, !D, [button_args]),
+            arg!(C, !D, [button_args]),
             ButtonArg(vec![
                 ButtonArgElement::direct(C),
                 ButtonArgElement::inversion(D),
