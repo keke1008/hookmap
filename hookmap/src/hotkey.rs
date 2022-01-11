@@ -7,7 +7,7 @@ mod storage;
 use modifier_keys::ModifierKeys;
 
 use crate::{
-    macros::{ButtonArgElementTag, ButtonArgs},
+    macros::{ButtonArg, ButtonArgElementTag},
     runtime::Runtime,
 };
 use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
@@ -30,7 +30,7 @@ pub trait RegisterHotkey {
     /// hotkey.remap(button_args!(A), Button::B);
     /// ```
     ///
-    fn remap(&self, target: ButtonArgs, behavior: Button);
+    fn remap(&self, target: ButtonArg, behavior: Button);
 
     /// Run `process` when `target` is pressed.
     ///
@@ -44,7 +44,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_press(button_args!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
     /// ```
     ///
-    fn on_press(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>);
+    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when `target` is released.
     ///
@@ -58,7 +58,7 @@ pub trait RegisterHotkey {
     /// hotkey.on_release(button_args!(A), Arc::new(|e| println!("Released: {:?}", e)));
     /// ```
     ///
-    fn on_release(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>);
+    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>);
 
     /// Run `process` when a mouse wheel is rotated.
     ///
@@ -100,7 +100,7 @@ pub trait RegisterHotkey {
     /// hotkey.disable(button_args!(A));
     /// ```
     ///
-    fn disable(&self, target: ButtonArgs);
+    fn disable(&self, target: ButtonArg);
 
     /// Adds modifier keys.
     ///
@@ -113,7 +113,7 @@ pub trait RegisterHotkey {
     /// let a_or_b = hotkey.add_modifier_keys(button_args!(A, B));
     /// a_or_b.remap(button_args!(C), Button::D);
     /// ```
-    fn add_modifier_keys(&self, modifier_keys: ButtonArgs) -> ModifierHotkey;
+    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey;
 
     /// Changes the operation for native events to block or dispatch.
     ///
@@ -174,7 +174,7 @@ impl Hotkey {
 }
 
 impl RegisterHotkey for Hotkey {
-    fn remap(&self, target: ButtonArgs, behavior: Button) {
+    fn remap(&self, target: ButtonArg, behavior: Button) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
 
@@ -188,7 +188,7 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_press(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -208,7 +208,7 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn on_release(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -246,7 +246,7 @@ impl RegisterHotkey for Hotkey {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&self, target: ButtonArgs) {
+    fn disable(&self, target: ButtonArg) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Any,
@@ -260,7 +260,7 @@ impl RegisterHotkey for Hotkey {
         }
     }
 
-    fn add_modifier_keys(&self, modifier_keys: ButtonArgs) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey {
         ModifierHotkey::new(
             &self.storage,
             Arc::new(ModifierKeys::from(modifier_keys)),
@@ -295,7 +295,7 @@ impl<'a> ModifierHotkey<'a> {
 }
 
 impl RegisterHotkey for ModifierHotkey<'_> {
-    fn remap(&self, target: ButtonArgs, behavior: Button) {
+    fn remap(&self, target: ButtonArg, behavior: Button) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
 
@@ -309,7 +309,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_press(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>) {
+    fn on_press(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
@@ -329,7 +329,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn on_release(&self, target: ButtonArgs, process: HookProcess<ButtonEvent>) {
+    fn on_release(&self, target: ButtonArg, process: HookProcess<ButtonEvent>) {
         let mut storage = self.storage.borrow_mut();
 
         for arg in target.iter() {
@@ -383,7 +383,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
     }
 
-    fn disable(&self, target: ButtonArgs) {
+    fn disable(&self, target: ButtonArg) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
@@ -397,7 +397,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         }
     }
 
-    fn add_modifier_keys(&self, modifier_keys: ButtonArgs) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: ButtonArg) -> ModifierHotkey {
         ModifierHotkey::new(
             self.storage,
             Arc::new(self.modifier_keys.merge(ModifierKeys::from(modifier_keys))),

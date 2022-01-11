@@ -1,6 +1,6 @@
 //! Definition of utility hotkeys.
 
-use crate::{hotkey, hotkey::RegisterHotkey, macros::ButtonArgs, seq};
+use crate::{hotkey, hotkey::RegisterHotkey, macros::ButtonArg, seq};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
@@ -25,7 +25,7 @@ pub trait Utils: RegisterHotkey {
     /// });
     /// ```
     ///
-    fn bind_alt_tab(&self, alt: ButtonArgs, tab: ButtonArgs) {
+    fn bind_alt_tab(&self, alt: ButtonArg, tab: ButtonArg) {
         hotkey!(self => {
             on_release [alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
@@ -62,7 +62,7 @@ pub trait Utils: RegisterHotkey {
     /// });
     /// ```
     ///
-    fn bind_shift_alt_tab(&self, alt: ButtonArgs, tab: ButtonArgs) {
+    fn bind_shift_alt_tab(&self, alt: ButtonArg, tab: ButtonArg) {
         hotkey!(self => {
             on_release [alt] => move |_| {
                 IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
