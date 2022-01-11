@@ -48,6 +48,12 @@ impl ButtonArg {
     }
 }
 
+impl From<Button> for ButtonArg {
+    fn from(button: Button) -> Self {
+        ButtonArg(vec![ButtonArgElement::direct(button)])
+    }
+}
+
 impl FromIterator<Box<dyn Iterator<Item = ButtonArgElement>>> for ButtonArg {
     fn from_iter<T: IntoIterator<Item = Box<dyn Iterator<Item = ButtonArgElement>>>>(
         iter: T,
