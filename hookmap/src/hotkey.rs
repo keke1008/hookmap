@@ -7,7 +7,7 @@ mod storage;
 use modifier_keys::ModifierKeys;
 
 use crate::{
-    macros::{ButtonArgTag, ButtonArgs},
+    macros::{ButtonArgElementTag, ButtonArgs},
     runtime::Runtime,
 };
 use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
@@ -180,8 +180,8 @@ impl RegisterHotkey for Hotkey {
 
         for arg in target.iter() {
             match arg.tag {
-                ButtonArgTag::Inversion => panic!(),
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Inversion => panic!(),
+                ButtonArgElementTag::Direct => {
                     storage.register_remap(arg.button, Arc::clone(&hook));
                 }
             }
@@ -198,10 +198,10 @@ impl RegisterHotkey for Hotkey {
 
         for arg in target.iter() {
             match arg.tag {
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
                 }
-                ButtonArgTag::Inversion => {
+                ButtonArgElementTag::Inversion => {
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
                 }
             }
@@ -218,10 +218,10 @@ impl RegisterHotkey for Hotkey {
 
         for arg in target.iter() {
             match arg.tag {
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
                 }
-                ButtonArgTag::Inversion => {
+                ButtonArgElementTag::Inversion => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
                 }
             }
@@ -301,8 +301,8 @@ impl RegisterHotkey for ModifierHotkey<'_> {
 
         for arg in target.iter() {
             match arg.tag {
-                ButtonArgTag::Inversion => panic!(),
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Inversion => panic!(),
+                ButtonArgElementTag::Direct => {
                     storage.register_remap(arg.button, Arc::clone(&hook));
                 }
             }
@@ -319,10 +319,10 @@ impl RegisterHotkey for ModifierHotkey<'_> {
 
         for arg in target.iter() {
             match arg.tag {
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
                 }
-                ButtonArgTag::Inversion => {
+                ButtonArgElementTag::Inversion => {
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
                 }
             }
@@ -347,11 +347,11 @@ impl RegisterHotkey for ModifierHotkey<'_> {
             ));
 
             match arg.tag {
-                ButtonArgTag::Direct => {
+                ButtonArgElementTag::Direct => {
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&activation_hook));
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&inactivation_hook));
                 }
-                ButtonArgTag::Inversion => {
+                ButtonArgElementTag::Inversion => {
                     storage.register_hotkey_on_release(arg.button, Arc::clone(&activation_hook));
                     storage.register_hotkey_on_press(arg.button, Arc::clone(&inactivation_hook));
                 }

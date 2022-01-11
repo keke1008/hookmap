@@ -1,6 +1,6 @@
 pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
 
-use crate::macros::{ButtonArg, ExpandButtonArg};
+use crate::macros::{ButtonArgElement, ExpandButtonArg};
 use hookmap_core::ButtonOperation;
 
 #[derive(Debug, Clone)]
@@ -19,8 +19,8 @@ pub const ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
 
 impl<const N: usize> ExpandButtonArg for ConstantAny<N> {
-    fn expand(self) -> Box<dyn Iterator<Item = ButtonArg>> {
-        Box::new(IntoIterator::into_iter(self.0).map(ButtonArg::direct))
+    fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
+        Box::new(IntoIterator::into_iter(self.0).map(ButtonArgElement::direct))
     }
 }
 
