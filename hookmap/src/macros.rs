@@ -588,7 +588,7 @@ macro_rules! send {
 mod tests {
     use super::*;
     use crate::{
-        button::{Button, ALT, CTRL, META, SHIFT},
+        button::{Button, Sequence, SequenceOperation, ALT, CTRL, META, SHIFT},
         hotkey::{Hotkey, RegisterHotkey},
     };
 
@@ -748,34 +748,37 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "This function sends keyboard input"]
     fn seq_macro() {
-        seq!();
-        seq!(A, B);
-        seq!(A,);
-        seq!([Button::A], [Button::B]);
-        seq!([CTRL], [SHIFT]);
-        seq!(A up, B down, [CTRL] up);
-        seq!(with(A));
-        seq!(with(A),);
-        seq!(with(A), C,);
-        seq!(with(A, B), C);
-        seq!(with([Button::A], [SHIFT]), [CTRL]);
-    }
-
-    #[test]
-    #[ignore = "This function sends keyboard input"]
-    fn send_macro() {
-        send!();
-        send!(A, B);
-        send!(A,);
-        send!([Button::A], [Button::B]);
-        send!([CTRL], [SHIFT]);
-        send!(A up, B down, [CTRL] up);
-        send!(with(A));
-        send!(with(A),);
-        send!(with(A), C,);
-        send!(with(A, B), C);
-        send!(with([Button::A], [SHIFT]), [CTRL]);
+        use SequenceOperation::{Click, Press, Release};
+        assert_eq!(seq!(), Sequence::new(vec![], vec![]));
+        assert_eq!(seq!(A), Sequence::new(vec![], vec![Click(Button::A)]));
+        assert_eq!(
+            seq!(A, B),
+            Sequence::new(vec![], vec![Click(Button::A), Click(Button::B)])
+        );
+        assert_eq!(
+            seq!([Button::A], [Button::B]),
+            Sequence::new(vec![], vec![Click(Button::A), Click(Button::B)])
+        );
+        assert_eq!(seq!(A up), Sequence::new(vec![], vec![Release(Button::A)]));
+        assert_eq!(
+            seq!(A down, B, A up),
+            Sequence::new(
+                vec![],
+                vec![Press(Button::A), Click(Button::B), Release(Button::A)]
+            )
+        );
+        assert_eq!(
+            seq!(with(A), C),
+            Sequence::new(vec![Button::A], vec![Click(Button::C)])
+        );
+        assert_eq!(
+            seq!(with(A, B), C),
+            Sequence::new(vec![Button::A, Button::B], vec![Click(Button::C)])
+        );
+        assert_eq!(
+            seq!(with([Button::A], B), C up),
+            Sequence::new(vec![Button::A, Button::B], vec![Release(Button::C)])
+        );
     }
 }
