@@ -151,3 +151,109 @@ impl<const N: usize> ButtonState for ConstantAny<N> {
         self.0.iter().any(Button::is_released)
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SequenceOperation {
+    Click(Button),
+    Press(Button),
+    Release(Button),
+}
+
+impl SequenceOperation {
+    fn operate(&self) {
+        match self {
+            SequenceOperation::Click(button) => button.click(),
+            SequenceOperation::Press(button) => button.press(),
+            SequenceOperation::Release(button) => button.release(),
+        }
+    }
+
+    fn operate_recursive(&self) {
+        match self {
+            SequenceOperation::Click(button) => button.click_recursive(),
+            SequenceOperation::Press(button) => button.press_recursive(),
+            SequenceOperation::Release(button) => button.release_recursive(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Sequence {
+    with: Vec<Button>,
+    seq: Vec<SequenceOperation>,
+}
+
+impl Sequence {
+    const MODIFIER_LIST: [Button; 8] = [
+        Button::LShift,
+        Button::RShift,
+        Button::LCtrl,
+        Button::RCtrl,
+        Button::LAlt,
+        Button::RAlt,
+        Button::LMeta,
+        Button::RMeta,
+    ];
+
+    pub fn new(with: Vec<Button>, seq: Vec<SequenceOperation>) -> Self {
+        Self { with, seq }
+    }
+
+    fn operate_with_keys(&self, operation: fn(&Button)) {
+        self.with.iter().for_each(operation);
+    }
+
+    fn send_inner(
+        &self,
+        press: fn(&Button),
+        release: fn(&Button),
+        operation: fn(&SequenceOperation),
+    ) {
+        self.operate_with_keys(press);
+        self.seq.iter().for_each(operation);
+        self.operate_with_keys(release);
+    }
+
+    pub fn send(&self) {
+        self.send_inner(
+            ButtonInput::press,
+            ButtonInput::release,
+            SequenceOperation::operate,
+        );
+    }
+
+    pub fn send_recursive(&self) {
+        self.send_inner(
+            ButtonInput::press_recursive,
+            ButtonInput::release_recursive,
+            SequenceOperation::operate_recursive,
+        );
+    }
+
+    pub fn send_ignore_modifier_keys_inner(
+        &self,
+        press: fn(&Button),
+        release: fn(&Button),
+        operation: fn(&SequenceOperation),
+    ) {
+        Self::MODIFIER_LIST.iter().for_each(press);
+        self.send_inner(press, release, operation);
+        Self::MODIFIER_LIST.iter().for_each(release);
+    }
+
+    pub fn send_ignore_modifier_keys(&self) {
+        self.send_ignore_modifier_keys_inner(
+            ButtonInput::press,
+            ButtonInput::release,
+            SequenceOperation::operate,
+        );
+    }
+
+    pub fn send_ignore_modifier_keys_recursive(&self) {
+        self.send_ignore_modifier_keys_inner(
+            ButtonInput::press_recursive,
+            ButtonInput::release_recursive,
+            SequenceOperation::operate_recursive,
+        );
+    }
+}

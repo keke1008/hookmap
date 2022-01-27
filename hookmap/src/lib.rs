@@ -24,7 +24,8 @@ pub mod event {
 /// keyboard and mouse, and their inputs.
 pub mod devices {
     pub use super::button::{
-        Button, ButtonAction, ButtonInput, ButtonState, ALT, CTRL, META, SHIFT,
+        Button, ButtonAction, ButtonInput, ButtonState, Sequence, SequenceOperation, ALT, CTRL,
+        META, SHIFT,
     };
     pub use hookmap_core::{EmulateMouseCursor, EmulateMouseWheel, Mouse};
 }
