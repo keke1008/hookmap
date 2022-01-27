@@ -481,31 +481,58 @@ macro_rules! hotkey {
 ///
 #[macro_export]
 macro_rules! seq {
-    // trailing comma case
-    (with($($modifier:tt)*) $(, $($button:tt $($action:ident)?),*)? ,) => {
-        $crate::seq!(with($($modifier)*) $(, $($button$($action)?),*)?)
+    (@with $($modifier:tt),*) => {
+        vec![ $($crate::button_name!($modifier)),* ]
     };
 
-    (with($($modifier:tt),*) $(, $($rest:tt)*)?) => {
-        $crate::seq!($($modifier down,)* $($($rest)*,)? $($modifier up),*)
+    (@single $button:tt $op:ident) => {
+        $crate::devices::SequenceOperation::$op($crate::button_name!($button))
     };
 
-    ($($button:tt $($action:ident)?),* $(,)?) => {
-        $(
-            $crate::seq!(@single $crate::button_name!($button) $(, $action)?);
-        )*
+    (@button $parsed:tt) => {
+        vec!$parsed
     };
 
-    (@single $button:expr) => {
-        $crate::devices::ButtonInput::click(&$button);
+    (@button $parsed:tt , $($rest:tt)*) => {
+        $crate::seq!(@button $parsed $($rest)*)
     };
 
-    (@single $button:expr, down) => {
-        $crate::devices::ButtonInput::press(&$button);
+    (@button [ $($parsed:tt),* ] $button:tt up $($rest:tt)*) => {
+        $crate::seq!(
+            @button
+            [ $($parsed,)* ($crate::seq!(@single $button Release)) ]
+            $($rest)*
+        )
     };
 
-    (@single $button:expr, up) => {
-        $crate::devices::ButtonInput::release(&$button);
+    (@button [ $($parsed:tt),* ] $button:tt down $($rest:tt)*) => {
+        $crate::seq!(
+            @button
+            [ $($parsed,)* ($crate::seq!(@single $button Press)) ]
+            $($rest)*
+        )
+    };
+
+    (@button [ $($parsed:tt),* ] $button:tt $($rest:tt)*) => {
+        $crate::seq!(
+            @button
+            [ $($parsed,)* ($crate::seq!(@single $button Click)) ]
+            $($rest)*
+        )
+    };
+
+    (with( $($modifier:tt),* ), $($button:tt)*) => {
+        $crate::devices::Sequence::new(
+            seq!( @with $($modifier),* ),
+            seq!( @button [] $($button)* ),
+        )
+    };
+
+    ($($button:tt)*) => {
+        $crate::devices::Sequence::new(
+            vec![],
+            $crate::seq!( @button [] $($button)* ),
+        )
     };
 }
 
