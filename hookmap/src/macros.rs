@@ -253,43 +253,6 @@ pub const MODIFIER_LIST: [Button; 8] = [
     Button::RMeta,
 ];
 
-/// Ignores the modifier keys and sends the input events.
-///
-/// # Examples
-///
-/// ```no_run
-/// use hookmap::*;
-/// send!(A, B, C);
-/// ```
-///
-/// Use `down` and `up` to press and release keys.
-///
-/// ```no_run
-/// use hookmap::*;
-/// send!(LCtrl down, A, LCtrl up);
-/// ```
-///
-/// Use `with(...)` to specify the keys to hold down when sending.
-///
-/// ```no_run
-/// use hookmap::*;
-/// send!(with(LShift, LCtrl), Tab);
-/// send!(LShift down, LCtrl down, Tab, LShift up, LCtrl up); // equals to above
-/// ```
-///
-#[macro_export]
-macro_rules! send {
-    ($($input:tt)*) => {{
-        let pressed_modifiers = $crate::macros::MODIFIER_LIST
-            .iter()
-            .filter(|button| $crate::devices::ButtonState::is_pressed(button))
-            .collect::<Vec<_>>();
-        pressed_modifiers.iter().for_each(|button| $crate::devices::ButtonInput::release(button));
-        $crate::seq!($($input)*);
-        pressed_modifiers.iter().for_each(|button| $crate::devices::ButtonInput::press(button));
-    }};
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

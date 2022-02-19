@@ -12,10 +12,10 @@ fn main() {
     // You can define hotkeys that work only when specific keys are pressed or released.
     let modified = hotkey.add_modifier_keys(buttons!(LCtrl, !RShift));
 
-    modified.on_press(Button::Space, |_| send!(with(LCtrl), A));
+    modified.on_press(Button::Space, |_| seq!(with(LCtrl), A).send());
 
     modified.on_release(buttons!(A, B), |event: ButtonEvent| {
-        send!(with(LShift), [event.target])
+        seq!(with(LShift), [event.target]).send()
     });
 
     hotkey.install();

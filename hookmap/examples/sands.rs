@@ -12,16 +12,16 @@ fn emulate_sands(hotkey: &Hotkey, space: Button, ingored: HashSet<Button>) {
         let is_alone = Arc::clone(&is_alone);
         move |_| {
             is_alone.store(true, Ordering::SeqCst);
-            seq!(LShift down);
+            seq!(LShift down).send();
         }
     };
 
     let on_release_space = {
         let is_alone = Arc::clone(&is_alone);
         move |_| {
-            seq!(LShift up);
+            seq!(LShift up).send();
             if is_alone.load(Ordering::SeqCst) {
-                seq!([space]);
+                seq!([space]).send();
             }
         }
     };

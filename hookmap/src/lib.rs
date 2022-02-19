@@ -44,7 +44,7 @@ pub mod prelude {
         hotkey,
         hotkey::{Hotkey, RegisterHotkey},
         interceptor::{Filter, Interceptor},
-        send, seq,
+        seq,
         utils::Utils,
     };
 }
