@@ -25,8 +25,8 @@ fn emulate_sands(hotkey: &Hotkey, space: Button, ingored: HashSet<Button>) {
             }
         }
     };
-    hotkey.on_press(arg!([space]), on_press_space);
-    hotkey.on_release(arg!([space]), on_release_space);
+    hotkey.on_press(buttons!([space]), on_press_space);
+    hotkey.on_release(buttons!([space]), on_release_space);
 
     // hotkey!(hotkey => {
     //     block {

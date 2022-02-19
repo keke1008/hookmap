@@ -35,7 +35,7 @@ pub use runtime::interceptor;
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
     pub use super::{
-        arg,
+        buttons,
         devices::{
             Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
             Mouse,

@@ -83,13 +83,13 @@ impl ExpandButtonArg for Button {
 
 /// Constructs [`ButtonArgs`].
 #[macro_export]
-macro_rules! arg {
+macro_rules! buttons {
     (@inner $parsed:tt , $($rest:tt)*) => {
-        $crate::arg!(@inner $parsed $($rest)*)
+        $crate::buttons!(@inner $parsed $($rest)*)
     };
 
     (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
-        $crate::arg!(
+        $crate::buttons!(
             @inner
             [
                 $($parsed)*
@@ -100,7 +100,7 @@ macro_rules! arg {
     };
 
     (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
-        $crate::arg!(
+        $crate::buttons!(
             @inner
             [
                 $($parsed)*
@@ -118,7 +118,7 @@ macro_rules! arg {
     };
 
     ($($args:tt)*) => {
-        $crate::arg!(@inner [] $($args)*)
+        $crate::buttons!(@inner [] $($args)*)
     };
 }
 
@@ -298,17 +298,20 @@ mod tests {
     #[test]
     fn button_args() {
         use Button::*;
-        assert_eq!(arg!(A), ButtonArg(vec![ButtonArgElement::direct(A)]));
-        assert_eq!(arg!(!A), ButtonArg(vec![ButtonArgElement::inversion(A)]));
+        assert_eq!(buttons!(A), ButtonArg(vec![ButtonArgElement::direct(A)]));
         assert_eq!(
-            arg!(A, !B),
+            buttons!(!A),
+            ButtonArg(vec![ButtonArgElement::inversion(A)])
+        );
+        assert_eq!(
+            buttons!(A, !B),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B)
             ])
         );
         assert_eq!(
-            arg!(A, !B),
+            buttons!(A, !B),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B)
@@ -318,9 +321,9 @@ mod tests {
             ButtonArgElement::direct(A),
             ButtonArgElement::inversion(B),
         ]);
-        assert_eq!(arg!([button_args]), button_args);
+        assert_eq!(buttons!([button_args]), button_args);
         assert_eq!(
-            arg!([button_args], C, !D),
+            buttons!([button_args], C, !D),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B),
@@ -329,7 +332,7 @@ mod tests {
             ])
         );
         assert_eq!(
-            arg!(C, !D, [button_args]),
+            buttons!(C, !D, [button_args]),
             ButtonArg(vec![
                 ButtonArgElement::direct(C),
                 ButtonArgElement::inversion(D),
