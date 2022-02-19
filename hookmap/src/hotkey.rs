@@ -50,7 +50,7 @@ pub trait RegisterHotkey {
     /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.remap(button_args!(A), Button::B);
+    /// hotkey.remap(buttons!(A), Button::B);
     /// ```
     ///
     fn remap(&self, target: impl Into<ButtonArg>, behavior: Button);
@@ -64,7 +64,7 @@ pub trait RegisterHotkey {
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.on_press(button_args!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
+    /// hotkey.on_press(buttons!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
     /// ```
     ///
     fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
@@ -78,7 +78,7 @@ pub trait RegisterHotkey {
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.on_release(button_args!(A), Arc::new(|e| println!("Released: {:?}", e)));
+    /// hotkey.on_release(buttons!(A), Arc::new(|e| println!("Released: {:?}", e)));
     /// ```
     ///
     fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
@@ -120,7 +120,7 @@ pub trait RegisterHotkey {
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.disable(button_args!(A));
+    /// hotkey.disable(buttons!(A));
     /// ```
     ///
     fn disable(&self, target: impl Into<ButtonArg>);
@@ -133,8 +133,8 @@ pub trait RegisterHotkey {
     /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// let a_or_b = hotkey.add_modifier_keys(button_args!(A, B));
-    /// a_or_b.remap(button_args!(C), Button::D);
+    /// let a_or_b = hotkey.add_modifier_keys(buttons!(A, B));
+    /// a_or_b.remap(buttons!(C), Button::D);
     /// ```
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey;
 
@@ -148,7 +148,7 @@ pub trait RegisterHotkey {
     ///
     /// let hotkey = Hotkey::new();
     /// let blocking_hotkey = hotkey.change_native_event_operation(NativeEventOperation::Block);
-    /// blocking_hotkey.on_press(button_args!(A), Arc::new(|e| println!("Press: {:?}", e)));
+    /// blocking_hotkey.on_press(buttons!(A), Arc::new(|e| println!("Press: {:?}", e)));
     /// ```
     ///
     fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey;
@@ -162,7 +162,7 @@ pub trait RegisterHotkey {
 /// use hookmap::prelude::*;
 ///
 /// let hotkey = Hotkey::new();
-/// hotkey.remap(button_args!(A), Button::B);
+/// hotkey.remap(buttons!(A), Button::B);
 /// hotkey.install();
 /// ```
 ///

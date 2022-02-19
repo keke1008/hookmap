@@ -1,6 +1,6 @@
 //! Definition of utility hotkeys.
 
-use crate::{buttons, hotkey::button_arg::ButtonArg, hotkey::RegisterHotkey, seq};
+use crate::{hotkey::button_arg::ButtonArg, hotkey::RegisterHotkey, seq};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);
@@ -20,18 +20,18 @@ pub trait Utils: RegisterHotkey {
     /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey!(hotkey => {
-    ///     call bind_alt_tab([button_args!(A)], [button_args!(T)]);
-    /// });
+    /// hotkey.bind_alt_tab(Button::A, Button::T);
     /// ```
     ///
-    fn bind_alt_tab(&self, alt: ButtonArg, tab: ButtonArg) {
-        self.on_release(alt.clone(), move |_| {
+    fn bind_alt_tab(&self, alt: impl Into<ButtonArg>, tab: impl Into<ButtonArg>) {
+        let alt = alt.into();
+        let tab = tab.into();
+        self.on_release(&alt, move |_| {
             IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
             seq!(LAlt up).send();
         });
-        let mod_alt = self.add_modifier_keys(buttons!([alt]));
-        mod_alt.disable(tab.clone());
+        let mod_alt = self.add_modifier_keys(alt);
+        mod_alt.disable(&tab);
         mod_alt.on_press(tab, move |_| {
             if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
                 seq!(LAlt down).send();
@@ -53,18 +53,18 @@ pub trait Utils: RegisterHotkey {
     /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey!(hotkey => {
-    ///     call bind_shift_alt_tab([button_args!(A)], [button_args!(T)]);
-    /// });
+    /// hotkey.bind_shift_alt_tab(Button::A, Button::T);
     /// ```
     ///
-    fn bind_shift_alt_tab(&self, alt: ButtonArg, tab: ButtonArg) {
-        self.on_release(alt.clone(), move |_| {
+    fn bind_shift_alt_tab(&self, alt: impl Into<ButtonArg>, tab: impl Into<ButtonArg>) {
+        let alt = alt.into();
+        let tab = tab.into();
+        self.on_release(&alt, move |_| {
             IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
             seq!(LAlt up).send();
         });
-        let mod_alt = self.add_modifier_keys(buttons!([alt]));
-        mod_alt.disable(tab.clone());
+        let mod_alt = self.add_modifier_keys(alt);
+        mod_alt.disable(&tab);
         mod_alt.on_press(tab, move |_| {
             if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
                 seq!(with(LShift), LAlt down).send();
