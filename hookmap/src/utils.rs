@@ -1,6 +1,6 @@
 //! Definition of utility hotkeys.
 
-use crate::{buttons, hotkey::RegisterHotkey, macros::ButtonArg, seq};
+use crate::{buttons, hotkey::button_arg::ButtonArg, hotkey::RegisterHotkey, seq};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 static IS_ALT_TAB_WORKING: AtomicBool = AtomicBool::new(false);

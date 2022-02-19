@@ -1,21 +1,22 @@
 //! Registering Hotkeys.
 
+pub mod button_arg;
 mod hook;
 mod modifier_keys;
 mod storage;
 
 use modifier_keys::ModifierKeys;
 
-use crate::{
-    macros::{ButtonArg, ButtonArgElementTag},
-    runtime::Runtime,
-};
+use crate::runtime::Runtime;
 use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::{cell::RefCell, sync::Arc};
 use storage::HotkeyStorage;
 
-use self::hook::{HotkeyCondition, HotkeyProcess};
+use self::{
+    button_arg::{ButtonArg, ButtonArgElementTag},
+    hook::{HotkeyCondition, HotkeyProcess},
+};
 
 pub trait IntoHookProcess<E> {
     fn into(self) -> HookProcess<E>;

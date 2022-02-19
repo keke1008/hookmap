@@ -1,6 +1,6 @@
 pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
 
-use crate::macros::{ButtonArgElement, ExpandButtonArg};
+use crate::hotkey::button_arg::{ButtonArgElement, ExpandButtonArg};
 use hookmap_core::ButtonOperation;
 
 #[derive(Debug, Clone)]
