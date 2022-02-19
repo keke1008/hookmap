@@ -60,6 +60,12 @@ impl FromIterator<Box<dyn Iterator<Item = ButtonArgElement>>> for ButtonArg {
     }
 }
 
+impl Into<ButtonArg> for &ButtonArg {
+    fn into(self) -> ButtonArg {
+        self.clone()
+    }
+}
+
 pub trait ExpandButtonArg: Sized {
     fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>>;
     fn expand_inverse(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
