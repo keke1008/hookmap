@@ -3,30 +3,19 @@ use hookmap::prelude::*;
 fn main() {
     let hotkey = Hotkey::new();
 
-    hotkey!(hotkey => {
+    // Remap H,J,K,L keys as in vim.
+    hotkey.remap(Button::H, Button::LeftArrow);
+    hotkey.remap(Button::J, Button::DownArrow);
+    hotkey.remap(Button::K, Button::UpArrow);
+    hotkey.remap(Button::L, Button::RightArrow);
 
-        // Remap H,J,K,L keys as in vim.
-        remap H => LeftArrow;
-        remap J => DownArrow;
-        remap K => UpArrow;
-        remap L => RightArrow;
+    // You can define hotkeys that work only when specific keys are pressed or released.
+    let modified = hotkey.add_modifier_keys(arg!(LCtrl, !RShift));
 
+    modified.on_press(Button::Space, |_| send!(with(LCtrl), A));
 
-        // if left ctrl is pressed and right shift is not pressed.
-        modifier LCtrl, !RShift {
-
-            // Disable the event so that it does not reach other processes.
-            block {
-
-                // Send Ctrl+A when the Shift and the Space key are pressed.
-                on_press Space => |_| send!(with(LCtrl), A);
-
-                // Sends an uppercase A or B when the A or B key is pressed.
-                on_release A, B => |event| {
-                    send!(with(LShift, [event.target]));
-                };
-            }
-        }
+    modified.on_release(arg!(A, B), |event: ButtonEvent| {
+        send!(with(LShift), [event.target])
     });
 
     hotkey.install();

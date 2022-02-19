@@ -40,6 +40,7 @@ pub mod prelude {
             Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
             Mouse,
         },
+        event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent},
         hotkey,
         hotkey::{Hotkey, RegisterHotkey},
         interceptor::{Filter, Interceptor},
