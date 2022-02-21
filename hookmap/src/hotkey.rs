@@ -1,6 +1,7 @@
 //! Registering Hotkeys.
 
 pub mod button_arg;
+mod entry;
 mod hook;
 mod modifier_keys;
 mod storage;
