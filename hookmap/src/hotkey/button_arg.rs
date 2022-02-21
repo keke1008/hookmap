@@ -1,5 +1,5 @@
 use crate::button::Button;
-use std::iter::{self, FromIterator};
+use std::borrow::Borrow;
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub enum ButtonArgElementTag {
@@ -54,78 +54,67 @@ impl From<Button> for ButtonArg {
     }
 }
 
-impl FromIterator<Box<dyn Iterator<Item = ButtonArgElement>>> for ButtonArg {
-    fn from_iter<T: IntoIterator<Item = Box<dyn Iterator<Item = ButtonArgElement>>>>(
-        iter: T,
-    ) -> Self {
-        ButtonArg(Vec::from_iter(iter.into_iter().flatten()))
+impl From<&ButtonArg> for ButtonArg {
+    fn from(arg: &ButtonArg) -> Self {
+        arg.clone()
     }
 }
 
-impl Into<ButtonArg> for &ButtonArg {
-    fn into(self) -> ButtonArg {
-        self.clone()
+#[doc(hidden)]
+pub trait ButtonArgChain<T> {
+    fn chain(self, next: ButtonArgElement<T>) -> ButtonArg;
+}
+
+impl ButtonArgChain<Button> for ButtonArg {
+    fn chain(mut self, next: ButtonArgElement<Button>) -> ButtonArg {
+        self.0.push(next);
+        self
     }
 }
 
-pub trait ExpandButtonArg: Sized {
-    fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>>;
-    fn expand_inverse(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
-        Box::new(self.expand().map(|e| e.invert()))
+impl<T> ButtonArgChain<T> for ButtonArg
+where
+    T: Borrow<ButtonArg>,
+{
+    fn chain(mut self, next: ButtonArgElement<T>) -> ButtonArg {
+        let element = next.value.borrow();
+        match next.tag {
+            ButtonArgElementTag::Direct => {
+                self.0.extend(element.iter());
+            }
+            ButtonArgElementTag::Inversion => {
+                self.0.extend(element.iter().map(|x| x.invert()));
+            }
+        }
+        self
     }
 }
 
-impl ExpandButtonArg for ButtonArg {
-    fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
-        Box::new(self.0.into_iter())
-    }
-}
-
-impl ExpandButtonArg for Button {
-    fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
-        Box::new(iter::once(ButtonArgElement::direct(self)))
-    }
-}
-
-/// Constructs [`ButtonArg`].
 #[macro_export]
 macro_rules! buttons {
-    (@inner $parsed:tt , $($rest:tt)*) => {
-        $crate::buttons!(@inner $parsed $($rest)*)
+    (@inner $chain:tt , $($tail:tt)*) => {
+        $crate::buttons!(@inner $chain $($tail)*)
     };
 
-    (@inner [ $($parsed:tt)* ] !$button:tt $($rest:tt)*) => {
-        $crate::buttons!(
-            @inner
-            [
-                $($parsed)*
-                ($crate::hotkey::button_arg::ExpandButtonArg::expand_inverse($crate::button_name!($button).clone()))
-            ]
-            $($rest)*
-        )
+    (@inner $chain:tt !$button:tt $($tail:tt)*) => {{
+        let element = ButtonArgElement::inversion($crate::button_name!($button));
+        $crate::buttons!(@inner ($chain.chain(element)) $($tail)*)
+    }};
+
+    (@inner $chain:tt $button:tt $($tail:tt)*) => {{
+        let element = ButtonArgElement::direct($crate::button_name!($button));
+        $crate::buttons!(@inner ($chain.chain(element)) $($tail)*)
+    }};
+
+    (@inner $chain:tt) => {
+        $chain
     };
 
-    (@inner [ $($parsed:tt)* ] $button:tt $($rest:tt)*) => {
-        $crate::buttons!(
-            @inner
-            [
-                $($parsed)*
-                ($crate::hotkey::button_arg::ExpandButtonArg::expand($crate::button_name!($button).clone()))
-            ]
-            $($rest)*
-        )
-    };
-
-    (@inner [ $($parsed:tt)* ]) => {
-        IntoIterator::into_iter(
-            [ $($parsed),* ]
-        )
-        .collect::<$crate::hotkey::button_arg::ButtonArg>()
-    };
-
-    ($($args:tt)*) => {
-        $crate::buttons!(@inner [] $($args)*)
-    };
+    ($($args:tt)*) => {{
+        #[allow(unused_imports)]
+        use $crate::hotkey::button_arg::{ButtonArgElement, ButtonArgChain, ButtonArg};
+        $crate::buttons!(@inner (ButtonArg::default()) $($args)*)
+    }};
 }
 
 #[cfg(test)]
@@ -161,9 +150,9 @@ mod tests {
             ButtonArgElement::direct(A),
             ButtonArgElement::inversion(B),
         ]);
-        assert_eq!(buttons!([button_args]), button_args);
+        assert_eq!(buttons!([&button_args]), button_args);
         assert_eq!(
-            buttons!([button_args], C, !D),
+            buttons!([&button_args], C, !D),
             ButtonArg(vec![
                 ButtonArgElement::direct(A),
                 ButtonArgElement::inversion(B),

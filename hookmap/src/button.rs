@@ -1,6 +1,5 @@
 pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
 
-use crate::hotkey::button_arg::{ButtonArgElement, ExpandButtonArg};
 use hookmap_core::ButtonOperation;
 
 #[derive(Debug, Clone)]
@@ -17,12 +16,6 @@ pub const ALT: ConstantAny<2> = ConstantAny([Button::LAlt, Button::RAlt]);
 
 /// Meta key that does not distinguish between right and left.
 pub const META: ConstantAny<2> = ConstantAny([Button::LMeta, Button::RMeta]);
-
-impl<const N: usize> ExpandButtonArg for ConstantAny<N> {
-    fn expand(self) -> Box<dyn Iterator<Item = ButtonArgElement>> {
-        Box::new(IntoIterator::into_iter(self.0).map(ButtonArgElement::direct))
-    }
-}
 
 /// Emulates button input.
 pub trait ButtonInput {
