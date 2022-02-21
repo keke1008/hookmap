@@ -9,14 +9,13 @@ mod storage;
 use modifier_keys::ModifierKeys;
 
 use crate::runtime::Runtime;
-use hook::{HookProcess, HotkeyHook, MouseHook, RemapHook};
+use hook::HookProcess;
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
-use std::{cell::RefCell, sync::Arc};
-use storage::HotkeyStorage;
+use std::sync::Arc;
 
 use self::{
-    button_arg::{ButtonArg, ButtonArgElementTag},
-    hook::{HotkeyCondition, HotkeyProcess},
+    button_arg::ButtonArg,
+    entry::{Context, HotkeyEntry},
 };
 
 pub trait IntoHookProcess<E> {
@@ -169,9 +168,8 @@ pub trait RegisterHotkey {
 ///
 #[derive(Default)]
 pub struct Hotkey {
-    storage: RefCell<HotkeyStorage>,
-    modifier_keys: Arc<ModifierKeys>,
-    native_event_operation: NativeEventOperation,
+    entry: HotkeyEntry,
+    context: Context,
 }
 
 impl Hotkey {
@@ -192,248 +190,115 @@ impl Hotkey {
     /// ```
     ///
     pub fn install(self) {
-        let runtime = Runtime::new(self.storage.into_inner());
+        let runtime = Runtime::new(self.entry.into_inner());
         runtime.start();
     }
 }
 
 impl RegisterHotkey for Hotkey {
     fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
-
-        for arg in target.into().iter() {
-            match arg.tag {
-                ButtonArgElementTag::Inversion => panic!(),
-                ButtonArgElementTag::Direct => {
-                    storage.register_remap(arg.value, Arc::clone(&hook));
-                }
-            }
-        }
+        self.entry
+            .remap(target.into(), behavior, self.context.clone());
     }
 
     fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Any,
-            HotkeyProcess::Callback(process.into()),
-            self.native_event_operation,
-        ));
-
-        for arg in target.into().iter() {
-            match arg.tag {
-                ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
-                }
-                ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
-                }
-            }
-        }
+        self.entry
+            .on_press(target.into(), process.into(), self.context.clone());
     }
 
     fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Any,
-            HotkeyProcess::Callback(process.into()),
-            self.native_event_operation,
-        ));
-
-        for arg in target.into().iter() {
-            match arg.tag {
-                ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
-                }
-                ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
-                }
-            }
-        }
+        self.entry
+            .on_release(target.into(), process.into(), self.context.clone());
     }
 
     fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
-        let hook = Arc::new(MouseHook::new(
-            Arc::clone(&self.modifier_keys),
-            process.into(),
-            self.native_event_operation,
-        ));
-        self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
+        self.entry.mouse_wheel(process.into(), self.context.clone());
     }
 
     fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
-        let hook = Arc::new(MouseHook::new(
-            Arc::clone(&self.modifier_keys),
-            process.into(),
-            self.native_event_operation,
-        ));
-        self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
+        self.entry
+            .mouse_cursor(process.into(), self.context.clone());
     }
 
     fn disable(&self, target: impl Into<ButtonArg>) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Any,
-            HotkeyProcess::Noop,
-            self.native_event_operation,
-        ));
-
-        for arg in target.into().iter() {
-            storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
-            storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
-        }
+        self.entry.disable(target.into(), self.context.clone());
     }
 
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
-        ModifierHotkey::new(
-            &self.storage,
-            Arc::new(ModifierKeys::from(modifier_keys.into())),
-            self.native_event_operation,
-        )
+        let context = Context {
+            modifier_keys: Some(Arc::new(ModifierKeys::from(modifier_keys.into()))),
+            native_event_operation: self.context.native_event_operation,
+        };
+        ModifierHotkey::new(&self.entry, context)
     }
 
     fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
-        ModifierHotkey::new(&self.storage, Arc::clone(&self.modifier_keys), operation)
+        let mut context = self.context.clone();
+        context.native_event_operation = operation;
+        ModifierHotkey::new(&self.entry, context)
     }
 }
 
 /// Registers Hotkeys with modifier keys.
 pub struct ModifierHotkey<'a> {
-    storage: &'a RefCell<HotkeyStorage>,
-    modifier_keys: Arc<ModifierKeys>,
-    native_event_operation: NativeEventOperation,
+    entry: &'a HotkeyEntry,
+    context: Context,
 }
 
 impl<'a> ModifierHotkey<'a> {
-    fn new(
-        storage: &'a RefCell<HotkeyStorage>,
-        modifier_keys: Arc<ModifierKeys>,
-        native_event_operation: NativeEventOperation,
-    ) -> Self {
-        ModifierHotkey {
-            storage,
-            modifier_keys,
-            native_event_operation,
-        }
+    fn new(entry: &'a HotkeyEntry, context: Context) -> Self {
+        ModifierHotkey { entry, context }
     }
 }
 
 impl RegisterHotkey for ModifierHotkey<'_> {
     fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(RemapHook::new(Arc::clone(&self.modifier_keys), behavior));
-
-        for arg in target.into().iter() {
-            match arg.tag {
-                ButtonArgElementTag::Inversion => panic!(),
-                ButtonArgElementTag::Direct => {
-                    storage.register_remap(arg.value, Arc::clone(&hook));
-                }
-            }
-        }
+        self.entry
+            .remap(target.into(), behavior, self.context.clone());
     }
 
     fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
-            HotkeyProcess::Callback(process.into()),
-            self.native_event_operation,
-        ));
-
-        for arg in target.into().iter() {
-            match arg.tag {
-                ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
-                }
-                ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
-                }
-            }
-        }
+        self.entry
+            .on_press(target.into(), process.into(), self.context.clone());
     }
 
     fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
-        let mut storage = self.storage.borrow_mut();
-        let process = process.into();
-
-        for arg in target.into().iter() {
-            let is_active = Arc::default();
-            let inactivation_hook = Arc::new(HotkeyHook::new(
-                HotkeyCondition::Activation(Arc::clone(&is_active)),
-                HotkeyProcess::Callback(Arc::clone(&process)),
-                self.native_event_operation,
-            ));
-            let is_active = Arc::clone(&is_active);
-            let activation_hook = Arc::new(HotkeyHook::new(
-                HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
-                HotkeyProcess::Activate(Arc::clone(&is_active)),
-                NativeEventOperation::Dispatch,
-            ));
-
-            match arg.tag {
-                ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.value, Arc::clone(&activation_hook));
-                    storage.register_hotkey_on_release(arg.value, Arc::clone(&inactivation_hook));
-                }
-                ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.value, Arc::clone(&activation_hook));
-                    storage.register_hotkey_on_press(arg.value, Arc::clone(&inactivation_hook));
-                }
-            }
-            for target in &self.modifier_keys.pressed {
-                storage.register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
-            }
-            for target in &self.modifier_keys.released {
-                storage.register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
-            }
-        }
+        self.entry
+            .on_release(target.into(), process.into(), self.context.clone());
     }
 
     fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
-        let hook = Arc::new(MouseHook::new(
-            Arc::clone(&self.modifier_keys),
-            process.into(),
-            self.native_event_operation,
-        ));
-        self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
+        self.entry.mouse_wheel(process.into(), self.context.clone());
     }
 
     fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
-        let hook = Arc::new(MouseHook::new(
-            Arc::clone(&self.modifier_keys),
-            process.into(),
-            self.native_event_operation,
-        ));
-        self.storage.borrow_mut().register_mouse_cursor_hotkey(hook);
+        self.entry
+            .mouse_cursor(process.into(), self.context.clone());
     }
 
     fn disable(&self, target: impl Into<ButtonArg>) {
-        let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(HotkeyHook::new(
-            HotkeyCondition::Modifier(Arc::clone(&self.modifier_keys)),
-            HotkeyProcess::Noop,
-            self.native_event_operation,
-        ));
-
-        for arg in target.into().iter() {
-            storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
-            storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
-        }
+        self.entry.disable(target.into(), self.context.clone());
     }
 
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
-        ModifierHotkey::new(
-            self.storage,
-            Arc::new(
-                self.modifier_keys
-                    .merge(ModifierKeys::from(modifier_keys.into())),
-            ),
-            self.native_event_operation,
-        )
+        let new = ModifierKeys::from(modifier_keys.into());
+        let modifier_keys = if let Some(modifier_keys) = &self.context.modifier_keys {
+            modifier_keys.merge(new)
+        } else {
+            new
+        };
+        let context = Context {
+            modifier_keys: Some(Arc::new(modifier_keys)),
+            native_event_operation: self.context.native_event_operation,
+        };
+        ModifierHotkey::new(self.entry, context)
     }
 
     fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
-        ModifierHotkey::new(self.storage, Arc::clone(&self.modifier_keys), operation)
+        let context = Context {
+            modifier_keys: self.context.modifier_keys.clone(),
+            native_event_operation: operation,
+        };
+        ModifierHotkey::new(self.entry, context)
     }
 }
