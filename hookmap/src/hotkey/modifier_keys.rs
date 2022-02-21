@@ -38,8 +38,8 @@ impl From<ButtonArg> for ModifierKeys {
         let mut released = vec![];
         for arg in args.iter() {
             match arg.tag {
-                ButtonArgElementTag::Direct => pressed.push(arg.button),
-                ButtonArgElementTag::Inversion => released.push(arg.button),
+                ButtonArgElementTag::Direct => pressed.push(arg.value),
+                ButtonArgElementTag::Inversion => released.push(arg.value),
             }
         }
         Self { pressed, released }

@@ -8,40 +8,42 @@ pub enum ButtonArgElementTag {
 }
 
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ButtonArgElement {
+pub struct ButtonArgElement<T> {
     pub tag: ButtonArgElementTag,
-    pub button: Button,
+    pub value: T,
 }
 
-impl ButtonArgElement {
-    pub fn direct(button: Button) -> Self {
+impl<T> ButtonArgElement<T> {
+    pub fn direct(value: T) -> Self {
         ButtonArgElement {
             tag: ButtonArgElementTag::Direct,
-            button,
+            value,
         }
     }
 
-    pub fn inversion(button: Button) -> Self {
+    pub fn inversion(value: T) -> Self {
         ButtonArgElement {
             tag: ButtonArgElementTag::Inversion,
-            button,
+            value,
         }
     }
+}
 
+impl<T: Clone> ButtonArgElement<T> {
     pub fn invert(&self) -> Self {
         match self.tag {
-            ButtonArgElementTag::Direct => ButtonArgElement::inversion(self.button),
-            ButtonArgElementTag::Inversion => ButtonArgElement::direct(self.button),
+            ButtonArgElementTag::Direct => ButtonArgElement::inversion(self.value.clone()),
+            ButtonArgElementTag::Inversion => ButtonArgElement::direct(self.value.clone()),
         }
     }
 }
 
 /// A struct used in macros to pass multiple buttons to a function.
-#[derive(Clone, PartialEq, Eq, Debug)]
-pub struct ButtonArg(Vec<ButtonArgElement>);
+#[derive(Clone, PartialEq, Eq, Debug, Default)]
+pub struct ButtonArg(Vec<ButtonArgElement<Button>>);
 
 impl ButtonArg {
-    pub fn iter(&self) -> impl Iterator<Item = ButtonArgElement> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = ButtonArgElement<Button>> + '_ {
         self.0.iter().copied()
     }
 }

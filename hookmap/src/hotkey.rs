@@ -205,7 +205,7 @@ impl RegisterHotkey for Hotkey {
             match arg.tag {
                 ButtonArgElementTag::Inversion => panic!(),
                 ButtonArgElementTag::Direct => {
-                    storage.register_remap(arg.button, Arc::clone(&hook));
+                    storage.register_remap(arg.value, Arc::clone(&hook));
                 }
             }
         }
@@ -222,10 +222,10 @@ impl RegisterHotkey for Hotkey {
         for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
                 }
                 ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
                 }
             }
         }
@@ -242,10 +242,10 @@ impl RegisterHotkey for Hotkey {
         for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
                 }
                 ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
                 }
             }
         }
@@ -278,8 +278,8 @@ impl RegisterHotkey for Hotkey {
         ));
 
         for arg in target.into().iter() {
-            storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
-            storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
+            storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
+            storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
         }
     }
 
@@ -326,7 +326,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
             match arg.tag {
                 ButtonArgElementTag::Inversion => panic!(),
                 ButtonArgElementTag::Direct => {
-                    storage.register_remap(arg.button, Arc::clone(&hook));
+                    storage.register_remap(arg.value, Arc::clone(&hook));
                 }
             }
         }
@@ -343,10 +343,10 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         for arg in target.into().iter() {
             match arg.tag {
                 ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
                 }
                 ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
+                    storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
                 }
             }
         }
@@ -372,12 +372,12 @@ impl RegisterHotkey for ModifierHotkey<'_> {
 
             match arg.tag {
                 ButtonArgElementTag::Direct => {
-                    storage.register_hotkey_on_press(arg.button, Arc::clone(&activation_hook));
-                    storage.register_hotkey_on_release(arg.button, Arc::clone(&inactivation_hook));
+                    storage.register_hotkey_on_press(arg.value, Arc::clone(&activation_hook));
+                    storage.register_hotkey_on_release(arg.value, Arc::clone(&inactivation_hook));
                 }
                 ButtonArgElementTag::Inversion => {
-                    storage.register_hotkey_on_release(arg.button, Arc::clone(&activation_hook));
-                    storage.register_hotkey_on_press(arg.button, Arc::clone(&inactivation_hook));
+                    storage.register_hotkey_on_release(arg.value, Arc::clone(&activation_hook));
+                    storage.register_hotkey_on_press(arg.value, Arc::clone(&inactivation_hook));
                 }
             }
             for target in &self.modifier_keys.pressed {
@@ -416,8 +416,8 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         ));
 
         for arg in target.into().iter() {
-            storage.register_hotkey_on_press(arg.button, Arc::clone(&hook));
-            storage.register_hotkey_on_release(arg.button, Arc::clone(&hook));
+            storage.register_hotkey_on_press(arg.value, Arc::clone(&hook));
+            storage.register_hotkey_on_release(arg.value, Arc::clone(&hook));
         }
     }
 
