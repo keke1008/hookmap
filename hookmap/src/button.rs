@@ -229,9 +229,15 @@ impl Sequence {
         release: fn(&Button),
         operation: fn(&SequenceOperation),
     ) {
-        Self::MODIFIER_LIST.iter().for_each(press);
+        let pressed_modifiers: Vec<_> = Self::MODIFIER_LIST
+            .iter()
+            .copied()
+            .filter(Button::is_pressed)
+            .collect();
+
+        pressed_modifiers.iter().for_each(release);
         self.send_inner(press, release, operation);
-        Self::MODIFIER_LIST.iter().for_each(release);
+        pressed_modifiers.iter().for_each(press);
     }
 
     pub fn send_ignore_modifiers(&self) {
