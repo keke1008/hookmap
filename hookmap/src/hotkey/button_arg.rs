@@ -55,9 +55,12 @@ impl From<Button> for ButtonArg {
     }
 }
 
-impl From<&ButtonArg> for ButtonArg {
-    fn from(arg: &ButtonArg) -> Self {
-        arg.clone()
+impl<T> From<&T> for ButtonArg
+where
+    T: Clone + Into<ButtonArg>,
+{
+    fn from(arg: &T) -> Self {
+        (*arg).clone().into()
     }
 }
 
