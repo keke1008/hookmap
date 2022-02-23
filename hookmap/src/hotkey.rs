@@ -52,7 +52,7 @@ pub trait RegisterHotkey {
     /// hotkey.remap(buttons!(A), Button::B);
     /// ```
     ///
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button);
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self;
 
     /// Run `process` when `target` is pressed.
     ///
@@ -66,7 +66,11 @@ pub trait RegisterHotkey {
     /// hotkey.on_press(buttons!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
     /// ```
     ///
-    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
+    fn on_press(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self;
 
     /// Run `process` when `target` is released.
     ///
@@ -80,7 +84,11 @@ pub trait RegisterHotkey {
     /// hotkey.on_release(buttons!(A), Arc::new(|e| println!("Released: {:?}", e)));
     /// ```
     ///
-    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>);
+    fn on_release(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self;
 
     /// Run `process` when a mouse wheel is rotated.
     ///
@@ -94,7 +102,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_wheel(Arc::new(|delta| println!("Delta: {:?}", delta)));
     /// ```
     ///
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>);
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self;
 
     /// Run `process` when a mouse cursor is moved.
     ///
@@ -108,7 +116,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_cursor(Arc::new(|(x, y)| println!("Cursor: ({}, {})", x, y)));
     /// ```
     ///
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>);
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self;
 
     /// Disables the button and blocks events.
     ///
@@ -122,7 +130,7 @@ pub trait RegisterHotkey {
     /// hotkey.disable(buttons!(A));
     /// ```
     ///
-    fn disable(&self, target: impl Into<ButtonArg>);
+    fn disable(&self, target: impl Into<ButtonArg>) -> &Self;
 
     /// Adds modifier keys.
     ///
@@ -211,32 +219,46 @@ impl Hotkey {
 }
 
 impl RegisterHotkey for Hotkey {
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self {
         self.entry
             .remap(target.into(), behavior, self.context.clone());
+        self
     }
 
-    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
+    fn on_press(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self {
         self.entry
             .on_press(target.into(), process.into(), self.context.clone());
+        self
     }
 
-    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
+    fn on_release(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self {
         self.entry
             .on_release(target.into(), process.into(), self.context.clone());
+        self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
+        self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
+        self
     }
 
-    fn disable(&self, target: impl Into<ButtonArg>) {
+    fn disable(&self, target: impl Into<ButtonArg>) -> &Self {
         self.entry.disable(target.into(), self.context.clone());
+        self
     }
 
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
@@ -277,32 +299,46 @@ impl<'a> BranchedHotkey<'a> {
 }
 
 impl RegisterHotkey for BranchedHotkey<'_> {
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
+    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self {
         self.entry
             .remap(target.into(), behavior, self.context.clone());
+        self
     }
 
-    fn on_press(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
+    fn on_press(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self {
         self.entry
             .on_press(target.into(), process.into(), self.context.clone());
+        self
     }
 
-    fn on_release(&self, target: impl Into<ButtonArg>, process: impl IntoHookProcess<ButtonEvent>) {
+    fn on_release(
+        &self,
+        target: impl Into<ButtonArg>,
+        process: impl IntoHookProcess<ButtonEvent>,
+    ) -> &Self {
         self.entry
             .on_release(target.into(), process.into(), self.context.clone());
+        self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
+        self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
+        self
     }
 
-    fn disable(&self, target: impl Into<ButtonArg>) {
+    fn disable(&self, target: impl Into<ButtonArg>) -> &Self {
         self.entry.disable(target.into(), self.context.clone());
+        self
     }
 
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
