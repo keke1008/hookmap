@@ -149,7 +149,7 @@ impl HotkeyEntry {
         let hook = Arc::new(HotkeyHook::new(
             context.modifiers.into(),
             HotkeyProcess::Noop,
-            context.native_event_operation,
+            NativeEventOperation::Block,
         ));
         for target in targets.iter() {
             storage.register_hotkey_on_press(target.value, Arc::clone(&hook));
