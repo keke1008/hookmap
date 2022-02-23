@@ -14,9 +14,13 @@ fn main() {
     let modified = hotkey.add_modifiers(buttons!(LCtrl, !RShift));
 
     modified
-        .on_press(Button::Space, |_| seq!(with(LCtrl), A).send())
+        .block_input_event()
+        .on_press(Button::Space, |_| {
+            seq!(with(LCtrl), A).send_ignore_modifiers();
+        })
+        .disable(buttons!(A, B))
         .on_release(buttons!(A, B), |event: ButtonEvent| {
-            seq!(with(LShift), [event.target]).send()
+            seq!(with(LShift), [event.target]).send_ignore_modifiers();
         });
 
     hotkey.install();

@@ -5,41 +5,36 @@ use std::sync::{
     Arc,
 };
 
-fn emulate_sands(hotkey: &Hotkey, space: Button, ingored: HashSet<Button>) {
-    let is_alone = Arc::new(AtomicBool::new(true));
+fn emulate_sands<T: RegisterHotkey>(hotkey: &T, space: Button, ingored: HashSet<Button>) {
+    let is_other_key_pressed = Arc::new(AtomicBool::default());
 
-    let on_press_space = {
-        let is_alone = Arc::clone(&is_alone);
+    let hotkey = hotkey.block_input_event();
+    let on_press = {
+        let is_other_key_pressed = Arc::clone(&is_other_key_pressed);
         move |_| {
-            is_alone.store(true, Ordering::SeqCst);
+            is_other_key_pressed.store(false, Ordering::SeqCst);
             seq!(LShift down).send();
         }
     };
+    hotkey.on_press(space, on_press);
 
-    let on_release_space = {
-        let is_alone = Arc::clone(&is_alone);
+    let on_release = {
+        let is_other_key_pressed = Arc::clone(&is_other_key_pressed);
         move |_| {
-            seq!(LShift up).send();
-            if is_alone.load(Ordering::SeqCst) {
+            seq!(LShift up);
+            if !is_other_key_pressed.load(Ordering::SeqCst) {
                 seq!([space]).send();
             }
         }
     };
-    hotkey.on_press(buttons!([space]), on_press_space);
-    hotkey.on_release(buttons!([space]), on_release_space);
-
-    // hotkey!(hotkey => {
-    //     block {
-    //         on_press [space] => on_press_space;
-    //         on_release [space] => on_release_space;
-    //     }
-    // });
+    hotkey.on_release(space, on_release);
 
     let filter = Filter::new()
         .action(ButtonAction::Press)
         .callback(move |e| !ingored.contains(&e.target));
-    Interceptor::unblock(filter)
-        .then_iter(move |iter| iter.for_each(|_| is_alone.store(false, Ordering::SeqCst)));
+    Interceptor::unblock(filter).then_iter(move |iter| {
+        iter.for_each(|_| is_other_key_pressed.store(true, Ordering::SeqCst))
+    });
 }
 
 fn main() {
