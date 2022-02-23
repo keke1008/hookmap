@@ -223,7 +223,7 @@ impl Sequence {
         );
     }
 
-    pub fn send_ignore_modifiers_inner(
+    fn send_ignore_modifiers_inner(
         &self,
         press: fn(&Button),
         release: fn(&Button),
