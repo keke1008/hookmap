@@ -30,7 +30,7 @@ pub trait Utils: RegisterHotkey {
             IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
             seq!(LAlt up).send();
         });
-        let mod_alt = self.add_modifier_keys(alt);
+        let mod_alt = self.add_modifiers(alt);
         mod_alt.disable(&tab);
         mod_alt.on_press(tab, move |_| {
             if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {
@@ -63,7 +63,7 @@ pub trait Utils: RegisterHotkey {
             IS_ALT_TAB_WORKING.store(false, Ordering::SeqCst);
             seq!(LAlt up).send();
         });
-        let mod_alt = self.add_modifier_keys(alt);
+        let mod_alt = self.add_modifiers(alt);
         mod_alt.disable(&tab);
         mod_alt.on_press(tab, move |_| {
             if !IS_ALT_TAB_WORKING.swap(true, Ordering::SeqCst) {

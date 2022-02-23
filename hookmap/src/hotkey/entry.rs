@@ -4,7 +4,7 @@ use std::sync::Arc;
 use super::{
     button_arg::{ButtonArg, ButtonArgElementTag},
     hook::{HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook},
-    modifier_keys::ModifierKeys,
+    modifiers::Modifiers,
     storage::HotkeyStorage,
 };
 use crate::{
@@ -14,7 +14,7 @@ use crate::{
 
 #[derive(Debug, Default, Clone)]
 pub(super) struct Context {
-    pub(super) modifier_keys: Option<Arc<ModifierKeys>>,
+    pub(super) modifiers: Option<Arc<Modifiers>>,
     pub(super) native_event_operation: NativeEventOperation,
 }
 
@@ -30,7 +30,7 @@ impl HotkeyEntry {
 
     pub(super) fn remap(&self, targets: ButtonArg, behavior: Button, context: Context) {
         let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(RemapHook::new(context.modifier_keys.into(), behavior));
+        let hook = Arc::new(RemapHook::new(context.modifiers.into(), behavior));
         for target in targets.iter() {
             match target.tag {
                 ButtonArgElementTag::Inversion => panic!(),
@@ -49,7 +49,7 @@ impl HotkeyEntry {
     ) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
-            context.modifier_keys.into(),
+            context.modifiers.into(),
             HotkeyProcess::Callback(process),
             context.native_event_operation,
         ));
@@ -72,7 +72,7 @@ impl HotkeyEntry {
         context: Context,
     ) {
         let mut storage = self.storage.borrow_mut();
-        if context.modifier_keys.is_none() {
+        if context.modifiers.is_none() {
             let hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Any,
                 HotkeyProcess::Callback(process),
@@ -91,7 +91,7 @@ impl HotkeyEntry {
             }
             return;
         }
-        let modifier_keys = context.modifier_keys.unwrap();
+        let modifiers = context.modifiers.unwrap();
         for target in targets.iter() {
             let is_active = Arc::default();
             let inactivation_hook = Arc::new(HotkeyHook::new(
@@ -101,7 +101,7 @@ impl HotkeyEntry {
             ));
             let is_active = Arc::clone(&is_active);
             let activation_hook = Arc::new(HotkeyHook::new(
-                HotkeyCondition::Modifier(Arc::clone(&modifier_keys)),
+                HotkeyCondition::Modifier(Arc::clone(&modifiers)),
                 HotkeyProcess::Activate(Arc::clone(&is_active)),
                 NativeEventOperation::Dispatch,
             ));
@@ -117,10 +117,10 @@ impl HotkeyEntry {
                     storage.register_hotkey_on_press(target.value, Arc::clone(&inactivation_hook));
                 }
             }
-            for target in &modifier_keys.pressed {
+            for target in &modifiers.pressed {
                 storage.register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
             }
-            for target in &modifier_keys.released {
+            for target in &modifiers.released {
                 storage.register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
             }
         }
@@ -128,7 +128,7 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context.modifier_keys.into(),
+            context.modifiers.into(),
             process,
             context.native_event_operation,
         ));
@@ -137,7 +137,7 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context.modifier_keys.into(),
+            context.modifiers.into(),
             process,
             context.native_event_operation,
         ));
@@ -147,7 +147,7 @@ impl HotkeyEntry {
     pub(super) fn disable(&self, targets: ButtonArg, context: Context) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
-            context.modifier_keys.into(),
+            context.modifiers.into(),
             HotkeyProcess::Noop,
             context.native_event_operation,
         ));

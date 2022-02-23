@@ -1,4 +1,4 @@
-use super::modifier_keys::ModifierKeys;
+use super::modifiers::Modifiers;
 use crate::{button::ButtonInput, hook::Hook};
 use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
 use std::sync::{
@@ -11,7 +11,7 @@ pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
 pub(super) enum HotkeyCondition {
     Any,
     Activation(Arc<AtomicBool>),
-    Modifier(Arc<ModifierKeys>),
+    Modifier(Arc<Modifiers>),
 }
 
 impl HotkeyCondition {
@@ -19,13 +19,13 @@ impl HotkeyCondition {
         match self {
             HotkeyCondition::Any => true,
             HotkeyCondition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
-            HotkeyCondition::Modifier(modifier_keys) => modifier_keys.meets_conditions(),
+            HotkeyCondition::Modifier(modifiers) => modifiers.meets_conditions(),
         }
     }
 }
 
-impl From<Option<Arc<ModifierKeys>>> for HotkeyCondition {
-    fn from(this: Option<Arc<ModifierKeys>>) -> Self {
+impl From<Option<Arc<Modifiers>>> for HotkeyCondition {
+    fn from(this: Option<Arc<Modifiers>>) -> Self {
         this.map_or(HotkeyCondition::Any, HotkeyCondition::Modifier)
     }
 }
@@ -72,7 +72,7 @@ impl HotkeyHook {
 
 pub(super) enum Condition {
     Any,
-    Modifier(Arc<ModifierKeys>),
+    Modifier(Arc<Modifiers>),
 }
 
 impl Condition {
@@ -84,8 +84,8 @@ impl Condition {
     }
 }
 
-impl From<Option<Arc<ModifierKeys>>> for Condition {
-    fn from(this: Option<Arc<ModifierKeys>>) -> Condition {
+impl From<Option<Arc<Modifiers>>> for Condition {
+    fn from(this: Option<Arc<Modifiers>>) -> Condition {
         this.map_or(Condition::Any, Condition::Modifier)
     }
 }

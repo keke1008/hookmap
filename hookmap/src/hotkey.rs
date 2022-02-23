@@ -4,12 +4,12 @@
 pub mod button_arg;
 mod entry;
 mod hook;
-mod modifier_keys;
+mod modifiers;
 mod storage;
 
 pub use button_arg::ButtonArg;
 
-use modifier_keys::ModifierKeys;
+use modifiers::Modifiers;
 
 use crate::runtime::Runtime;
 use entry::{Context, HotkeyEntry};
@@ -140,10 +140,10 @@ pub trait RegisterHotkey {
     /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// let a_or_b = hotkey.add_modifier_keys(buttons!(A, B));
+    /// let a_or_b = hotkey.add_modifiers(buttons!(A, B));
     /// a_or_b.remap(buttons!(C), Button::D);
     /// ```
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey;
+    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey;
 
     /// If the hotkey registered in the return value of this method is executed,
     /// the input event will be blocked.
@@ -261,9 +261,9 @@ impl RegisterHotkey for Hotkey {
         self
     }
 
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
+    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey {
         let context = Context {
-            modifier_keys: Some(Arc::new(ModifierKeys::from(modifier_keys.into()))),
+            modifiers: Some(Arc::new(Modifiers::from(modifiers.into()))),
             native_event_operation: self.context.native_event_operation,
         };
         BranchedHotkey::new(&self.entry, context)
@@ -272,7 +272,7 @@ impl RegisterHotkey for Hotkey {
     fn block_input_event(&self) -> BranchedHotkey {
         let context = Context {
             native_event_operation: NativeEventOperation::Block,
-            modifier_keys: self.context.modifier_keys.clone(),
+            modifiers: self.context.modifiers.clone(),
         };
         BranchedHotkey::new(&self.entry, context)
     }
@@ -280,7 +280,7 @@ impl RegisterHotkey for Hotkey {
     fn dispatch_input_event(&self) -> BranchedHotkey {
         let context = Context {
             native_event_operation: NativeEventOperation::Dispatch,
-            modifier_keys: self.context.modifier_keys.clone(),
+            modifiers: self.context.modifiers.clone(),
         };
         BranchedHotkey::new(&self.entry, context)
     }
@@ -341,15 +341,15 @@ impl RegisterHotkey for BranchedHotkey<'_> {
         self
     }
 
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
-        let new = ModifierKeys::from(modifier_keys.into());
-        let modifier_keys = if let Some(modifier_keys) = &self.context.modifier_keys {
-            modifier_keys.merge(new)
+    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey {
+        let new = Modifiers::from(modifiers.into());
+        let modifiers = if let Some(modifiers) = &self.context.modifiers {
+            modifiers.merge(new)
         } else {
             new
         };
         let context = Context {
-            modifier_keys: Some(Arc::new(modifier_keys)),
+            modifiers: Some(Arc::new(modifiers)),
             native_event_operation: self.context.native_event_operation,
         };
         BranchedHotkey::new(self.entry, context)
@@ -358,7 +358,7 @@ impl RegisterHotkey for BranchedHotkey<'_> {
     fn block_input_event(&self) -> BranchedHotkey {
         let context = Context {
             native_event_operation: NativeEventOperation::Block,
-            modifier_keys: self.context.modifier_keys.clone(),
+            modifiers: self.context.modifiers.clone(),
         };
         BranchedHotkey::new(self.entry, context)
     }
@@ -366,7 +366,7 @@ impl RegisterHotkey for BranchedHotkey<'_> {
     fn dispatch_input_event(&self) -> BranchedHotkey {
         let context = Context {
             native_event_operation: NativeEventOperation::Dispatch,
-            modifier_keys: self.context.modifier_keys.clone(),
+            modifiers: self.context.modifiers.clone(),
         };
         BranchedHotkey::new(self.entry, context)
     }

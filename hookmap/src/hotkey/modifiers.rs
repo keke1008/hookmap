@@ -3,14 +3,14 @@ use crate::button::ButtonState;
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]
-pub(crate) struct ModifierKeys {
+pub(crate) struct Modifiers {
     pub pressed: Vec<Button>,
     pub released: Vec<Button>,
 }
 
-impl ModifierKeys {
+impl Modifiers {
     pub fn merge(&self, other: Self) -> Self {
-        ModifierKeys {
+        Modifiers {
             pressed: self
                 .pressed
                 .iter()
@@ -32,7 +32,7 @@ impl ModifierKeys {
     }
 }
 
-impl From<ButtonArg> for ModifierKeys {
+impl From<ButtonArg> for Modifiers {
     fn from(args: ButtonArg) -> Self {
         let mut pressed = vec![];
         let mut released = vec![];

@@ -223,7 +223,7 @@ impl Sequence {
         );
     }
 
-    pub fn send_ignore_modifier_keys_inner(
+    pub fn send_ignore_modifiers_inner(
         &self,
         press: fn(&Button),
         release: fn(&Button),
@@ -234,16 +234,16 @@ impl Sequence {
         Self::MODIFIER_LIST.iter().for_each(release);
     }
 
-    pub fn send_ignore_modifier_keys(&self) {
-        self.send_ignore_modifier_keys_inner(
+    pub fn send_ignore_modifiers(&self) {
+        self.send_ignore_modifiers_inner(
             ButtonInput::press,
             ButtonInput::release,
             SequenceOperation::operate,
         );
     }
 
-    pub fn send_ignore_modifier_keys_recursive(&self) {
-        self.send_ignore_modifier_keys_inner(
+    pub fn send_ignore_modifiers_recursive(&self) {
+        self.send_ignore_modifiers_inner(
             ButtonInput::press_recursive,
             ButtonInput::release_recursive,
             SequenceOperation::operate_recursive,

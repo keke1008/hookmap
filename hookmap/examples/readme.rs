@@ -10,7 +10,7 @@ fn main() {
     hotkey.remap(Button::L, Button::RightArrow);
 
     // You can define hotkeys that work only when specific keys are pressed or released.
-    let modified = hotkey.add_modifier_keys(buttons!(LCtrl, !RShift));
+    let modified = hotkey.add_modifiers(buttons!(LCtrl, !RShift));
 
     modified.on_press(Button::Space, |_| seq!(with(LCtrl), A).send());
 
