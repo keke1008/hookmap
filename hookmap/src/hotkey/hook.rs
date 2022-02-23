@@ -28,6 +28,12 @@ impl HotkeyCondition {
     }
 }
 
+impl From<Option<Arc<ModifierKeys>>> for HotkeyCondition {
+    fn from(this: Option<Arc<ModifierKeys>>) -> Self {
+        this.map_or(HotkeyCondition::Any, HotkeyCondition::Modifier)
+    }
+}
+
 pub(super) enum HotkeyProcess<E> {
     Callback(HookProcess<E>),
     Activate(Arc<AtomicBool>),
@@ -73,6 +79,12 @@ impl HotkeyHook {
 pub(super) enum Condition {
     Any,
     Modifier(Arc<ModifierKeys>),
+}
+
+impl From<Option<Arc<ModifierKeys>>> for Condition {
+    fn from(this: Option<Arc<ModifierKeys>>) -> Condition {
+        this.map_or(Condition::Any, Condition::Modifier)
+    }
 }
 
 impl Condition {

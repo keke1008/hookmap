@@ -3,9 +3,7 @@ use std::sync::Arc;
 
 use super::{
     button_arg::{ButtonArg, ButtonArgElementTag},
-    hook::{
-        Condition, HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook,
-    },
+    hook::{HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook},
     modifier_keys::ModifierKeys,
     storage::HotkeyStorage,
 };
@@ -32,13 +30,7 @@ impl HotkeyEntry {
 
     pub(super) fn remap(&self, targets: ButtonArg, behavior: Button, context: Context) {
         let mut storage = self.storage.borrow_mut();
-        let hook = Arc::new(RemapHook::new(
-            context
-                .modifier_keys
-                .map(Condition::Modifier)
-                .unwrap_or(Condition::Any),
-            behavior,
-        ));
+        let hook = Arc::new(RemapHook::new(context.modifier_keys.into(), behavior));
         for target in targets.iter() {
             match target.tag {
                 ButtonArgElementTag::Inversion => panic!(),
@@ -57,10 +49,7 @@ impl HotkeyEntry {
     ) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
-            context
-                .modifier_keys
-                .map(HotkeyCondition::Modifier)
-                .unwrap_or(HotkeyCondition::Any),
+            context.modifier_keys.into(),
             HotkeyProcess::Callback(process),
             context.native_event_operation,
         ));
@@ -139,10 +128,7 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context
-                .modifier_keys
-                .map(Condition::Modifier)
-                .unwrap_or(Condition::Any),
+            context.modifier_keys.into(),
             process,
             context.native_event_operation,
         ));
@@ -151,10 +137,7 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context
-                .modifier_keys
-                .map(Condition::Modifier)
-                .unwrap_or(Condition::Any),
+            context.modifier_keys.into(),
             process,
             context.native_event_operation,
         ));
@@ -164,10 +147,7 @@ impl HotkeyEntry {
     pub(super) fn disable(&self, targets: ButtonArg, context: Context) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
-            context
-                .modifier_keys
-                .map(HotkeyCondition::Modifier)
-                .unwrap_or(HotkeyCondition::Any),
+            context.modifier_keys.into(),
             HotkeyProcess::Noop,
             context.native_event_operation,
         ));
