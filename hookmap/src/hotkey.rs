@@ -138,20 +138,36 @@ pub trait RegisterHotkey {
     /// ```
     fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey;
 
-    /// Changes the operation for native events to block or dispatch.
+    /// If the hotkey registered in the return value of this method is executed,
+    /// the input event will be blocked.
     ///
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{prelude::*, event::NativeEventOperation};
-    /// use std::sync::Arc;
+    /// use hookmap::prelude::*;
     ///
     /// let hotkey = Hotkey::new();
-    /// let blocking_hotkey = hotkey.change_native_event_operation(NativeEventOperation::Block);
-    /// blocking_hotkey.on_press(buttons!(A), Arc::new(|e| println!("Press: {:?}", e)));
+    /// let blocking_hotkey = hotkey.block_input_event();
+    /// blocking_hotkey.on_press(Button::A, |event| println!("An input event {:?} will be blocked.", event));
     /// ```
     ///
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey;
+    fn block_input_event(&self) -> BranchedHotkey;
+
+    // If the hotkey registered in the return value of this method is executed,
+    // the input event will not be blocked. However, if any other blocking hotkey
+    // is executed, the input event will be blocked.
+    //
+    // # Examples
+    //
+    // ```
+    // use hookmap::prelude::*;
+    //
+    // let hotkey = Hotkey::new();
+    // let dispatching_hotkey = hotkey.dispatch_input_event();
+    // dispatch_input_event.remap(Button::A, Button::B);
+    // ```
+    //
+    fn dispatch_input_event(&self) -> BranchedHotkey;
 }
 
 /// Registering Hotkeys.
@@ -232,9 +248,19 @@ impl RegisterHotkey for Hotkey {
         BranchedHotkey::new(&self.entry, context)
     }
 
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey {
-        let mut context = self.context.clone();
-        context.native_event_operation = operation;
+    fn block_input_event(&self) -> BranchedHotkey {
+        let context = Context {
+            native_event_operation: NativeEventOperation::Block,
+            modifier_keys: self.context.modifier_keys.clone(),
+        };
+        BranchedHotkey::new(&self.entry, context)
+    }
+
+    fn dispatch_input_event(&self) -> BranchedHotkey {
+        let context = Context {
+            native_event_operation: NativeEventOperation::Dispatch,
+            modifier_keys: self.context.modifier_keys.clone(),
+        };
         BranchedHotkey::new(&self.entry, context)
     }
 }
@@ -294,10 +320,18 @@ impl RegisterHotkey for BranchedHotkey<'_> {
         BranchedHotkey::new(self.entry, context)
     }
 
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey {
+    fn block_input_event(&self) -> BranchedHotkey {
         let context = Context {
+            native_event_operation: NativeEventOperation::Block,
             modifier_keys: self.context.modifier_keys.clone(),
-            native_event_operation: operation,
+        };
+        BranchedHotkey::new(self.entry, context)
+    }
+
+    fn dispatch_input_event(&self) -> BranchedHotkey {
+        let context = Context {
+            native_event_operation: NativeEventOperation::Dispatch,
+            modifier_keys: self.context.modifier_keys.clone(),
         };
         BranchedHotkey::new(self.entry, context)
     }
