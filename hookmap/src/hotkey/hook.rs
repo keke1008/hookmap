@@ -8,10 +8,6 @@ use std::sync::{
 
 pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
 
-pub(super) trait ExecutableHook {
-    fn is_executable(&self) -> bool;
-}
-
 pub(super) enum HotkeyCondition {
     Any,
     Activation(Arc<AtomicBool>),
@@ -19,7 +15,7 @@ pub(super) enum HotkeyCondition {
 }
 
 impl HotkeyCondition {
-    fn is_executable(&self) -> bool {
+    fn is_satisfied(&self) -> bool {
         match self {
             HotkeyCondition::Any => true,
             HotkeyCondition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
@@ -56,12 +52,6 @@ pub(super) struct HotkeyHook {
     native_event_operation: NativeEventOperation,
 }
 
-impl ExecutableHook for HotkeyHook {
-    fn is_executable(&self) -> bool {
-        self.condition.is_executable()
-    }
-}
-
 impl HotkeyHook {
     pub(super) fn new(
         condition: HotkeyCondition,
@@ -74,17 +64,15 @@ impl HotkeyHook {
             native_event_operation,
         }
     }
+
+    pub(super) fn is_executable(&self) -> bool {
+        self.condition.is_satisfied()
+    }
 }
 
 pub(super) enum Condition {
     Any,
     Modifier(Arc<ModifierKeys>),
-}
-
-impl From<Option<Arc<ModifierKeys>>> for Condition {
-    fn from(this: Option<Arc<ModifierKeys>>) -> Condition {
-        this.map_or(Condition::Any, Condition::Modifier)
-    }
 }
 
 impl Condition {
@@ -93,6 +81,12 @@ impl Condition {
             Condition::Any => true,
             Condition::Modifier(modifiers) => modifiers.meets_conditions(),
         }
+    }
+}
+
+impl From<Option<Arc<ModifierKeys>>> for Condition {
+    fn from(this: Option<Arc<ModifierKeys>>) -> Condition {
+        this.map_or(Condition::Any, Condition::Modifier)
     }
 }
 
@@ -105,10 +99,8 @@ impl RemapHook {
     pub(super) fn new(condition: Condition, button: Button) -> Self {
         RemapHook { condition, button }
     }
-}
 
-impl ExecutableHook for RemapHook {
-    fn is_executable(&self) -> bool {
+    pub(super) fn is_executable(&self) -> bool {
         self.condition.is_satisfied()
     }
 }
@@ -167,6 +159,12 @@ impl<E> MouseHook<E> {
     }
 }
 
+impl<E> MouseHook<E> {
+    pub(super) fn is_executable(&self) -> bool {
+        self.condition.is_satisfied()
+    }
+}
+
 impl<E> Hook<E> for MouseHook<E> {
     fn native_event_operation(&self) -> NativeEventOperation {
         self.native_event_operation
@@ -174,12 +172,6 @@ impl<E> Hook<E> for MouseHook<E> {
 
     fn run(&self, event: E) {
         (self.process)(event);
-    }
-}
-
-impl<E> ExecutableHook for MouseHook<E> {
-    fn is_executable(&self) -> bool {
-        self.condition.is_satisfied()
     }
 }
 
