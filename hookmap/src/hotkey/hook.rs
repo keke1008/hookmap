@@ -75,6 +75,15 @@ pub(super) enum Condition {
     Modifier(Arc<ModifierKeys>),
 }
 
+impl Condition {
+    fn is_satisfied(&self) -> bool {
+        match self {
+            Condition::Any => true,
+            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
+        }
+    }
+}
+
 pub(super) struct RemapHook {
     condition: Condition,
     button: Button,
@@ -88,10 +97,7 @@ impl RemapHook {
 
 impl ExecutableHook for RemapHook {
     fn is_executable(&self) -> bool {
-        match &self.condition {
-            Condition::Any => true,
-            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
-        }
+        self.condition.is_satisfied()
     }
 }
 
@@ -130,19 +136,19 @@ impl From<Arc<RemapHook>> for ButtonHook {
 }
 
 pub(super) struct MouseHook<E> {
-    modifier_keys: Arc<ModifierKeys>,
+    condition: Condition,
     process: HookProcess<E>,
     native_event_operation: NativeEventOperation,
 }
 
 impl<E> MouseHook<E> {
     pub(super) fn new(
-        modifier_keys: Arc<ModifierKeys>,
+        condition: Condition,
         process: HookProcess<E>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         MouseHook {
-            modifier_keys,
+            condition,
             process,
             native_event_operation,
         }
@@ -161,7 +167,7 @@ impl<E> Hook<E> for MouseHook<E> {
 
 impl<E> ExecutableHook for MouseHook<E> {
     fn is_executable(&self) -> bool {
-        self.modifier_keys.meets_conditions()
+        self.condition.is_satisfied()
     }
 }
 

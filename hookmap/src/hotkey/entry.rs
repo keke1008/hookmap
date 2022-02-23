@@ -139,7 +139,10 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context.modifier_keys.unwrap_or_default(),
+            context
+                .modifier_keys
+                .map(Condition::Modifier)
+                .unwrap_or(Condition::Any),
             process,
             context.native_event_operation,
         ));
@@ -148,7 +151,10 @@ impl HotkeyEntry {
 
     pub(super) fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
-            context.modifier_keys.unwrap_or_default(),
+            context
+                .modifier_keys
+                .map(Condition::Modifier)
+                .unwrap_or(Condition::Any),
             process,
             context.native_event_operation,
         ));
