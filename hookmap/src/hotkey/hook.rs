@@ -70,23 +70,28 @@ impl HotkeyHook {
     }
 }
 
+pub(super) enum Condition {
+    Any,
+    Modifier(Arc<ModifierKeys>),
+}
+
 pub(super) struct RemapHook {
-    modifier_keys: Arc<ModifierKeys>,
+    condition: Condition,
     button: Button,
 }
 
 impl RemapHook {
-    pub(super) fn new(modifier_keys: Arc<ModifierKeys>, button: Button) -> Self {
-        RemapHook {
-            modifier_keys,
-            button,
-        }
+    pub(super) fn new(condition: Condition, button: Button) -> Self {
+        RemapHook { condition, button }
     }
 }
 
 impl ExecutableHook for RemapHook {
     fn is_executable(&self) -> bool {
-        self.modifier_keys.meets_conditions()
+        match &self.condition {
+            Condition::Any => true,
+            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
+        }
     }
 }
 

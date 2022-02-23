@@ -3,7 +3,9 @@ use std::sync::Arc;
 
 use super::{
     button_arg::{ButtonArg, ButtonArgElementTag},
-    hook::{HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook},
+    hook::{
+        Condition, HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook,
+    },
     modifier_keys::ModifierKeys,
     storage::HotkeyStorage,
 };
@@ -31,7 +33,10 @@ impl HotkeyEntry {
     pub(super) fn remap(&self, targets: ButtonArg, behavior: Button, context: Context) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(RemapHook::new(
-            context.modifier_keys.unwrap_or_default(),
+            context
+                .modifier_keys
+                .map(Condition::Modifier)
+                .unwrap_or(Condition::Any),
             behavior,
         ));
         for target in targets.iter() {
