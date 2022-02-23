@@ -9,8 +9,10 @@
 //! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod hotkey;
-pub mod macros;
 pub mod utils;
+
+#[doc(hidden)]
+pub mod macros;
 
 mod button;
 mod hook;

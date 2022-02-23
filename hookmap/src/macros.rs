@@ -21,6 +21,7 @@ use crate::button::Button;
 #[allow(clippy::deprecated_cfg_attr)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 #[macro_export]
+#[doc(hidden)]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
     (Shift)          => ($crate::devices::SHIFT);
@@ -122,6 +123,7 @@ macro_rules! seq {
     };
 }
 
+#[doc(hidden)]
 pub const MODIFIER_LIST: [Button; 8] = [
     Button::LShift,
     Button::RShift,

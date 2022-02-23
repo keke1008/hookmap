@@ -1,22 +1,21 @@
 //! Registering Hotkeys.
 
+#[doc(hidden)]
 pub mod button_arg;
 mod entry;
 mod hook;
 mod modifier_keys;
 mod storage;
 
+pub use button_arg::ButtonArg;
+
 use modifier_keys::ModifierKeys;
 
 use crate::runtime::Runtime;
+use entry::{Context, HotkeyEntry};
 use hook::HookProcess;
 use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::sync::Arc;
-
-use self::{
-    button_arg::ButtonArg,
-    entry::{Context, HotkeyEntry},
-};
 
 pub trait IntoHookProcess<E> {
     fn into(self) -> HookProcess<E>;
@@ -170,7 +169,7 @@ pub trait RegisterHotkey {
     fn dispatch_input_event(&self) -> BranchedHotkey;
 }
 
-/// Registering Hotkeys.
+/// Register Hotkeys.
 ///
 /// # Examples
 ///

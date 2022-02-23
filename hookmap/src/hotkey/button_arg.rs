@@ -38,12 +38,13 @@ impl<T: Clone> ButtonArgElement<T> {
     }
 }
 
-/// A struct used in macros to pass multiple buttons to a function.
+/// A struct to pass multiple buttons to a function.
+/// This struct constructs by [`buttons!`].
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
 pub struct ButtonArg(Vec<ButtonArgElement<Button>>);
 
 impl ButtonArg {
-    pub fn iter(&self) -> impl Iterator<Item = ButtonArgElement<Button>> + '_ {
+    pub(super) fn iter(&self) -> impl Iterator<Item = ButtonArgElement<Button>> + '_ {
         self.0.iter().copied()
     }
 }
@@ -90,6 +91,66 @@ where
     }
 }
 
+/// Passing multiple buttons as an argument for functions like [`RegisterHotkey::remap`].
+///
+/// This macro produces a value of type [`ButtonArg`].
+///
+/// # Syntax
+///
+/// This macro receives variant names of [`Button`] separated by commas,
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// buttons!(A, B, Esc, F12);
+/// ```
+///
+/// Or number letarals corresponding to numeric keys.
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// buttons!(0, 1, 2);
+/// ```
+///
+/// Variables can be used by enclosing them in square brackets.
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// let a = Button::A;
+/// buttons!([a], B, C);
+/// ```
+///
+/// The prefix `!` means that this key is released.
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// let b = Button::B;
+/// buttons!(!A, ![b], !0);
+/// ```
+///
+/// Nested `buttons!(..)` will be flattened.
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// let arg = buttons!(A, B, C);
+/// assert_eq!(
+///     buttons!([arg], D, E),
+///     buttons!(A, B, C, D, E),
+/// );
+/// ```
+///
+/// The prefix `!` of nested `buttons!(..)` will affect each button.
+///
+/// ```
+/// # use hookmap::prelude::*;
+/// let arg = buttons!(A, B, C);
+/// assert_eq!(
+///     buttons!(![arg], D, E),
+///     buttons!(!A, !B, !C, D, E),
+/// );
+/// ```
+///
+/// [`RegisterHotkey::remap`]: super::RegisterHotkey::remap
+///
 #[macro_export]
 macro_rules! buttons {
     (@inner $chain:tt , $($tail:tt)*) => {
