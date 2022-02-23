@@ -136,7 +136,7 @@ pub trait RegisterHotkey {
     /// let a_or_b = hotkey.add_modifier_keys(buttons!(A, B));
     /// a_or_b.remap(buttons!(C), Button::D);
     /// ```
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey;
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey;
 
     /// Changes the operation for native events to block or dispatch.
     ///
@@ -151,7 +151,7 @@ pub trait RegisterHotkey {
     /// blocking_hotkey.on_press(buttons!(A), Arc::new(|e| println!("Press: {:?}", e)));
     /// ```
     ///
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey;
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey;
 }
 
 /// Registering Hotkeys.
@@ -224,34 +224,34 @@ impl RegisterHotkey for Hotkey {
         self.entry.disable(target.into(), self.context.clone());
     }
 
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
         let context = Context {
             modifier_keys: Some(Arc::new(ModifierKeys::from(modifier_keys.into()))),
             native_event_operation: self.context.native_event_operation,
         };
-        ModifierHotkey::new(&self.entry, context)
+        BranchedHotkey::new(&self.entry, context)
     }
 
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey {
         let mut context = self.context.clone();
         context.native_event_operation = operation;
-        ModifierHotkey::new(&self.entry, context)
+        BranchedHotkey::new(&self.entry, context)
     }
 }
 
-/// Registers Hotkeys with modifier keys.
-pub struct ModifierHotkey<'a> {
+/// Registers Hotkeys with some conditions.
+pub struct BranchedHotkey<'a> {
     entry: &'a HotkeyEntry,
     context: Context,
 }
 
-impl<'a> ModifierHotkey<'a> {
+impl<'a> BranchedHotkey<'a> {
     fn new(entry: &'a HotkeyEntry, context: Context) -> Self {
-        ModifierHotkey { entry, context }
+        BranchedHotkey { entry, context }
     }
 }
 
-impl RegisterHotkey for ModifierHotkey<'_> {
+impl RegisterHotkey for BranchedHotkey<'_> {
     fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) {
         self.entry
             .remap(target.into(), behavior, self.context.clone());
@@ -280,7 +280,7 @@ impl RegisterHotkey for ModifierHotkey<'_> {
         self.entry.disable(target.into(), self.context.clone());
     }
 
-    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> ModifierHotkey {
+    fn add_modifier_keys(&self, modifier_keys: impl Into<ButtonArg>) -> BranchedHotkey {
         let new = ModifierKeys::from(modifier_keys.into());
         let modifier_keys = if let Some(modifier_keys) = &self.context.modifier_keys {
             modifier_keys.merge(new)
@@ -291,14 +291,14 @@ impl RegisterHotkey for ModifierHotkey<'_> {
             modifier_keys: Some(Arc::new(modifier_keys)),
             native_event_operation: self.context.native_event_operation,
         };
-        ModifierHotkey::new(self.entry, context)
+        BranchedHotkey::new(self.entry, context)
     }
 
-    fn change_native_event_operation(&self, operation: NativeEventOperation) -> ModifierHotkey {
+    fn change_native_event_operation(&self, operation: NativeEventOperation) -> BranchedHotkey {
         let context = Context {
             modifier_keys: self.context.modifier_keys.clone(),
             native_event_operation: operation,
         };
-        ModifierHotkey::new(self.entry, context)
+        BranchedHotkey::new(self.entry, context)
     }
 }
