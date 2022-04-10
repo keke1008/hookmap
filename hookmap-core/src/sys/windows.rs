@@ -6,9 +6,11 @@ use crate::common::{
     button::{Button, ButtonKind},
     event::EventProvider,
 };
-use bitmaps::Bitmap;
-use once_cell::sync::Lazy;
-use std::{mem::MaybeUninit, ptr, sync::Mutex};
+use std::{
+    mem::MaybeUninit,
+    ptr,
+    sync::atomic::{AtomicBool, Ordering},
+};
 use winapi::{
     ctypes::c_int,
     shared::minwindef::{LPARAM, LRESULT, WPARAM},
@@ -29,7 +31,41 @@ fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     }
 }
 
-static BUTTON_STATE: Lazy<Mutex<Bitmap<{ Button::VARIANT_COUNT }>>> = Lazy::new(Mutex::default);
+#[derive(Debug)]
+struct ButtonState([AtomicBool; Button::VARIANT_COUNT]);
+
+impl ButtonState {
+    const fn new() -> Self {
+        let inner = unsafe {
+            // AtomicBool has the same in-memory representation as a bool.
+            // https://doc.rust-lang.org/std/sync/atomic/struct.AtomicBool.html
+            std::mem::transmute([false; Button::VARIANT_COUNT])
+        };
+        ButtonState(inner)
+    }
+
+    #[inline]
+    fn press(&self, button: Button, order: Ordering) {
+        self.0[button as usize].store(true, order);
+    }
+
+    #[inline]
+    fn release(&self, button: Button, order: Ordering) {
+        self.0[button as usize].store(false, order)
+    }
+
+    #[inline]
+    fn is_pressed(&self, button: Button, order: Ordering) -> bool {
+        self.0[button as usize].load(order)
+    }
+
+    #[inline]
+    fn is_released(&self, button: Button, order: Ordering) -> bool {
+        !self.0[button as usize].load(order)
+    }
+}
+
+static BUTTON_STATE: ButtonState = ButtonState::new();
 
 impl Button {
     #[inline]
@@ -82,24 +118,22 @@ impl Button {
 
     #[inline]
     pub fn is_pressed(self) -> bool {
-        BUTTON_STATE.lock().unwrap().get(self as usize)
+        BUTTON_STATE.is_pressed(self, Ordering::SeqCst)
     }
 
     #[inline]
     pub fn is_released(self) -> bool {
-        !BUTTON_STATE.lock().unwrap().get(self as usize)
+        !BUTTON_STATE.is_released(self, Ordering::SeqCst)
     }
-}
 
-impl Button {
     #[inline]
     fn assume_pressed(self) {
-        BUTTON_STATE.lock().unwrap().set(self as usize, true);
+        BUTTON_STATE.press(self, Ordering::SeqCst);
     }
 
     #[inline]
     fn assume_released(self) {
-        BUTTON_STATE.lock().unwrap().set(self as usize, false);
+        BUTTON_STATE.release(self, Ordering::SeqCst);
     }
 }
 
