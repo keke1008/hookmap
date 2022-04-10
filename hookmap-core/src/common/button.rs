@@ -1,11 +1,5 @@
 use variant_count::VariantCount;
 
-pub trait ButtonOperation {
-    fn generate_press_event(self, recursive: bool);
-    fn generate_release_event(self, recursive: bool);
-    fn read_is_pressed(self) -> bool;
-}
-
 /// A button input action.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum ButtonAction {

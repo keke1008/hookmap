@@ -3,7 +3,7 @@ mod keyboard;
 mod mouse;
 
 use crate::common::{
-    button::{Button, ButtonKind, ButtonOperation},
+    button::{Button, ButtonKind},
     event::EventProvider,
 };
 use bitmaps::Bitmap;
@@ -31,33 +31,73 @@ fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
 
 static BUTTON_STATE: Lazy<Mutex<Bitmap<{ Button::VARIANT_COUNT }>>> = Lazy::new(Mutex::default);
 
-impl ButtonOperation for Button {
-    fn generate_press_event(self, recursive: bool) {
+impl Button {
+    #[inline]
+    pub fn press(self) {
         self.assume_pressed();
         match self.kind() {
-            ButtonKind::Key => keyboard::press(&self, recursive),
-            ButtonKind::Mouse => mouse::press(&self, recursive),
+            ButtonKind::Key => keyboard::press(self, false),
+            ButtonKind::Mouse => mouse::press(self, false),
         }
     }
 
-    fn generate_release_event(self, recursive: bool) {
+    #[inline]
+    pub fn press_recursive(self) {
+        self.assume_pressed();
+        match self.kind() {
+            ButtonKind::Key => keyboard::press(self, true),
+            ButtonKind::Mouse => mouse::press(self, true),
+        }
+    }
+
+    #[inline]
+    pub fn release(self) {
         self.assume_released();
         match self.kind() {
-            ButtonKind::Key => keyboard::release(&self, recursive),
-            ButtonKind::Mouse => mouse::release(&self, recursive),
+            ButtonKind::Key => keyboard::release(self, false),
+            ButtonKind::Mouse => mouse::release(self, false),
         }
     }
 
-    fn read_is_pressed(self) -> bool {
+    #[inline]
+    pub fn release_recursive(self) {
+        self.assume_released();
+        match self.kind() {
+            ButtonKind::Key => keyboard::release(self, true),
+            ButtonKind::Mouse => mouse::release(self, true),
+        }
+    }
+
+    #[inline]
+    pub fn click(self) {
+        self.press();
+        self.release();
+    }
+
+    #[inline]
+    pub fn click_recursive(self) {
+        self.press_recursive();
+        self.release_recursive();
+    }
+
+    #[inline]
+    pub fn is_pressed(self) -> bool {
         BUTTON_STATE.lock().unwrap().get(self as usize)
+    }
+
+    #[inline]
+    pub fn is_released(self) -> bool {
+        !BUTTON_STATE.lock().unwrap().get(self as usize)
     }
 }
 
 impl Button {
+    #[inline]
     fn assume_pressed(self) {
         BUTTON_STATE.lock().unwrap().set(self as usize, true);
     }
 
+    #[inline]
     fn assume_released(self) {
         BUTTON_STATE.lock().unwrap().set(self as usize, false);
     }

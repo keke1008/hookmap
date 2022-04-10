@@ -1,5 +1,5 @@
 use super::modifiers::Modifiers;
-use crate::{button::ButtonInput, hook::Hook};
+use crate::hook::Hook;
 use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
 use std::sync::{
     atomic::{AtomicBool, Ordering},

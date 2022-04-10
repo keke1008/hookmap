@@ -15,7 +15,7 @@ pub mod common;
 mod sys;
 
 pub use common::{
-    button::{Button, ButtonAction, ButtonKind, ButtonOperation},
+    button::{Button, ButtonAction, ButtonKind},
     event::{ButtonEvent, Event, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
     handler::HookHandler,
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},

@@ -1,5 +1,4 @@
 use super::button_arg::{ButtonArg, ButtonArgElementTag};
-use crate::button::ButtonState;
 use hookmap_core::Button;
 
 #[derive(Clone, Debug, Default)]

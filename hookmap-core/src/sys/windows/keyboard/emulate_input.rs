@@ -6,15 +6,15 @@ use winapi::{
     um::winuser::{self, INPUT, INPUT_KEYBOARD, KEYBDINPUT, KEYEVENTF_KEYUP, KEYEVENTF_SCANCODE},
 };
 
-pub(crate) fn press(key: &Button, recursive: bool) {
+pub(crate) fn press(key: Button, recursive: bool) {
     send_key_input(key, 0, recursive);
 }
 
-pub(crate) fn release(key: &Button, recursive: bool) {
+pub(crate) fn release(key: Button, recursive: bool) {
     send_key_input(key, KEYEVENTF_KEYUP, recursive);
 }
 
-fn send_key_input(key: &Button, flags: u32, recursive: bool) {
+fn send_key_input(key: Button, flags: u32, recursive: bool) {
     let (scancode, flags) = if let Some((scancode, flag)) = key.to_scancode_and_flag() {
         (scancode, flags | flag)
     } else {

@@ -25,10 +25,7 @@ pub mod event {
 
 /// keyboard and mouse, and their inputs.
 pub mod devices {
-    pub use super::button::{
-        Button, ButtonAction, ButtonInput, ButtonState, Sequence, SequenceOperation, ALT, CTRL,
-        META, SHIFT,
-    };
+    pub use super::button::{Button, ButtonAction, Sequence, SequenceOperation};
     pub use hookmap_core::{EmulateMouseCursor, EmulateMouseWheel, Mouse};
 }
 
@@ -38,10 +35,7 @@ pub use runtime::interceptor;
 pub mod prelude {
     pub use super::{
         buttons,
-        devices::{
-            Button, ButtonAction, ButtonInput, ButtonState, EmulateMouseCursor, EmulateMouseWheel,
-            Mouse,
-        },
+        devices::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse},
         event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent},
         hotkey,
         hotkey::{Hotkey, RegisterHotkey},
