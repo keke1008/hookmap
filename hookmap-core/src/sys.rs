@@ -2,4 +2,4 @@
 mod windows;
 
 #[cfg(target_os = "windows")]
-pub(crate) use windows::install_hook;
+pub use windows::{install_hook, mouse};

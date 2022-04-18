@@ -1,7 +1,7 @@
 pub mod interceptor;
 
 use crate::hook::{Hook, HookStorage};
-use hookmap_core::{common::event::UndispatchedEvent, HookHandler, NativeEventOperation};
+use hookmap_core::{common::event::UndispatchedEvent, NativeEventOperation};
 use std::thread;
 
 #[derive(Debug)]
@@ -50,7 +50,7 @@ where
     }
 
     pub(crate) fn start(&self) {
-        let event_receiver = HookHandler::install_hook();
+        let event_receiver = hookmap_core::install_hook();
 
         loop {
             let message = event_receiver.recv();

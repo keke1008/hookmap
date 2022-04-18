@@ -72,7 +72,7 @@ impl UndispatchedEvent {
     ///
     /// ```no_run
     /// use hookmap_core::*;
-    /// let mut event = HookHandler::install_hook().recv();
+    /// let mut event = hookmap_core::install_hook().recv();
     /// event.operate(NativeEventOperation::Block);
     /// ```
     pub fn operate(mut self, operation: NativeEventOperation) {
@@ -88,8 +88,7 @@ impl UndispatchedEvent {
     /// # Examples
     ///
     /// ```no_run
-    /// use hookmap_core::*;
-    /// let mut event = HookHandler::install_hook().recv();
+    /// let mut event = hookmap_core::install_hook().recv();
     /// event.dispatch();
     /// ```
     pub fn dispatch(self) {
@@ -101,8 +100,7 @@ impl UndispatchedEvent {
     /// # Examples
     ///
     /// ```no_run
-    /// use hookmap_core::*;
-    /// let mut event = HookHandler::install_hook().recv();
+    /// let mut event = hookmap_core::install_hook().recv();
     /// event.block();
     /// ```
     pub fn block(self) {

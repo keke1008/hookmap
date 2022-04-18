@@ -1,35 +1,20 @@
-mod conversion;
-mod keyboard;
-mod mouse;
+mod hook;
+mod input;
+mod vkcode;
 
 use crate::common::{
-    button::{Button, ButtonKind},
-    event::EventProvider,
+    button::{Button, ButtonAction},
+    event::{self, EventConsumer},
 };
 use std::{
     mem::MaybeUninit,
     ptr,
     sync::atomic::{AtomicBool, Ordering},
+    thread,
 };
-use winapi::{
-    ctypes::c_int,
-    shared::minwindef::{LPARAM, LRESULT, WPARAM},
-    um::winuser,
-};
+use winapi::{shared::windef::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, um::winuser};
 
 static IGNORED_DW_EXTRA_INFO: usize = 0x1;
-
-fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
-    unsafe {
-        winuser::CallNextHookEx(
-            // This parameter is ignored.
-            MaybeUninit::zeroed().assume_init(),
-            n_code,
-            w_param,
-            l_param,
-        )
-    }
-}
 
 #[derive(Debug)]
 struct ButtonState([AtomicBool; Button::VARIANT_COUNT]);
@@ -71,37 +56,25 @@ impl Button {
     #[inline]
     pub fn press(self) {
         self.assume_pressed();
-        match self.kind() {
-            ButtonKind::Key => keyboard::press(self, false),
-            ButtonKind::Mouse => mouse::press(self, false),
-        }
+        input::send_input(self, ButtonAction::Press, false);
     }
 
     #[inline]
     pub fn press_recursive(self) {
         self.assume_pressed();
-        match self.kind() {
-            ButtonKind::Key => keyboard::press(self, true),
-            ButtonKind::Mouse => mouse::press(self, true),
-        }
+        input::send_input(self, ButtonAction::Press, true);
     }
 
     #[inline]
     pub fn release(self) {
         self.assume_released();
-        match self.kind() {
-            ButtonKind::Key => keyboard::release(self, false),
-            ButtonKind::Mouse => mouse::release(self, false),
-        }
+        input::send_input(self, ButtonAction::Release, false);
     }
 
     #[inline]
     pub fn release_recursive(self) {
         self.assume_released();
-        match self.kind() {
-            ButtonKind::Key => keyboard::release(self, true),
-            ButtonKind::Mouse => mouse::release(self, true),
-        }
+        input::send_input(self, ButtonAction::Release, true);
     }
 
     #[inline]
@@ -123,7 +96,7 @@ impl Button {
 
     #[inline]
     pub fn is_released(self) -> bool {
-        !BUTTON_STATE.is_released(self, Ordering::SeqCst)
+        BUTTON_STATE.is_released(self, Ordering::SeqCst)
     }
 
     #[inline]
@@ -137,10 +110,22 @@ impl Button {
     }
 }
 
-pub(crate) fn install_hook(event_provider: EventProvider) {
-    keyboard::install_hook(event_provider.clone());
-    mouse::install_hook(event_provider);
+pub mod mouse {
+    pub use super::input::{get_position, move_absolute, move_relative, rotate};
+}
+
+pub fn install_hook() -> EventConsumer {
     unsafe {
-        winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
+        // If this is not executed, the GetCursorPos function returns an invalid cursor position.
+        winuser::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     }
+
+    let (event_tx, event_rx) = event::connection();
+    thread::spawn(|| {
+        hook::install(event_tx);
+        unsafe {
+            winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
+        }
+    });
+    event_rx
 }

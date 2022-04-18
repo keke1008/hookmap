@@ -14,9 +14,10 @@ pub mod common;
 
 mod sys;
 
+pub use sys::{install_hook, mouse};
+
 pub use common::{
     button::{Button, ButtonAction, ButtonKind},
     event::{ButtonEvent, Event, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
-    handler::HookHandler,
     mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
 };

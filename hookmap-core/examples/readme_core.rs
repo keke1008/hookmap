@@ -1,7 +1,7 @@
 use hookmap_core::*;
 
 fn main() {
-    let event_receiver = HookHandler::install_hook();
+    let event_receiver = hookmap_core::install_hook();
 
     loop {
         let undispatched_event = event_receiver.recv();

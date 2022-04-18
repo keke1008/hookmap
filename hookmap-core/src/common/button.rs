@@ -83,6 +83,10 @@ pub enum Button {
     J,
     K,
     L,
+
+    #[cfg(feature = "us-keyboard-layout")]
+    SemiColon,
+    #[cfg(feature = "japanese-keyboard-layout")]
     SemiColon,
 
     #[cfg(feature = "us-keyboard-layout")]
@@ -180,41 +184,6 @@ pub enum Button {
     F23,
     F24,
     PrintScreen,
-
-    Void,
-
-    Unassigned1,
-    Unassigned2,
-    Unassigned3,
-    Unassigned4,
-    Unassigned5,
-    Unassigned6,
-    Unassigned7,
-    Unassigned8,
-    Unassigned9,
-    Unassigned10,
-    Unassigned11,
-    Unassigned12,
-    Unassigned13,
-    Unassigned14,
-    Unassigned15,
-    Unassigned16,
-    Unassigned17,
-    Unassigned18,
-    Unassigned19,
-    Unassigned20,
-    Unassigned21,
-    Unassigned22,
-    Unassigned23,
-    Unassigned24,
-    Unassigned25,
-    Unassigned26,
-    Unassigned27,
-    Unassigned28,
-    Unassigned29,
-    Unassigned30,
-    Unassigned31,
-    Unassigned32,
 }
 
 impl Button {
