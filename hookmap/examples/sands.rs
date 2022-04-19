@@ -47,8 +47,8 @@ fn main() {
         Button::RCtrl,
         Button::LAlt,
         Button::RAlt,
-        Button::LMeta,
-        Button::RMeta,
+        Button::LSuper,
+        Button::RSuper,
     ]
     .iter()
     .copied()

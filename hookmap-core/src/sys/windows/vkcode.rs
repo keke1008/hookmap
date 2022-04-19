@@ -103,7 +103,7 @@ pub(super) const fn into_button(vkcode: u32) -> Option<Button> {
 
         0xA1 => RShift,
         0xA2 => LCtrl,
-        0x5B => LMeta,
+        0x5B => LSuper,
         0xA4 => LAlt,
 
         #[cfg(feature = "japanese-keyboard-layout")]
@@ -118,7 +118,7 @@ pub(super) const fn into_button(vkcode: u32) -> Option<Button> {
         0xF2 => KatakanaHiragana,
 
         0xA5 => RAlt,
-        0x5C => RMeta,
+        0x5C => RSuper,
         0x5D => Application,
         0xA3 => RCtrl,
         0x2D => Insert,
@@ -279,7 +279,7 @@ pub(super) const fn from_button(button: Button) -> u16 {
 
         RShift => 0xA1,
         LCtrl => 0xA2,
-        LMeta => 0x5B,
+        LSuper => 0x5B,
         LAlt => 0xA4,
 
         #[cfg(feature = "japanese-keyboard-layout")]
@@ -294,7 +294,7 @@ pub(super) const fn from_button(button: Button) -> u16 {
         KatakanaHiragana => 0xF2,
 
         RAlt => 0xA5,
-        RMeta => 0x5C,
+        RSuper => 0x5C,
         Application => 0x5D,
         RCtrl => 0xA3,
         Insert => 0x2D,

@@ -131,8 +131,8 @@ pub const MODIFIER_LIST: [Button; 8] = [
     Button::RCtrl,
     Button::LAlt,
     Button::RAlt,
-    Button::LMeta,
-    Button::RMeta,
+    Button::LSuper,
+    Button::RSuper,
 ];
 
 #[cfg(test)]

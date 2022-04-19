@@ -40,8 +40,8 @@ impl Sequence {
         Button::RCtrl,
         Button::LAlt,
         Button::RAlt,
-        Button::LMeta,
-        Button::RMeta,
+        Button::LSuper,
+        Button::RSuper,
     ];
 
     pub fn new(with: Vec<Button>, seq: Vec<SequenceOperation>) -> Self {

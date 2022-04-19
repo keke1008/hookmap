@@ -115,7 +115,7 @@ pub enum Button {
 
     RShift,
     LCtrl,
-    LMeta,
+    LSuper,
     LAlt,
 
     #[cfg(feature = "japanese-keyboard-layout")]
@@ -130,7 +130,7 @@ pub enum Button {
     KatakanaHiragana,
 
     RAlt,
-    RMeta,
+    RSuper,
     Application,
     RCtrl,
     Insert,
