@@ -1,8 +1,6 @@
 use super::{vkcode, IGNORED_DW_EXTRA_INFO};
-use crate::common::{
-    button::{Button, ButtonAction},
-    event::{ButtonEvent, Event, EventProvider, NativeEventOperation},
-};
+use crate::button::{Button, ButtonAction};
+use crate::event::{ButtonEvent, Event, EventProvider, NativeEventOperation};
 
 use std::mem::MaybeUninit;
 

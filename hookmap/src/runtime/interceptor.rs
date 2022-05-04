@@ -1,11 +1,12 @@
 //! Gets keyboard events dynamically.
 
-use hookmap_core::{Button, ButtonAction, ButtonEvent, NativeEventOperation};
+use hookmap_core::button::{Button, ButtonAction};
+use hookmap_core::event::{ButtonEvent, NativeEventOperation};
 use std::{collections::HashSet, fmt::Debug, sync::mpsc, sync::Arc};
 
 pub(super) mod event_sender {
     use super::Filter;
-    use hookmap_core::{ButtonEvent, NativeEventOperation};
+    use hookmap_core::event::{ButtonEvent, NativeEventOperation};
     use once_cell::sync::Lazy;
     use std::{sync::mpsc::SyncSender, sync::Mutex};
 
@@ -75,7 +76,7 @@ pub(super) mod event_sender {
     #[cfg(test)]
     mod tests {
         use super::*;
-        use hookmap_core::{Button, ButtonAction};
+        use hookmap_core::button::{Button, ButtonAction};
         use std::sync::mpsc;
 
         #[test]

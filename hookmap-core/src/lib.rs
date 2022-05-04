@@ -10,14 +10,9 @@
 //! * `us-keyboard-layout` (default): Set the variants of [`Button`] to the buttons on the us keyboard.
 //! * `japanese-keyboard-layout`: Set the variants of [`Button`] to the buttons on the japanese keyboard.
 
-pub mod common;
+pub mod button;
+pub mod event;
 
 mod sys;
 
 pub use sys::{install_hook, mouse};
-
-pub use common::{
-    button::{Button, ButtonAction, ButtonKind},
-    event::{ButtonEvent, Event, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
-    mouse::{EmulateMouseCursor, EmulateMouseWheel, Mouse},
-};

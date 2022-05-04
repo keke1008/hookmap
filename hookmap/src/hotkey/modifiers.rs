@@ -1,5 +1,5 @@
 use super::button_arg::{ButtonArg, ButtonArgElementTag};
-use hookmap_core::Button;
+use hookmap_core::button::Button;
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Modifiers {

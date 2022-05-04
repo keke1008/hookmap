@@ -1,6 +1,8 @@
+use hookmap_core::button::{Button, ButtonAction};
+use hookmap_core::event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent};
+
 use super::hook::{ButtonHook, HotkeyHook, MouseHook, RemapHook};
 use crate::hook::HookStorage;
-use hookmap_core::{Button, ButtonAction, ButtonEvent, MouseCursorEvent, MouseWheelEvent};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Default)]

@@ -1,4 +1,4 @@
-use hookmap_core::*;
+use hookmap_core::{button::Button, event::Event};
 
 fn main() {
     let event_receiver = hookmap_core::install_hook();

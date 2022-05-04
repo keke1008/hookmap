@@ -1,4 +1,4 @@
-use crate::common::button::Button;
+use crate::button::Button;
 
 pub(super) const fn into_button(vkcode: u32) -> Option<Button> {
     use Button::*;

@@ -1,7 +1,7 @@
 pub mod interceptor;
 
 use crate::hook::{Hook, HookStorage};
-use hookmap_core::{common::event::UndispatchedEvent, NativeEventOperation};
+use hookmap_core::event::{Event, NativeEventOperation, UndispatchedEvent};
 use std::thread;
 
 #[derive(Debug)]
@@ -55,17 +55,17 @@ where
         loop {
             let message = event_receiver.recv();
             match message.event {
-                hookmap_core::Event::Button(event) => {
+                Event::Button(event) => {
                     if interceptor::event_sender::send(event) == NativeEventOperation::Block {
                         message.block();
                         return;
                     }
                     self.handle_event(HookStorage::fetch_button_hook, message, event);
                 }
-                hookmap_core::Event::MouseWheel(event) => {
+                Event::MouseWheel(event) => {
                     self.handle_event(HookStorage::fetch_mouse_wheel_hook, message, event)
                 }
-                hookmap_core::Event::MouseCursor(event) => {
+                Event::MouseCursor(event) => {
                     self.handle_event(HookStorage::fetch_mouse_cursor_hook, message, event)
                 }
             }

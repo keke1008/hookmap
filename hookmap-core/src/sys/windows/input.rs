@@ -1,5 +1,5 @@
 use super::{vkcode, IGNORED_DW_EXTRA_INFO};
-use crate::common::button::{Button, ButtonAction, ButtonKind};
+use crate::button::{Button, ButtonAction, ButtonKind};
 
 use std::mem::{self, MaybeUninit};
 

@@ -2,10 +2,8 @@ mod hook;
 mod input;
 mod vkcode;
 
-use crate::common::{
-    button::{Button, ButtonAction},
-    event::{self, EventConsumer},
-};
+use crate::button::{Button, ButtonAction};
+use crate::event::{self, EventConsumer};
 use std::{
     mem::MaybeUninit,
     ptr,

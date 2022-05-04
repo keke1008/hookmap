@@ -20,13 +20,14 @@ mod runtime;
 
 /// Items used for button and mouse event.
 pub mod event {
-    pub use hookmap_core::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
+    pub use hookmap_core::event::{
+        ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation,
+    };
 }
 
 /// keyboard and mouse, and their inputs.
 pub mod devices {
     pub use super::button::{Button, ButtonAction, Sequence, SequenceOperation};
-    pub use hookmap_core::{EmulateMouseCursor, EmulateMouseWheel, Mouse};
 }
 
 pub use runtime::interceptor;
@@ -35,8 +36,8 @@ pub use runtime::interceptor;
 pub mod prelude {
     pub use super::{
         buttons,
-        devices::{Button, ButtonAction, EmulateMouseCursor, EmulateMouseWheel, Mouse},
-        event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent},
+        devices::{Button, ButtonAction},
+        event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
         hotkey,
         hotkey::{Hotkey, RegisterHotkey},
         interceptor::{Filter, Interceptor},

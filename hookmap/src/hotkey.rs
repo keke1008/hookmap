@@ -14,7 +14,8 @@ use modifiers::Modifiers;
 use crate::runtime::Runtime;
 use entry::{Context, HotkeyEntry};
 use hook::HookProcess;
-use hookmap_core::{Button, ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
+use hookmap_core::button::Button;
+use hookmap_core::event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
 use std::sync::Arc;
 
 pub trait IntoHookProcess<E> {

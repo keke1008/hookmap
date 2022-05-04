@@ -1,4 +1,5 @@
-pub use hookmap_core::{Button, ButtonAction, ButtonEvent};
+pub use hookmap_core::button::{Button, ButtonAction};
+pub use hookmap_core::event::ButtonEvent;
 
 /// Emulates button input.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
