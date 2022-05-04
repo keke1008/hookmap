@@ -52,29 +52,46 @@ impl ButtonState {
 
 static BUTTON_STATE: ButtonState = ButtonState::new();
 
+#[inline]
+fn send_input(button: Button, action: ButtonAction, recursive: bool, assume: fn(Button)) {
+    let left_and_right_modifier = match button {
+        Button::Shift => Some((Button::LShift, Button::RShift)),
+        Button::Ctrl => Some((Button::LCtrl, Button::RCtrl)),
+        Button::Alt => Some((Button::LAlt, Button::RAlt)),
+        Button::Super => Some((Button::LSuper, Button::RSuper)),
+        _ => None,
+    };
+    if let Some((left, right)) = left_and_right_modifier {
+        assume(left);
+        assume(right);
+        assume(button);
+        input::send_input(left, action, recursive);
+        input::send_input(right, action, recursive);
+    } else {
+        assume(button);
+        input::send_input(button, action, recursive);
+    }
+}
+
 impl Button {
     #[inline]
     pub fn press(self) {
-        self.assume_pressed();
-        input::send_input(self, ButtonAction::Press, false);
+        send_input(self, ButtonAction::Press, false, Button::assume_pressed);
     }
 
     #[inline]
     pub fn press_recursive(self) {
-        self.assume_pressed();
-        input::send_input(self, ButtonAction::Press, true);
+        send_input(self, ButtonAction::Press, true, Button::assume_pressed);
     }
 
     #[inline]
     pub fn release(self) {
-        self.assume_released();
-        input::send_input(self, ButtonAction::Release, false);
+        send_input(self, ButtonAction::Release, false, Button::assume_released);
     }
 
     #[inline]
     pub fn release_recursive(self) {
-        self.assume_released();
-        input::send_input(self, ButtonAction::Release, true);
+        send_input(self, ButtonAction::Release, true, Button::assume_released);
     }
 
     #[inline]

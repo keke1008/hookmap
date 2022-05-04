@@ -184,6 +184,11 @@ pub enum Button {
     F23,
     F24,
     PrintScreen,
+
+    Shift,
+    Ctrl,
+    Alt,
+    Super,
 }
 
 impl Button {

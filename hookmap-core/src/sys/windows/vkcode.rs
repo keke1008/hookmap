@@ -348,5 +348,7 @@ pub(super) const fn from_button(button: Button) -> u16 {
         F23 => 0x86,
         F24 => 0x87,
         PrintScreen => 0x2C,
+
+        Shift | Ctrl | Alt | Super => unreachable!(),
     }
 }

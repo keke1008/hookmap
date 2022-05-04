@@ -24,10 +24,6 @@ use crate::button::Button;
 #[doc(hidden)]
 macro_rules! button_name {
     ([$button:expr]) => ($button);
-    (Shift)          => ($crate::devices::SHIFT);
-    (Ctrl)           => ($crate::devices::Ctrl);
-    (Alt)            => ($crate::devices::Alt);
-    (Meta)           => ($crate::devices::Meta);
     ($button:ident)  => ($crate::devices::Button::$button);
     (0)              => ($crate::devices::Button::Key0);
     (1)              => ($crate::devices::Button::Key1);
