@@ -28,7 +28,7 @@ impl Default for NativeEventOperation {
 }
 
 /// Information about the generated event.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct ButtonEvent {
     /// Target of the generated event.
     pub target: Button,
@@ -47,6 +47,7 @@ impl ButtonEvent {
 pub type MouseCursorEvent = (i32, i32);
 pub type MouseWheelEvent = i32;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Event {
     Button(ButtonEvent),
     MouseWheel(MouseWheelEvent),
