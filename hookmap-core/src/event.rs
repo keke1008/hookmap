@@ -13,11 +13,7 @@ pub enum NativeEventOperation {
 
 impl Default for &NativeEventOperation {
     fn default() -> Self {
-        if cfg!(feature = "block-input-event") {
-            &NativeEventOperation::Block
-        } else {
-            &NativeEventOperation::Dispatch
-        }
+        &NativeEventOperation::Dispatch
     }
 }
 
