@@ -1,6 +1,6 @@
 use super::{vkcode, IGNORED_DW_EXTRA_INFO};
 use crate::button::{Button, ButtonAction};
-use crate::event::{ButtonEvent, Event, EventProvider, NativeEventOperation};
+use crate::event::{ButtonEvent, Event, EventSender, NativeEventOperation};
 
 use std::mem::MaybeUninit;
 
@@ -13,7 +13,7 @@ use winapi::{
 // For many constants.
 use winapi::um::winuser::*;
 
-static EVENT_PROVIDER: OnceCell<EventProvider> = OnceCell::new();
+static EVENT_SENDER: OnceCell<EventSender> = OnceCell::new();
 
 fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     unsafe {
@@ -49,7 +49,7 @@ extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: WPARAM, l_param: L
         Some(event) => event,
         None => return call_next_hook(n_code, w_param, l_param),
     };
-    let native = EVENT_PROVIDER
+    let native = EVENT_SENDER
         .get()
         .expect("Hooks are not yet installed.")
         .send(Event::Button(event));
@@ -126,7 +126,7 @@ extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPAR
             Event::MouseWheel(delta as i32 / WHEEL_DELTA as i32)
         }
     };
-    match EVENT_PROVIDER
+    match EVENT_SENDER
         .get()
         .expect("Hooks are not yet installed.")
         .send(event)
@@ -136,8 +136,8 @@ extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPAR
     }
 }
 
-pub(super) fn install(event_provider: EventProvider) {
-    EVENT_PROVIDER
+pub(super) fn install(event_provider: EventSender) {
+    EVENT_SENDER
         .set(event_provider)
         .expect("Hooks are already installed.");
     unsafe {

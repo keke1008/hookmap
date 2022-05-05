@@ -3,7 +3,7 @@ mod input;
 mod vkcode;
 
 use crate::button::{Button, ButtonAction};
-use crate::event::{self, EventConsumer};
+use crate::event::{self, EventReceiver};
 use std::{
     mem::MaybeUninit,
     ptr,
@@ -129,18 +129,18 @@ pub mod mouse {
     pub use super::input::{get_position, move_absolute, move_relative, rotate};
 }
 
-pub fn install_hook() -> EventConsumer {
+pub fn install_hook() -> EventReceiver {
     unsafe {
         // If this is not executed, the GetCursorPos function returns an invalid cursor position.
         winuser::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     }
 
-    let (event_tx, event_rx) = event::connection();
+    let (tx, rx) = event::channel();
     thread::spawn(|| {
-        hook::install(event_tx);
+        hook::install(tx);
         unsafe {
             winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
         }
     });
-    event_rx
+    rx
 }

@@ -1,7 +1,7 @@
 pub mod interceptor;
 
 use crate::hook::{Hook, HookStorage};
-use hookmap_core::event::{Event, NativeEventOperation, UndispatchedEvent};
+use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 use std::thread;
 
 #[derive(Debug)]
@@ -29,8 +29,8 @@ where
     fn handle_event<E, U>(
         &self,
         fetch: impl FnOnce(&T, E) -> Vec<U>,
-        message: UndispatchedEvent,
         event: E,
+        native_handler: NativeEventHandler,
     ) where
         E: Copy + Send + 'static,
         U: Hook<E> + Send + 'static,
@@ -45,28 +45,27 @@ where
         } else {
             NativeEventOperation::Dispatch
         };
-        message.operate(operation);
+        native_handler.handle(operation);
         thread::spawn(move || hooks.iter().for_each(|hook| hook.run(event)));
     }
 
     pub(crate) fn start(&self) {
         let event_receiver = hookmap_core::install_hook();
 
-        loop {
-            let message = event_receiver.recv();
-            match message.event {
+        while let Ok((event, native_handler)) = event_receiver.recv() {
+            match event {
                 Event::Button(event) => {
                     if interceptor::event_sender::send(event) == NativeEventOperation::Block {
-                        message.block();
+                        native_handler.block();
                         return;
                     }
-                    self.handle_event(HookStorage::fetch_button_hook, message, event);
+                    self.handle_event(HookStorage::fetch_button_hook, event, native_handler);
                 }
                 Event::MouseWheel(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_wheel_hook, message, event)
+                    self.handle_event(HookStorage::fetch_mouse_wheel_hook, event, native_handler);
                 }
                 Event::MouseCursor(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_cursor_hook, message, event)
+                    self.handle_event(HookStorage::fetch_mouse_cursor_hook, event, native_handler);
                 }
             }
         }

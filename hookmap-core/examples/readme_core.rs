@@ -1,11 +1,10 @@
 use hookmap_core::{button::Button, event::Event};
 
 fn main() {
-    let event_receiver = hookmap_core::install_hook();
+    let rx = hookmap_core::install_hook();
 
-    loop {
-        let undispatched_event = event_receiver.recv();
-        match undispatched_event.event {
+    while let Ok((event, native_handler)) = rx.recv() {
+        match event {
             Event::Button(event) => {
                 match event.target {
                     Button::RightArrow => println!("Left"),
@@ -13,19 +12,21 @@ fn main() {
                     Button::LeftArrow => println!("Right"),
                     Button::DownArrow => println!("Down"),
                     _ => {
-                        undispatched_event.dispatch();
+                        native_handler.dispatch();
                         continue;
                     }
                 };
-                undispatched_event.block();
+                native_handler.block();
             }
+
             Event::MouseCursor(cursor) => {
                 println!("position: {:?}", cursor);
-                undispatched_event.dispatch();
+                native_handler.dispatch();
             }
+
             Event::MouseWheel(speed) => {
                 println!("speed: {}", speed);
-                undispatched_event.dispatch()
+                native_handler.dispatch()
             }
         }
     }

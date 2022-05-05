@@ -50,104 +50,60 @@ pub enum Event {
     MouseCursor(MouseCursorEvent),
 }
 
-pub struct UndispatchedEvent {
-    pub event: Event,
-    pub(crate) native_event_operation_sender: Option<Sender<NativeEventOperation>>,
+#[derive(Debug)]
+pub struct NativeEventHandler {
+    tx: Option<Sender<NativeEventOperation>>,
 }
 
-impl UndispatchedEvent {
-    fn new(event: Event, native_event_operation_sender: Sender<NativeEventOperation>) -> Self {
-        Self {
-            event,
-            native_event_operation_sender: Some(native_event_operation_sender),
-        }
+impl NativeEventHandler {
+    fn new(tx: Sender<NativeEventOperation>) -> Self {
+        Self { tx: Some(tx) }
     }
 
-    /// Dispatches or Blocks events to the OS.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use hookmap_core::*;
-    /// let mut event = hookmap_core::install_hook().recv();
-    /// event.operate(NativeEventOperation::Block);
-    /// ```
-    pub fn operate(mut self, operation: NativeEventOperation) {
-        self.native_event_operation_sender
-            .take()
-            .unwrap()
-            .send(operation)
-            .unwrap();
+    pub fn handle(mut self, operation: NativeEventOperation) {
+        self.tx.take().unwrap().send(operation).unwrap();
     }
 
-    /// Dispatches this event to the OS.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// let mut event = hookmap_core::install_hook().recv();
-    /// event.dispatch();
-    /// ```
     pub fn dispatch(self) {
-        self.operate(NativeEventOperation::Dispatch);
+        self.handle(NativeEventOperation::Dispatch);
     }
 
-    /// Blocks events from being dispatched to the OS.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// let mut event = hookmap_core::install_hook().recv();
-    /// event.block();
-    /// ```
     pub fn block(self) {
-        self.operate(NativeEventOperation::Block);
+        self.handle(NativeEventOperation::Block);
     }
 }
 
-impl Drop for UndispatchedEvent {
+impl Drop for NativeEventHandler {
     fn drop(&mut self) {
-        if let Some(sender) = self.native_event_operation_sender.take() {
-            sender.send(NativeEventOperation::default()).unwrap();
+        if let Some(tx) = self.tx.take() {
+            tx.send(NativeEventOperation::default()).unwrap();
         }
     }
 }
 
-pub(crate) fn connection() -> (EventProvider, EventConsumer) {
-    const BOUND: usize = 1;
-    let (event_tx, event_rx) = mpsc::sync_channel(BOUND);
-    (EventProvider::new(event_tx), EventConsumer::new(event_rx))
+#[derive(Debug, Clone)]
+pub(crate) struct EventSender {
+    tx: SyncSender<(Event, NativeEventHandler)>,
 }
 
-#[derive(Clone, Debug)]
-pub(crate) struct EventProvider {
-    event_tx: SyncSender<UndispatchedEvent>,
-}
-
-impl EventProvider {
-    fn new(event_tx: SyncSender<UndispatchedEvent>) -> Self {
-        Self { event_tx }
+impl EventSender {
+    pub(crate) fn new(tx: SyncSender<(Event, NativeEventHandler)>) -> Self {
+        Self { tx }
     }
 
     pub(crate) fn send(&self, event: Event) -> NativeEventOperation {
-        let (operation_tx, operation_rx) = mpsc::channel();
-        let undispatched_event = UndispatchedEvent::new(event, operation_tx);
-        self.event_tx.send(undispatched_event).unwrap();
-        operation_rx.recv().unwrap()
+        let (tx, rx) = mpsc::channel();
+        let sent_data = (event, NativeEventHandler::new(tx));
+
+        self.tx.send(sent_data).unwrap();
+        rx.recv().unwrap()
     }
 }
 
-#[derive(Debug)]
-pub struct EventConsumer {
-    event_rx: Receiver<UndispatchedEvent>,
-}
+pub type EventReceiver = Receiver<(Event, NativeEventHandler)>;
 
-impl EventConsumer {
-    fn new(event_rx: Receiver<UndispatchedEvent>) -> Self {
-        Self { event_rx }
-    }
-
-    pub fn recv(&self) -> UndispatchedEvent {
-        self.event_rx.recv().unwrap()
-    }
+pub(crate) fn channel() -> (EventSender, EventReceiver) {
+    const BOUND: usize = 1;
+    let (tx, rx) = mpsc::sync_channel(BOUND);
+    (EventSender::new(tx), rx)
 }
