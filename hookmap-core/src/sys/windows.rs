@@ -2,10 +2,11 @@ mod hook;
 mod input;
 mod vkcode;
 
+use input::Input;
+
 use crate::button::{Button, ButtonAction};
 use crate::event::{self, EventReceiver};
 
-use std::sync::Mutex;
 use std::{
     mem::MaybeUninit,
     ptr,
@@ -14,6 +15,7 @@ use std::{
 };
 
 use once_cell::sync::Lazy;
+use winapi::um::winuser::SetProcessDpiAwarenessContext;
 use winapi::{shared::windef::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, um::winuser};
 
 static IGNORED_DW_EXTRA_INFO: usize = 0x1;
@@ -54,7 +56,7 @@ impl ButtonState {
 
 static BUTTON_STATE: ButtonState = ButtonState::new();
 
-static CURSOR_POSITION: Lazy<Mutex<(i32, i32)>> = Lazy::new(Mutex::default);
+static INPUT: Lazy<Input> = Lazy::new(Input::new);
 
 #[inline]
 fn send_input(button: Button, action: ButtonAction, recursive: bool, assume: fn(Button)) {
@@ -69,11 +71,11 @@ fn send_input(button: Button, action: ButtonAction, recursive: bool, assume: fn(
         assume(left);
         assume(right);
         assume(button);
-        input::send_input(left, action, recursive);
-        input::send_input(right, action, recursive);
+        INPUT.button_input(left, action, recursive);
+        INPUT.button_input(right, action, recursive);
     } else {
         assume(button);
-        input::send_input(button, action, recursive);
+        INPUT.button_input(button, action, recursive);
     }
 }
 
@@ -132,16 +134,36 @@ impl Button {
 }
 
 pub mod mouse {
-    pub use super::input::{get_position, move_absolute, move_relative, rotate};
+    use super::INPUT;
+
+    #[inline]
+    pub fn get_position() -> (i32, i32) {
+        INPUT.cursor_position()
+    }
+
+    #[inline]
+    pub fn move_absolute(x: i32, y: i32) {
+        INPUT.move_absolute(x, y);
+    }
+
+    #[inline]
+    pub fn move_relative(dx: i32, dy: i32) {
+        INPUT.move_relative(dx, dy);
+    }
+
+    #[inline]
+    pub fn rotate(speed: i32) {
+        INPUT.rotate_wheel(speed);
+    }
 }
 
 pub fn install_hook() -> EventReceiver {
     unsafe {
         // If this is not executed, the GetCursorPos function returns an invalid cursor position.
-        winuser::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     }
 
-    *CURSOR_POSITION.lock().unwrap() = input::get_position();
+    INPUT.update_cursor_position();
 
     let (tx, rx) = event::channel();
     thread::spawn(|| {

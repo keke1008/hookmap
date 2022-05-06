@@ -1,7 +1,10 @@
-use super::{vkcode, CURSOR_POSITION, IGNORED_DW_EXTRA_INFO};
+use super::{vkcode, IGNORED_DW_EXTRA_INFO};
 use crate::button::{Button, ButtonAction, ButtonKind};
 
-use std::mem::{self, MaybeUninit};
+use std::{
+    mem::{self, MaybeUninit},
+    sync::Mutex,
+};
 
 // For many constants.
 use winapi::um::winuser::{self, *};
@@ -61,17 +64,6 @@ fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) ->
     }
 }
 
-#[inline]
-pub(super) fn send_input(button: Button, action: ButtonAction, recursive: bool) {
-    unsafe {
-        winuser::SendInput(
-            1,
-            &mut create_input_struct(button, action, recursive),
-            mem::size_of::<INPUT>() as i32,
-        );
-    }
-}
-
 fn create_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) -> INPUT {
     let input = MOUSEINPUT {
         dx,
@@ -88,16 +80,7 @@ fn create_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) -> INPUT
 }
 
 #[inline]
-pub fn rotate(speed: i32) {
-    let speed = speed * WHEEL_DELTA as i32;
-    let mut input = create_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
-    unsafe {
-        winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
-    }
-}
-
-#[inline]
-pub fn get_position() -> (i32, i32) {
+fn get_cursor_position() -> (i32, i32) {
     unsafe {
         let mut pos = MaybeUninit::zeroed().assume_init();
         winuser::GetCursorPos(&mut pos);
@@ -105,38 +88,63 @@ pub fn get_position() -> (i32, i32) {
     }
 }
 
-#[inline]
-pub fn move_relative(dx: i32, dy: i32) {
-    unsafe {
-        // The SendInput function moves the cursor to an incorrect position, so
-        // SetCursorPos is used to move it.
-        let pos = get_position();
-        let next_pos = (pos.0 + dx, pos.1 + dy);
-        winuser::SetCursorPos(next_pos.0, next_pos.1);
-
-        *CURSOR_POSITION.lock().unwrap() = next_pos;
-
-        // In some applications, the SetCursorPos function alone is not enough
-        // to notice the cursor move, so the SendInput function is used to move
-        // the cursor by 0.
-        let mut input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
-        winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
-    }
+#[derive(Debug)]
+pub(super) struct Input {
+    cursor_position: Mutex<(i32, i32)>,
 }
 
-#[inline]
-pub fn move_absolute(x: i32, y: i32) {
-    unsafe {
-        // The SendInput function moves the cursor to an incorrect position, so
-        // SetCursorPos is used to move it.
-        winuser::SetCursorPos(x, y);
+impl Input {
+    pub(super) fn new() -> Self {
+        Self {
+            cursor_position: Mutex::new(get_cursor_position()),
+        }
+    }
 
-        *CURSOR_POSITION.lock().unwrap() = (x, y);
+    pub(super) fn button_input(&self, button: Button, action: ButtonAction, recursive: bool) {
+        unsafe {
+            winuser::SendInput(
+                1,
+                &mut create_input_struct(button, action, recursive),
+                mem::size_of::<INPUT>() as i32,
+            );
+        }
+    }
 
-        // In some applications, the SetCursorPos function alone is not enough
-        // to notice the cursor move, so the SendInput function is used to move
-        // the cursor by 0.
-        let mut input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
-        winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
+    pub(super) fn rotate_wheel(&self, speed: i32) {
+        let speed = speed * WHEEL_DELTA as i32;
+        let mut input = create_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
+        unsafe {
+            winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
+        }
+    }
+
+    pub(super) fn cursor_position(&self) -> (i32, i32) {
+        get_cursor_position()
+    }
+
+    pub(super) fn update_cursor_position(&self) {
+        *self.cursor_position.lock().unwrap() = get_cursor_position();
+    }
+
+    pub(super) fn move_absolute(&self, x: i32, y: i32) {
+        unsafe {
+            // The SendInput function moves the cursor to an incorrect position, so
+            // SetCursorPos is used to move it.
+            winuser::SetCursorPos(x, y);
+
+            self.update_cursor_position();
+
+            // In some applications, the SetCursorPos function alone is not enough
+            // to notice the cursor move, so the SendInput function is used to move
+            // the cursor by 0.
+            let mut input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
+            winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
+        }
+    }
+
+    pub(super) fn move_relative(&self, dx: i32, dy: i32) {
+        let current_pos = get_cursor_position();
+        let (x, y) = (current_pos.0 + dx, current_pos.1 + dy);
+        self.move_absolute(x, y);
     }
 }

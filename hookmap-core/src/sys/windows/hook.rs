@@ -1,4 +1,4 @@
-use super::{vkcode, CURSOR_POSITION, IGNORED_DW_EXTRA_INFO};
+use super::{vkcode, IGNORED_DW_EXTRA_INFO, INPUT};
 use crate::button::{Button, ButtonAction};
 use crate::event::{ButtonEvent, Event, EventSender, NativeEventOperation};
 
@@ -121,11 +121,10 @@ extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPAR
             Event::Button(ButtonEvent::new(button, action))
         }
         MouseEventTarget::Cursor => {
-            let mut prev = CURSOR_POSITION.lock().unwrap();
+            let prev = INPUT.cursor_position();
             let current = hook.pt;
             let diff = (current.x - prev.0, current.y - prev.1);
 
-            *prev = (current.x, current.y);
             Event::MouseCursor(diff)
         }
         MouseEventTarget::Wheel => {
