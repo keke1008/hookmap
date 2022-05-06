@@ -150,7 +150,10 @@ pub(super) fn install(event_provider: EventSender) {
             Some(keyboard_hook_proc),
             HINSTANCE(0),
             0,
-        );
-        WindowsAndMessaging::SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), HINSTANCE(0), 0);
+        )
+        .expect("Failed to install keyboard hook.");
+
+        WindowsAndMessaging::SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), HINSTANCE(0), 0)
+            .expect("Failed to install mouse hook.");
     }
 }
