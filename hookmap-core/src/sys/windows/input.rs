@@ -6,15 +6,18 @@ use std::{
     sync::Mutex,
 };
 
+use windows::Win32::UI::Input::KeyboardAndMouse;
+use windows::Win32::UI::WindowsAndMessaging;
 // For many constants.
-use winapi::um::winuser::{self, *};
+use windows::Win32::UI::Input::KeyboardAndMouse::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
 
 fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) -> INPUT {
     let dw_extra_info = if recursive { 0 } else { IGNORED_DW_EXTRA_INFO };
     match button.kind() {
         ButtonKind::Key => {
             let flags = match action {
-                ButtonAction::Press => 0,
+                ButtonAction::Press => KEYBD_EVENT_FLAGS(0),
                 ButtonAction::Release => KEYEVENTF_KEYUP,
             };
             let keybd_input = KEYBDINPUT {
@@ -25,24 +28,26 @@ fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) ->
                 dwExtraInfo: dw_extra_info,
             };
             INPUT {
-                type_: INPUT_KEYBOARD,
-                u: unsafe { mem::transmute_copy(&keybd_input) },
+                r#type: INPUT_KEYBOARD,
+                Anonymous: INPUT_0 { ki: keybd_input },
             }
         }
         ButtonKind::Mouse => {
             let (mouse_data, dw_flags) = match action {
                 ButtonAction::Press => match button {
-                    Button::LeftButton => (0, MOUSEEVENTF_LEFTDOWN),
-                    Button::RightButton => (0, MOUSEEVENTF_RIGHTDOWN),
-                    Button::MiddleButton => (0, MOUSEEVENTF_MIDDLEDOWN),
+                    Button::LeftButton => (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_LEFTDOWN),
+                    Button::RightButton => (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_RIGHTDOWN),
+                    Button::MiddleButton => {
+                        (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_MIDDLEDOWN)
+                    }
                     Button::SideButton1 => (XBUTTON1, MOUSEEVENTF_XDOWN),
                     Button::SideButton2 => (XBUTTON2, MOUSEEVENTF_XDOWN),
                     _ => unreachable!(),
                 },
                 ButtonAction::Release => match button {
-                    Button::LeftButton => (0, MOUSEEVENTF_LEFTUP),
-                    Button::RightButton => (0, MOUSEEVENTF_RIGHTUP),
-                    Button::MiddleButton => (0, MOUSEEVENTF_MIDDLEUP),
+                    Button::LeftButton => (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_LEFTUP),
+                    Button::RightButton => (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_RIGHTUP),
+                    Button::MiddleButton => (MOUSEHOOKSTRUCTEX_MOUSE_DATA(0), MOUSEEVENTF_MIDDLEUP),
                     Button::SideButton1 => (XBUTTON1, MOUSEEVENTF_XUP),
                     Button::SideButton2 => (XBUTTON2, MOUSEEVENTF_XUP),
                     _ => unreachable!(),
@@ -52,19 +57,19 @@ fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) ->
                 dx: 0,
                 dy: 0,
                 time: 0,
-                mouseData: mouse_data as u32,
+                mouseData: mouse_data.0 as i32,
                 dwFlags: dw_flags,
                 dwExtraInfo: dw_extra_info,
             };
             INPUT {
-                type_: INPUT_MOUSE,
-                u: unsafe { mem::transmute(mouse_input) },
+                r#type: INPUT_MOUSE,
+                Anonymous: INPUT_0 { mi: mouse_input },
             }
         }
     }
 }
 
-fn create_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) -> INPUT {
+fn create_mouse_input(dx: i32, dy: i32, mouse_data: i32, dw_flags: MOUSE_EVENT_FLAGS) -> INPUT {
     let input = MOUSEINPUT {
         dx,
         dy,
@@ -74,8 +79,8 @@ fn create_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) -> INPUT
         dwExtraInfo: IGNORED_DW_EXTRA_INFO,
     };
     INPUT {
-        type_: INPUT_MOUSE,
-        u: unsafe { mem::transmute(input) },
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 { mi: input },
     }
 }
 
@@ -83,7 +88,7 @@ fn create_mouse_input(dx: i32, dy: i32, mouse_data: u32, dw_flags: u32) -> INPUT
 fn get_cursor_position() -> (i32, i32) {
     unsafe {
         let mut pos = MaybeUninit::zeroed().assume_init();
-        winuser::GetCursorPos(&mut pos);
+        WindowsAndMessaging::GetCursorPos(&mut pos);
         (pos.x, pos.y)
     }
 }
@@ -102,9 +107,8 @@ impl Input {
 
     pub(super) fn button_input(&self, button: Button, action: ButtonAction, recursive: bool) {
         unsafe {
-            winuser::SendInput(
-                1,
-                &mut create_input_struct(button, action, recursive),
+            KeyboardAndMouse::SendInput(
+                &[create_input_struct(button, action, recursive)],
                 mem::size_of::<INPUT>() as i32,
             );
         }
@@ -112,9 +116,9 @@ impl Input {
 
     pub(super) fn rotate_wheel(&self, speed: i32) {
         let speed = speed * WHEEL_DELTA as i32;
-        let mut input = create_mouse_input(0, 0, speed as u32, MOUSEEVENTF_WHEEL);
+        let input = create_mouse_input(0, 0, speed, MOUSEEVENTF_WHEEL);
         unsafe {
-            winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
+            KeyboardAndMouse::SendInput(&[input], mem::size_of::<INPUT>() as i32);
         }
     }
 
@@ -130,15 +134,15 @@ impl Input {
         unsafe {
             // The SendInput function moves the cursor to an incorrect position, so
             // SetCursorPos is used to move it.
-            winuser::SetCursorPos(x, y);
+            WindowsAndMessaging::SetCursorPos(x, y);
 
             self.update_cursor_position();
 
             // In some applications, the SetCursorPos function alone is not enough
             // to notice the cursor move, so the SendInput function is used to move
             // the cursor by 0.
-            let mut input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
-            winuser::SendInput(1, &mut input, mem::size_of::<INPUT>() as i32);
+            let input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
+            KeyboardAndMouse::SendInput(&[input], mem::size_of::<INPUT>() as i32);
         }
     }
 

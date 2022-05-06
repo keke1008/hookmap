@@ -2,24 +2,22 @@ use super::{vkcode, IGNORED_DW_EXTRA_INFO, INPUT};
 use crate::button::{Button, ButtonAction};
 use crate::event::{ButtonEvent, Event, EventSender, NativeEventOperation};
 
-use std::mem::MaybeUninit;
-
 use once_cell::sync::OnceCell;
-use winapi::{
-    ctypes::c_int,
-    shared::minwindef::{self, HINSTANCE, LPARAM, LRESULT, WPARAM},
-    um::winuser,
-};
+use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
+use windows::Win32::UI::Input::KeyboardAndMouse::VIRTUAL_KEY;
+use windows::Win32::UI::WindowsAndMessaging;
+
 // For many constants.
-use winapi::um::winuser::*;
+use windows::Win32::UI::WindowsAndMessaging::*;
 
 static EVENT_SENDER: OnceCell<EventSender> = OnceCell::new();
 
-fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+#[inline]
+fn call_next_hook(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     unsafe {
-        winuser::CallNextHookEx(
+        WindowsAndMessaging::CallNextHookEx(
             // This parameter is ignored.
-            MaybeUninit::zeroed().assume_init(),
+            HHOOK(0),
             n_code,
             w_param,
             l_param,
@@ -28,8 +26,8 @@ fn call_next_hook(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
 }
 
 pub(super) fn create_keyboard_event(hook: KBDLLHOOKSTRUCT) -> Option<ButtonEvent> {
-    let target = vkcode::into_button(hook.vkCode)?;
-    let action = if hook.flags >> 7 == 0 {
+    let target = vkcode::into_button(VIRTUAL_KEY(hook.vkCode as u16))?;
+    let action = if hook.flags.0 >> 7 == 0 {
         ButtonAction::Press
     } else {
         ButtonAction::Release
@@ -37,11 +35,11 @@ pub(super) fn create_keyboard_event(hook: KBDLLHOOKSTRUCT) -> Option<ButtonEvent
     Some(ButtonEvent::new(target, action))
 }
 
-extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+extern "system" fn keyboard_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     if n_code < 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
-    let hook = unsafe { *(l_param as *const KBDLLHOOKSTRUCT) };
+    let hook = unsafe { *(l_param.0 as *const KBDLLHOOKSTRUCT) };
     if hook.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
@@ -58,7 +56,7 @@ extern "system" fn keyboard_hook_proc(n_code: c_int, w_param: WPARAM, l_param: L
     }
     match native {
         NativeEventOperation::Dispatch => call_next_hook(n_code, w_param, l_param),
-        NativeEventOperation::Block => 1,
+        NativeEventOperation::Block => LRESULT(1),
     }
 }
 
@@ -72,22 +70,21 @@ fn into_mouse_event_target(
     w_param: WPARAM,
     hook_struct: &MSLLHOOKSTRUCT,
 ) -> Option<MouseEventTarget> {
-    let mouse_data = minwindef::HIWORD(hook_struct.mouseData);
-    let mouse_button = match w_param as u32 {
+    let mouse_button = match w_param.0 as u32 {
         WM_MOUSEWHEEL => return Some(MouseEventTarget::Wheel),
         WM_MOUSEMOVE => return Some(MouseEventTarget::Cursor),
         WM_LBUTTONDOWN | WM_LBUTTONUP => Button::LeftButton,
         WM_RBUTTONDOWN | WM_RBUTTONUP => Button::RightButton,
         WM_MBUTTONDOWN | WM_MBUTTONUP => Button::MiddleButton,
-        WM_XBUTTONDOWN | WM_XBUTTONUP if mouse_data == XBUTTON1 => Button::SideButton1,
-        WM_XBUTTONDOWN | WM_XBUTTONUP if mouse_data == XBUTTON2 => Button::SideButton2,
+        WM_XBUTTONDOWN | WM_XBUTTONUP if hook_struct.mouseData == XBUTTON1 => Button::SideButton1,
+        WM_XBUTTONDOWN | WM_XBUTTONUP if hook_struct.mouseData == XBUTTON2 => Button::SideButton2,
         _ => None?,
     };
     Some(MouseEventTarget::Button(mouse_button))
 }
 
 fn into_mouse_button_action(w_param: WPARAM) -> Option<ButtonAction> {
-    match w_param as u32 {
+    match w_param.0 as u32 {
         WM_LBUTTONDOWN | WM_RBUTTONDOWN | WM_MBUTTONDOWN | WM_XBUTTONDOWN => {
             Some(ButtonAction::Press)
         }
@@ -96,11 +93,11 @@ fn into_mouse_button_action(w_param: WPARAM) -> Option<ButtonAction> {
     }
 }
 
-extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
     if n_code < 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
-    let hook = unsafe { *(l_param as *const MSLLHOOKSTRUCT) };
+    let hook = unsafe { *(l_param.0 as *const MSLLHOOKSTRUCT) };
     if hook.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
@@ -128,8 +125,8 @@ extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPAR
             Event::MouseCursor(diff)
         }
         MouseEventTarget::Wheel => {
-            let delta = winuser::GET_WHEEL_DELTA_WPARAM(hook.mouseData as usize);
-            Event::MouseWheel(delta as i32 / WHEEL_DELTA as i32)
+            let delta = hook.mouseData.0 as i32 >> 16;
+            Event::MouseWheel(delta / WHEEL_DELTA as i32)
         }
     };
     match EVENT_SENDER
@@ -138,7 +135,7 @@ extern "system" fn mouse_hook_proc(n_code: c_int, w_param: WPARAM, l_param: LPAR
         .send(event)
     {
         NativeEventOperation::Dispatch => call_next_hook(n_code, w_param, l_param),
-        NativeEventOperation::Block => 1,
+        NativeEventOperation::Block => LRESULT(1),
     }
 }
 
@@ -146,8 +143,14 @@ pub(super) fn install(event_provider: EventSender) {
     EVENT_SENDER
         .set(event_provider)
         .expect("Hooks are already installed.");
+
     unsafe {
-        winuser::SetWindowsHookExW(WH_KEYBOARD_LL, Some(keyboard_hook_proc), 0 as HINSTANCE, 0);
-        winuser::SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), 0 as HINSTANCE, 0);
+        WindowsAndMessaging::SetWindowsHookExW(
+            WH_KEYBOARD_LL,
+            Some(keyboard_hook_proc),
+            HINSTANCE(0),
+            0,
+        );
+        WindowsAndMessaging::SetWindowsHookExW(WH_MOUSE_LL, Some(mouse_hook_proc), HINSTANCE(0), 0);
     }
 }

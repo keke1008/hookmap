@@ -9,14 +9,13 @@ use crate::event::{self, EventReceiver};
 
 use std::{
     mem::MaybeUninit,
-    ptr,
     sync::atomic::{AtomicBool, Ordering},
     thread,
 };
 
 use once_cell::sync::Lazy;
-use winapi::um::winuser::SetProcessDpiAwarenessContext;
-use winapi::{shared::windef::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, um::winuser};
+use windows::Win32::Foundation::HWND;
+use windows::Win32::UI::{HiDpi, WindowsAndMessaging};
 
 static IGNORED_DW_EXTRA_INFO: usize = 0x1;
 
@@ -160,7 +159,7 @@ pub mod mouse {
 pub fn install_hook() -> EventReceiver {
     unsafe {
         // If this is not executed, the GetCursorPos function returns an invalid cursor position.
-        SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
+        HiDpi::SetProcessDpiAwarenessContext(HiDpi::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     }
 
     INPUT.update_cursor_position();
@@ -169,7 +168,7 @@ pub fn install_hook() -> EventReceiver {
     thread::spawn(|| {
         hook::install(tx);
         unsafe {
-            winuser::GetMessageW(MaybeUninit::zeroed().assume_init(), ptr::null_mut(), 0, 0);
+            WindowsAndMessaging::GetMessageW(MaybeUninit::zeroed().assume_init(), HWND(0), 0, 0);
         }
     });
     rx

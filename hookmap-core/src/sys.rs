@@ -2,4 +2,4 @@
 mod windows;
 
 #[cfg(target_os = "windows")]
-pub use windows::{install_hook, mouse};
+pub use self::windows::{install_hook, mouse};
