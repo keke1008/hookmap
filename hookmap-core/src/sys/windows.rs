@@ -4,12 +4,16 @@ mod vkcode;
 
 use crate::button::{Button, ButtonAction};
 use crate::event::{self, EventReceiver};
+
+use std::sync::Mutex;
 use std::{
     mem::MaybeUninit,
     ptr,
     sync::atomic::{AtomicBool, Ordering},
     thread,
 };
+
+use once_cell::sync::Lazy;
 use winapi::{shared::windef::DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE, um::winuser};
 
 static IGNORED_DW_EXTRA_INFO: usize = 0x1;
@@ -49,6 +53,8 @@ impl ButtonState {
 }
 
 static BUTTON_STATE: ButtonState = ButtonState::new();
+
+static CURSOR_POSITION: Lazy<Mutex<(i32, i32)>> = Lazy::new(Mutex::default);
 
 #[inline]
 fn send_input(button: Button, action: ButtonAction, recursive: bool, assume: fn(Button)) {
@@ -134,6 +140,8 @@ pub fn install_hook() -> EventReceiver {
         // If this is not executed, the GetCursorPos function returns an invalid cursor position.
         winuser::SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE);
     }
+
+    *CURSOR_POSITION.lock().unwrap() = input::get_position();
 
     let (tx, rx) = event::channel();
     thread::spawn(|| {

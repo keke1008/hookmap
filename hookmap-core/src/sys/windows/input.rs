@@ -1,4 +1,4 @@
-use super::{vkcode, IGNORED_DW_EXTRA_INFO};
+use super::{vkcode, CURSOR_POSITION, IGNORED_DW_EXTRA_INFO};
 use crate::button::{Button, ButtonAction, ButtonKind};
 
 use std::mem::{self, MaybeUninit};
@@ -111,7 +111,10 @@ pub fn move_relative(dx: i32, dy: i32) {
         // The SendInput function moves the cursor to an incorrect position, so
         // SetCursorPos is used to move it.
         let pos = get_position();
-        winuser::SetCursorPos(pos.0 + dx, pos.1 + dy);
+        let next_pos = (pos.0 + dx, pos.1 + dy);
+        winuser::SetCursorPos(next_pos.0, next_pos.1);
+
+        *CURSOR_POSITION.lock().unwrap() = next_pos;
 
         // In some applications, the SetCursorPos function alone is not enough
         // to notice the cursor move, so the SendInput function is used to move
@@ -127,6 +130,8 @@ pub fn move_absolute(x: i32, y: i32) {
         // The SendInput function moves the cursor to an incorrect position, so
         // SetCursorPos is used to move it.
         winuser::SetCursorPos(x, y);
+
+        *CURSOR_POSITION.lock().unwrap() = (x, y);
 
         // In some applications, the SetCursorPos function alone is not enough
         // to notice the cursor move, so the SendInput function is used to move
