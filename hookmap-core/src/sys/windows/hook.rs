@@ -1,6 +1,8 @@
-use super::{vkcode, IGNORED_DW_EXTRA_INFO, INPUT};
+use super::{vkcode, IGNORED_DW_EXTRA_INFO, INJECTED_FLAG, INPUT};
 use crate::button::{Button, ButtonAction};
-use crate::event::{ButtonEvent, Event, EventSender, NativeEventOperation};
+use crate::event::{
+    ButtonEvent, Event, EventSender, MouseCursorEvent, MouseWheelEvent, NativeEventOperation,
+};
 
 use once_cell::sync::OnceCell;
 use windows::Win32::Foundation::{HINSTANCE, LPARAM, LRESULT, WPARAM};
@@ -26,13 +28,16 @@ fn call_next_hook(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
 }
 
 pub(super) fn create_keyboard_event(hook: KBDLLHOOKSTRUCT) -> Option<ButtonEvent> {
-    let target = vkcode::into_button(VIRTUAL_KEY(hook.vkCode as u16))?;
     let action = if hook.flags.0 >> 7 == 0 {
         ButtonAction::Press
     } else {
         ButtonAction::Release
     };
-    Some(ButtonEvent::new(target, action))
+    Some(ButtonEvent {
+        target: vkcode::into_button(VIRTUAL_KEY(hook.vkCode as u16))?,
+        injected: hook.dwExtraInfo & INJECTED_FLAG != 0,
+        action,
+    })
 }
 
 extern "system" fn keyboard_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
@@ -105,6 +110,7 @@ extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM
         Some(target) => target,
         None => return call_next_hook(n_code, w_param, l_param),
     };
+    let injected = hook.dwExtraInfo & INJECTED_FLAG != 0;
     let event = match target {
         MouseEventTarget::Button(button) => {
             let action = match into_mouse_button_action(w_param) {
@@ -115,18 +121,22 @@ extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM
                 ButtonAction::Press => button.assume_pressed(),
                 ButtonAction::Release => button.assume_released(),
             };
-            Event::Button(ButtonEvent::new(button, action))
+            Event::Button(ButtonEvent {
+                target: button,
+                injected,
+                action,
+            })
         }
         MouseEventTarget::Cursor => {
             let prev = INPUT.cursor_position();
             let current = hook.pt;
-            let diff = (current.x - prev.0, current.y - prev.1);
+            let delta = (current.x - prev.0, current.y - prev.1);
 
-            Event::MouseCursor(diff)
+            Event::MouseCursor(MouseCursorEvent { delta, injected })
         }
         MouseEventTarget::Wheel => {
-            let delta = hook.mouseData.0 as i32 >> 16;
-            Event::MouseWheel(delta / WHEEL_DELTA as i32)
+            let delta = (hook.mouseData.0 as i32 >> 16) / WHEEL_DELTA as i32;
+            Event::MouseWheel(MouseWheelEvent { delta, injected })
         }
     };
     match EVENT_SENDER

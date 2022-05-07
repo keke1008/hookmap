@@ -19,13 +19,13 @@ fn main() {
                 native_handler.block();
             }
 
-            Event::MouseCursor(cursor) => {
-                println!("position: {:?}", cursor);
+            Event::MouseCursor(e) => {
+                println!("movement distance: {:?}", e.delta);
                 native_handler.dispatch();
             }
 
-            Event::MouseWheel(speed) => {
-                println!("speed: {}", speed);
+            Event::MouseWheel(e) => {
+                println!("delta: {}", e.delta);
                 native_handler.dispatch()
             }
         }

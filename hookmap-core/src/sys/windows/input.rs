@@ -1,4 +1,4 @@
-use super::{vkcode, IGNORED_DW_EXTRA_INFO};
+use super::{vkcode, IGNORED_DW_EXTRA_INFO, INJECTED_FLAG};
 use crate::button::{Button, ButtonAction, ButtonKind};
 
 use std::{
@@ -13,7 +13,7 @@ use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
 fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) -> INPUT {
-    let dw_extra_info = if recursive { 0 } else { IGNORED_DW_EXTRA_INFO };
+    let dw_extra_info = INJECTED_FLAG | if recursive { 0 } else { IGNORED_DW_EXTRA_INFO };
     match button.kind() {
         ButtonKind::Key => {
             let flags = match action {
@@ -76,7 +76,7 @@ fn create_mouse_input(dx: i32, dy: i32, mouse_data: i32, dw_flags: MOUSE_EVENT_F
         mouseData: mouse_data,
         dwFlags: dw_flags,
         time: 0,
-        dwExtraInfo: IGNORED_DW_EXTRA_INFO,
+        dwExtraInfo: IGNORED_DW_EXTRA_INFO | INJECTED_FLAG,
     };
     INPUT {
         r#type: INPUT_MOUSE,

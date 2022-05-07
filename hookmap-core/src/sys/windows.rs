@@ -18,6 +18,7 @@ use windows::Win32::Foundation::HWND;
 use windows::Win32::UI::{HiDpi, WindowsAndMessaging};
 
 static IGNORED_DW_EXTRA_INFO: usize = 0x1;
+const INJECTED_FLAG: usize = 0x2;
 
 #[derive(Debug)]
 struct ButtonState([AtomicBool; Button::VARIANT_COUNT]);

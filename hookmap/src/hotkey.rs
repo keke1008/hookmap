@@ -96,11 +96,11 @@ pub trait RegisterHotkey {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::hotkey::{Hotkey, RegisterHotkey};
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::MouseWheelEvent};
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_wheel(Arc::new(|delta| println!("Delta: {:?}", delta)));
+    /// hotkey.mouse_wheel(Arc::new(|e: MouseWheelEvent| println!("Delta: {}", e.delta)));
     /// ```
     ///
     fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self;
@@ -110,11 +110,11 @@ pub trait RegisterHotkey {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::hotkey::{Hotkey, RegisterHotkey};
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::MouseCursorEvent};
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_cursor(Arc::new(|(x, y)| println!("Cursor: ({}, {})", x, y)));
+    /// hotkey.mouse_cursor(Arc::new(|e: MouseCursorEvent| println!("movement distance: {:?}", e.delta)));
     /// ```
     ///
     fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self;

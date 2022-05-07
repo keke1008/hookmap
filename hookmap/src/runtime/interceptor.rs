@@ -79,6 +79,14 @@ pub(super) mod event_sender {
         use hookmap_core::button::{Button, ButtonAction};
         use std::sync::mpsc;
 
+        fn create_button_event(target: Button, action: ButtonAction) -> ButtonEvent {
+            ButtonEvent {
+                target,
+                action,
+                injected: false,
+            }
+        }
+
         #[test]
         fn event_sender_sends_block_events() {
             let mut event_sender = EventSender::default();
@@ -86,7 +94,7 @@ pub(super) mod event_sender {
             let filter = Filter::new();
             event_sender.push(tx, filter, NativeEventOperation::Block);
 
-            let event = ButtonEvent::new(Button::A, ButtonAction::Press);
+            let event = create_button_event(Button::A, ButtonAction::Press);
             event_sender.send(event);
             assert_eq!(event, rx.recv().unwrap());
         }
@@ -98,7 +106,7 @@ pub(super) mod event_sender {
             let filter = Filter::new().target(Button::A);
             event_sender.push(tx, filter, NativeEventOperation::Block);
 
-            let event = ButtonEvent::new(Button::B, ButtonAction::Press);
+            let event = create_button_event(Button::B, ButtonAction::Press);
             event_sender.send(event);
             assert!(rx.try_recv().is_err());
         }
@@ -114,12 +122,12 @@ pub(super) mod event_sender {
             let (tx_block, rx_block) = mpsc::sync_channel(1);
             event_sender.push(tx_block, filter, NativeEventOperation::Block);
 
-            let event = ButtonEvent::new(Button::A, ButtonAction::Press);
+            let event = create_button_event(Button::A, ButtonAction::Press);
             event_sender.send(event);
             assert!(rx_unblock.try_recv().is_err());
             assert_eq!(rx_block.recv().unwrap(), event);
 
-            let event = ButtonEvent::new(Button::B, ButtonAction::Press);
+            let event = create_button_event(Button::B, ButtonAction::Press);
             event_sender.send(event);
             assert_eq!(rx_unblock.recv().unwrap(), event);
         }
@@ -136,7 +144,7 @@ pub(super) mod event_sender {
             let filter = Filter::new();
             event_sender.push(tx2, filter, NativeEventOperation::Dispatch);
 
-            let event = ButtonEvent::new(Button::C, ButtonAction::Release);
+            let event = create_button_event(Button::C, ButtonAction::Release);
             event_sender.send(event);
             assert_eq!(rx1.recv().unwrap(), event);
             assert_eq!(rx2.recv().unwrap(), event);
@@ -401,11 +409,19 @@ impl Interceptor {
 mod tests {
     use super::*;
 
+    fn create_button_event(target: Button, action: ButtonAction) -> ButtonEvent {
+        ButtonEvent {
+            target,
+            action,
+            injected: false,
+        }
+    }
+
     #[test]
     fn filtering_events_by_target_matching_conditions() {
         let filter = Filter::new().target(Button::A);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.action = ButtonAction::Release;
@@ -416,7 +432,7 @@ mod tests {
     fn filtering_events_by_target_not_matching_conditions() {
         let filter = Filter::new().target(Button::A);
 
-        let mut event = ButtonEvent::new(Button::B, ButtonAction::Press);
+        let mut event = create_button_event(Button::B, ButtonAction::Press);
         assert!(!filter.filter(&event));
 
         event.action = ButtonAction::Press;
@@ -428,7 +444,7 @@ mod tests {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.action = ButtonAction::Release;
@@ -443,7 +459,7 @@ mod tests {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets);
 
-        let mut event = ButtonEvent::new(Button::C, ButtonAction::Press);
+        let mut event = create_button_event(Button::C, ButtonAction::Press);
         assert!(!filter.filter(&event));
 
         event.action = ButtonAction::Release;
@@ -454,7 +470,7 @@ mod tests {
     fn filtering_events_by_action() {
         let filter = Filter::new().action(ButtonAction::Press);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.action = ButtonAction::Release;
@@ -472,7 +488,7 @@ mod tests {
     fn filtering_events_by_target_and_action() {
         let filter = Filter::new().target(Button::A).action(ButtonAction::Press);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.action = ButtonAction::Release;
@@ -490,7 +506,7 @@ mod tests {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets).action(ButtonAction::Press);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.target = Button::B;
@@ -508,7 +524,7 @@ mod tests {
     fn filtering_events_by_callback() {
         let filter = Filter::new().callback(|e| e.action == ButtonAction::Press);
 
-        let mut event = ButtonEvent::new(Button::A, ButtonAction::Press);
+        let mut event = create_button_event(Button::A, ButtonAction::Press);
         assert!(filter.filter(&event));
 
         event.action = ButtonAction::Release;

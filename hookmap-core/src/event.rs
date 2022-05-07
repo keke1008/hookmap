@@ -31,17 +31,21 @@ pub struct ButtonEvent {
 
     /// Action of the generated event.
     pub action: ButtonAction,
+
+    pub injected: bool,
 }
 
-impl ButtonEvent {
-    /// Creates a new `ButtonEvent<T, A>`.
-    pub fn new(target: Button, action: ButtonAction) -> Self {
-        Self { target, action }
-    }
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MouseCursorEvent {
+    pub delta: (i32, i32),
+    pub injected: bool,
 }
 
-pub type MouseCursorEvent = (i32, i32);
-pub type MouseWheelEvent = i32;
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct MouseWheelEvent {
+    pub delta: i32,
+    pub injected: bool,
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Event {
