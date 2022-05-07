@@ -2,16 +2,18 @@ mod hook;
 mod input;
 mod vkcode;
 
-use hook::Hook;
+use hook::HookHandler;
 use input::Input;
+use windows::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
+use windows::Win32::UI::WindowsAndMessaging::HHOOK;
 
 use crate::button::{Button, ButtonAction};
-use crate::event::{self, EventReceiver};
+use crate::event::{self, EventReceiver, NativeEventOperation};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use once_cell::sync::Lazy;
-use windows::Win32::UI::HiDpi;
+use windows::Win32::UI::{HiDpi, WindowsAndMessaging};
 
 const SHOULD_BE_IGNORED_FLAG: usize = 0x1;
 const INJECTED_FLAG: usize = 0x2;
@@ -191,7 +193,25 @@ pub mod mouse {
     }
 }
 
-static HOOK: Lazy<Hook> = Lazy::new(Hook::new);
+static HOOK_HANDLER: Lazy<HookHandler> = Lazy::new(HookHandler::new);
+
+extern "system" fn keyboard_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    match hook::keyboard_hook_proc_inner(&HOOK_HANDLER, n_code, l_param) {
+        NativeEventOperation::Block => LRESULT(1),
+        NativeEventOperation::Dispatch => unsafe {
+            WindowsAndMessaging::CallNextHookEx(HHOOK(0), n_code, w_param, l_param)
+        },
+    }
+}
+
+extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM) -> LRESULT {
+    match hook::mouse_hook_proc_inner(&HOOK_HANDLER, &INPUT, n_code, w_param, l_param) {
+        NativeEventOperation::Block => LRESULT(1),
+        NativeEventOperation::Dispatch => unsafe {
+            WindowsAndMessaging::CallNextHookEx(HHOOK(0), n_code, w_param, l_param)
+        },
+    }
+}
 
 /// Installs a hook and returns a receiver to receive the generated event.
 ///
@@ -214,7 +234,7 @@ pub fn install_hook() -> EventReceiver {
     INPUT.update_cursor_position();
 
     let (tx, rx) = event::channel();
-    HOOK.install(tx);
+    HOOK_HANDLER.install(tx, keyboard_hook_proc, mouse_hook_proc);
 
     rx
 }
@@ -238,5 +258,5 @@ pub fn install_hook() -> EventReceiver {
 /// ```
 ///
 pub fn uninstall_hook() {
-    HOOK.uninstall();
+    HOOK_HANDLER.uninstall();
 }
