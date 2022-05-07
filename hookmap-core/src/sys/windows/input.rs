@@ -1,10 +1,7 @@
-use super::{vkcode, IGNORED_DW_EXTRA_INFO, INJECTED_FLAG};
+use super::{vkcode, INJECTED_FLAG, SHOULD_BE_IGNORED_FLAG};
 use crate::button::{Button, ButtonAction, ButtonKind};
 
-use std::{
-    mem::{self, MaybeUninit},
-    sync::Mutex,
-};
+use std::{mem::MaybeUninit, sync::Mutex};
 
 use windows::Win32::UI::Input::KeyboardAndMouse;
 use windows::Win32::UI::WindowsAndMessaging;
@@ -12,8 +9,10 @@ use windows::Win32::UI::WindowsAndMessaging;
 use windows::Win32::UI::Input::KeyboardAndMouse::*;
 use windows::Win32::UI::WindowsAndMessaging::*;
 
+const INPUT_MEM_SIZE: i32 = std::mem::size_of::<INPUT>() as i32;
+
 fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) -> INPUT {
-    let dw_extra_info = INJECTED_FLAG | if recursive { 0 } else { IGNORED_DW_EXTRA_INFO };
+    let dw_extra_info = INJECTED_FLAG | if recursive { 0 } else { SHOULD_BE_IGNORED_FLAG };
     match button.kind() {
         ButtonKind::Key => {
             let flags = match action {
@@ -76,7 +75,7 @@ fn create_mouse_input(dx: i32, dy: i32, mouse_data: i32, dw_flags: MOUSE_EVENT_F
         mouseData: mouse_data,
         dwFlags: dw_flags,
         time: 0,
-        dwExtraInfo: IGNORED_DW_EXTRA_INFO | INJECTED_FLAG,
+        dwExtraInfo: SHOULD_BE_IGNORED_FLAG | INJECTED_FLAG,
     };
     INPUT {
         r#type: INPUT_MOUSE,
@@ -109,7 +108,7 @@ impl Input {
         unsafe {
             KeyboardAndMouse::SendInput(
                 &[create_input_struct(button, action, recursive)],
-                mem::size_of::<INPUT>() as i32,
+                INPUT_MEM_SIZE,
             );
         }
     }
@@ -118,7 +117,7 @@ impl Input {
         let speed = speed * WHEEL_DELTA as i32;
         let input = create_mouse_input(0, 0, speed, MOUSEEVENTF_WHEEL);
         unsafe {
-            KeyboardAndMouse::SendInput(&[input], mem::size_of::<INPUT>() as i32);
+            KeyboardAndMouse::SendInput(&[input], INPUT_MEM_SIZE);
         }
     }
 
@@ -142,7 +141,7 @@ impl Input {
             // to notice the cursor move, so the SendInput function is used to move
             // the cursor by 0.
             let input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
-            KeyboardAndMouse::SendInput(&[input], mem::size_of::<INPUT>() as i32);
+            KeyboardAndMouse::SendInput(&[input], INPUT_MEM_SIZE);
         }
     }
 

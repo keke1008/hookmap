@@ -1,4 +1,4 @@
-use super::{vkcode, IGNORED_DW_EXTRA_INFO, INJECTED_FLAG, INPUT};
+use super::{vkcode, INJECTED_FLAG, INPUT, SHOULD_BE_IGNORED_FLAG};
 use crate::button::{Button, ButtonAction};
 use crate::event::{
     ButtonEvent, CursorEvent, Event, EventSender, NativeEventOperation, WheelEvent,
@@ -45,7 +45,7 @@ extern "system" fn keyboard_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPA
         return call_next_hook(n_code, w_param, l_param);
     }
     let hook = unsafe { *(l_param.0 as *const KBDLLHOOKSTRUCT) };
-    if hook.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
+    if hook.dwExtraInfo & SHOULD_BE_IGNORED_FLAG != 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
     let event = match create_keyboard_event(hook) {
@@ -103,7 +103,7 @@ extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM
         return call_next_hook(n_code, w_param, l_param);
     }
     let hook = unsafe { *(l_param.0 as *const MSLLHOOKSTRUCT) };
-    if hook.dwExtraInfo & IGNORED_DW_EXTRA_INFO != 0 {
+    if hook.dwExtraInfo & SHOULD_BE_IGNORED_FLAG != 0 {
         return call_next_hook(n_code, w_param, l_param);
     }
     let target = match into_mouse_event_target(w_param, &hook) {
