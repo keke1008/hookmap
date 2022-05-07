@@ -61,10 +61,10 @@ where
                     }
                     self.handle_event(HookStorage::fetch_button_hook, event, native_handler);
                 }
-                Event::MouseWheel(event) => {
+                Event::Wheel(event) => {
                     self.handle_event(HookStorage::fetch_mouse_wheel_hook, event, native_handler);
                 }
-                Event::MouseCursor(event) => {
+                Event::Cursor(event) => {
                     self.handle_event(HookStorage::fetch_mouse_cursor_hook, event, native_handler);
                 }
             }

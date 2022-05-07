@@ -50,8 +50,8 @@ pub struct WheelEvent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Event {
     Button(ButtonEvent),
-    MouseWheel(WheelEvent),
-    MouseCursor(CursorEvent),
+    Wheel(WheelEvent),
+    Cursor(CursorEvent),
 }
 
 #[derive(Debug)]

@@ -132,11 +132,11 @@ extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM
             let current = hook.pt;
             let delta = (current.x - prev.0, current.y - prev.1);
 
-            Event::MouseCursor(CursorEvent { delta, injected })
+            Event::Cursor(CursorEvent { delta, injected })
         }
         MouseEventTarget::Wheel => {
             let delta = (hook.mouseData.0 as i32 >> 16) / WHEEL_DELTA as i32;
-            Event::MouseWheel(WheelEvent { delta, injected })
+            Event::Wheel(WheelEvent { delta, injected })
         }
     };
     match EVENT_SENDER
