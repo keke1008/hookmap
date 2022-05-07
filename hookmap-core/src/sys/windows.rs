@@ -183,3 +183,7 @@ pub fn install_hook() -> EventReceiver {
 
     rx
 }
+
+pub fn uninstall_hook() {
+    HOOK.uninstall();
+}

@@ -70,6 +70,20 @@ impl Inner {
             thread_id,
         }
     }
+
+    fn uninstall(self) {
+        unsafe {
+            WindowsAndMessaging::UnhookWindowsHookEx(self.keyboard_hook_handler)
+                .expect("Failed to uninstall keyboard hook.");
+
+            WindowsAndMessaging::UnhookWindowsHookEx(self.mouse_hook_handler)
+                .expect("Failed to uninstall mouse hook.");
+
+            WindowsAndMessaging::PostThreadMessageW(self.thread_id, WM_QUIT, WPARAM(0), LPARAM(0))
+                .unwrap();
+        }
+        self.join_handle.join().unwrap();
+    }
 }
 
 #[derive(Debug, Default)]
@@ -87,6 +101,15 @@ impl Hook {
         assert!(hook.is_none(), "Hooks are already installed.");
 
         *hook = Some(Inner::new(event_sender));
+    }
+
+    pub(super) fn uninstall(&self) {
+        self.inner
+            .lock()
+            .unwrap()
+            .take()
+            .expect("Hooks are not installed.")
+            .uninstall();
     }
 
     fn send_event(&self, event: Event) -> NativeEventOperation {
