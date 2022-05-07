@@ -143,17 +143,32 @@ pub mod mouse {
 
     #[inline]
     pub fn move_absolute(x: i32, y: i32) {
-        INPUT.move_absolute(x, y);
+        INPUT.move_absolute(x, y, false);
+    }
+
+    #[inline]
+    pub fn move_absolute_recursive(x: i32, y: i32) {
+        INPUT.move_absolute(x, y, true);
     }
 
     #[inline]
     pub fn move_relative(dx: i32, dy: i32) {
-        INPUT.move_relative(dx, dy);
+        INPUT.move_relative(dx, dy, false);
+    }
+
+    #[inline]
+    pub fn move_relative_recursive(dx: i32, dy: i32) {
+        INPUT.move_relative(dx, dy, true);
     }
 
     #[inline]
     pub fn rotate(speed: i32) {
-        INPUT.rotate_wheel(speed);
+        INPUT.rotate_wheel(speed, false);
+    }
+
+    #[inline]
+    pub fn rotate_recursive(speed: i32) {
+        INPUT.rotate_wheel(speed, true);
     }
 }
 

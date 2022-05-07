@@ -11,8 +11,27 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 
 const INPUT_MEM_SIZE: i32 = std::mem::size_of::<INPUT>() as i32;
 
+#[inline]
+fn create_dw_extra_info(recursive: bool) -> usize {
+    INJECTED_FLAG | if recursive { 0 } else { SHOULD_BE_IGNORED_FLAG }
+}
+
+fn create_mouse_input(mouse_data: i32, dw_flags: MOUSE_EVENT_FLAGS, recursive: bool) -> INPUT {
+    let input = MOUSEINPUT {
+        dx: 0,
+        dy: 0,
+        mouseData: mouse_data,
+        dwFlags: dw_flags,
+        time: 0,
+        dwExtraInfo: create_dw_extra_info(recursive),
+    };
+    INPUT {
+        r#type: INPUT_MOUSE,
+        Anonymous: INPUT_0 { mi: input },
+    }
+}
+
 fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) -> INPUT {
-    let dw_extra_info = INJECTED_FLAG | if recursive { 0 } else { SHOULD_BE_IGNORED_FLAG };
     match button.kind() {
         ButtonKind::Key => {
             let flags = match action {
@@ -24,7 +43,7 @@ fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) ->
                 wScan: 0,
                 dwFlags: flags,
                 time: 0,
-                dwExtraInfo: dw_extra_info,
+                dwExtraInfo: create_dw_extra_info(recursive),
             };
             INPUT {
                 r#type: INPUT_KEYBOARD,
@@ -52,34 +71,8 @@ fn create_input_struct(button: Button, action: ButtonAction, recursive: bool) ->
                     _ => unreachable!(),
                 },
             };
-            let mouse_input = MOUSEINPUT {
-                dx: 0,
-                dy: 0,
-                time: 0,
-                mouseData: mouse_data.0 as i32,
-                dwFlags: dw_flags,
-                dwExtraInfo: dw_extra_info,
-            };
-            INPUT {
-                r#type: INPUT_MOUSE,
-                Anonymous: INPUT_0 { mi: mouse_input },
-            }
+            create_mouse_input(mouse_data.0 as i32, dw_flags, recursive)
         }
-    }
-}
-
-fn create_mouse_input(dx: i32, dy: i32, mouse_data: i32, dw_flags: MOUSE_EVENT_FLAGS) -> INPUT {
-    let input = MOUSEINPUT {
-        dx,
-        dy,
-        mouseData: mouse_data,
-        dwFlags: dw_flags,
-        time: 0,
-        dwExtraInfo: SHOULD_BE_IGNORED_FLAG | INJECTED_FLAG,
-    };
-    INPUT {
-        r#type: INPUT_MOUSE,
-        Anonymous: INPUT_0 { mi: input },
     }
 }
 
@@ -113,9 +106,9 @@ impl Input {
         }
     }
 
-    pub(super) fn rotate_wheel(&self, speed: i32) {
+    pub(super) fn rotate_wheel(&self, speed: i32, recursive: bool) {
         let speed = speed * WHEEL_DELTA as i32;
-        let input = create_mouse_input(0, 0, speed, MOUSEEVENTF_WHEEL);
+        let input = create_mouse_input(speed, MOUSEEVENTF_WHEEL, recursive);
         unsafe {
             KeyboardAndMouse::SendInput(&[input], INPUT_MEM_SIZE);
         }
@@ -129,7 +122,9 @@ impl Input {
         *self.cursor_position.lock().unwrap() = get_cursor_position();
     }
 
-    pub(super) fn move_absolute(&self, x: i32, y: i32) {
+    // FIXME: Since the cursor is moved with SetCursorPos, it cannot be hooked
+    // with SetWindowHookEx. Therefore, recursive mouse movement is not possible.
+    pub(super) fn move_absolute(&self, x: i32, y: i32, recursive: bool) {
         unsafe {
             // The SendInput function moves the cursor to an incorrect position, so
             // SetCursorPos is used to move it.
@@ -140,14 +135,14 @@ impl Input {
             // In some applications, the SetCursorPos function alone is not enough
             // to notice the cursor move, so the SendInput function is used to move
             // the cursor by 0.
-            let input = create_mouse_input(0, 0, 0, MOUSEEVENTF_MOVE);
+            let input = create_mouse_input(0, MOUSEEVENTF_MOVE, recursive);
             KeyboardAndMouse::SendInput(&[input], INPUT_MEM_SIZE);
         }
     }
 
-    pub(super) fn move_relative(&self, dx: i32, dy: i32) {
+    pub(super) fn move_relative(&self, dx: i32, dy: i32, recursive: bool) {
         let current_pos = get_cursor_position();
         let (x, y) = (current_pos.0 + dx, current_pos.1 + dy);
-        self.move_absolute(x, y);
+        self.move_absolute(x, y, recursive);
     }
 }
