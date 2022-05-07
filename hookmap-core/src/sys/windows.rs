@@ -2,20 +2,16 @@ mod hook;
 mod input;
 mod vkcode;
 
+use hook::Hook;
 use input::Input;
 
 use crate::button::{Button, ButtonAction};
 use crate::event::{self, EventReceiver};
 
-use std::{
-    mem::MaybeUninit,
-    sync::atomic::{AtomicBool, Ordering},
-    thread,
-};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 use once_cell::sync::Lazy;
-use windows::Win32::Foundation::HWND;
-use windows::Win32::UI::{HiDpi, WindowsAndMessaging};
+use windows::Win32::UI::HiDpi;
 
 const SHOULD_BE_IGNORED_FLAG: usize = 0x1;
 const INJECTED_FLAG: usize = 0x2;
@@ -172,6 +168,8 @@ pub mod mouse {
     }
 }
 
+static HOOK: Lazy<Hook> = Lazy::new(Hook::new);
+
 pub fn install_hook() -> EventReceiver {
     unsafe {
         // If this is not executed, the GetCursorPos function returns an invalid cursor position.
@@ -181,11 +179,7 @@ pub fn install_hook() -> EventReceiver {
     INPUT.update_cursor_position();
 
     let (tx, rx) = event::channel();
-    thread::spawn(|| {
-        hook::install(tx);
-        unsafe {
-            WindowsAndMessaging::GetMessageW(MaybeUninit::zeroed().assume_init(), HWND(0), 0, 0);
-        }
-    });
+    HOOK.install(tx);
+
     rx
 }
