@@ -1,7 +1,7 @@
 use super::{vkcode, IGNORED_DW_EXTRA_INFO, INJECTED_FLAG, INPUT};
 use crate::button::{Button, ButtonAction};
 use crate::event::{
-    ButtonEvent, Event, EventSender, MouseCursorEvent, MouseWheelEvent, NativeEventOperation,
+    ButtonEvent, CursorEvent, Event, EventSender, NativeEventOperation, WheelEvent,
 };
 
 use once_cell::sync::OnceCell;
@@ -132,11 +132,11 @@ extern "system" fn mouse_hook_proc(n_code: i32, w_param: WPARAM, l_param: LPARAM
             let current = hook.pt;
             let delta = (current.x - prev.0, current.y - prev.1);
 
-            Event::MouseCursor(MouseCursorEvent { delta, injected })
+            Event::MouseCursor(CursorEvent { delta, injected })
         }
         MouseEventTarget::Wheel => {
             let delta = (hook.mouseData.0 as i32 >> 16) / WHEEL_DELTA as i32;
-            Event::MouseWheel(MouseWheelEvent { delta, injected })
+            Event::MouseWheel(WheelEvent { delta, injected })
         }
     };
     match EVENT_SENDER

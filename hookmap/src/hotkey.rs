@@ -15,7 +15,7 @@ use crate::runtime::Runtime;
 use entry::{Context, HotkeyEntry};
 use hook::HookProcess;
 use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation};
+use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 use std::sync::Arc;
 
 pub trait IntoHookProcess<E> {
@@ -96,28 +96,28 @@ pub trait RegisterHotkey {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::MouseWheelEvent};
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::WheelEvent};
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_wheel(Arc::new(|e: MouseWheelEvent| println!("Delta: {}", e.delta)));
+    /// hotkey.mouse_wheel(Arc::new(|e: WheelEvent| println!("Delta: {}", e.delta)));
     /// ```
     ///
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self;
+    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self;
 
     /// Run `process` when a mouse cursor is moved.
     ///
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::MouseCursorEvent};
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::CursorEvent};
     /// use std::sync::Arc;
     ///
     /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_cursor(Arc::new(|e: MouseCursorEvent| println!("movement distance: {:?}", e.delta)));
+    /// hotkey.mouse_cursor(Arc::new(|e: CursorEvent| println!("movement distance: {:?}", e.delta)));
     /// ```
     ///
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self;
+    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self;
 
     /// Disables the button and blocks events.
     ///
@@ -246,12 +246,12 @@ impl RegisterHotkey for Hotkey {
         self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
         self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
         self
@@ -326,12 +326,12 @@ impl RegisterHotkey for BranchedHotkey<'_> {
         self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<MouseWheelEvent>) -> &Self {
+    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
         self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<MouseCursorEvent>) -> &Self {
+    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
         self

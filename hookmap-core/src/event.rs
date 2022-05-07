@@ -36,13 +36,13 @@ pub struct ButtonEvent {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MouseCursorEvent {
+pub struct CursorEvent {
     pub delta: (i32, i32),
     pub injected: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct MouseWheelEvent {
+pub struct WheelEvent {
     pub delta: i32,
     pub injected: bool,
 }
@@ -50,8 +50,8 @@ pub struct MouseWheelEvent {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Event {
     Button(ButtonEvent),
-    MouseWheel(MouseWheelEvent),
-    MouseCursor(MouseCursorEvent),
+    MouseWheel(WheelEvent),
+    MouseCursor(CursorEvent),
 }
 
 #[derive(Debug)]

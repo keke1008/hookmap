@@ -9,7 +9,7 @@ use super::{
 };
 use crate::{
     button::Button,
-    event::{ButtonEvent, MouseCursorEvent, MouseWheelEvent, NativeEventOperation},
+    event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent},
 };
 
 #[derive(Debug, Default, Clone)]
@@ -126,7 +126,7 @@ impl HotkeyEntry {
         }
     }
 
-    pub(super) fn mouse_wheel(&self, process: HookProcess<MouseWheelEvent>, context: Context) {
+    pub(super) fn mouse_wheel(&self, process: HookProcess<WheelEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
             context.modifiers.into(),
             process,
@@ -135,7 +135,7 @@ impl HotkeyEntry {
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    pub(super) fn mouse_cursor(&self, process: HookProcess<MouseCursorEvent>, context: Context) {
+    pub(super) fn mouse_cursor(&self, process: HookProcess<CursorEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
             context.modifiers.into(),
             process,
