@@ -3,9 +3,9 @@
 [![Crates.io](https://img.shields.io/crates/v/hookmap-core.svg)](https://crates.io/crates/hookmap-core)
 [![API reference](https://docs.rs/hookmap-core/badge.svg)](https://docs.rs/hookmap-core)
 
-Core crate of [hookmap](https://crates.io/crates/hookmap)
+A core library of [hookmap](https://crates.io/crates/hookmap)
 
-Input emulation and global hooks for keyboard and mouse.
+This library provides input simulation and global hooks for keyboard and mouse.
 
 ## Supported OS
 
@@ -14,34 +14,36 @@ Input emulation and global hooks for keyboard and mouse.
 ## Eample
 
 ```rust
-use hookmap_core::*;
+use hookmap_core::{button::Button, event::Event, mouse};
 
 fn main() {
-    let event_receiver = HookHandler::install_hook();
+    let rx = hookmap_core::install_hook();
 
-    loop {
-        let undispatched_event = event_receiver.recv();
-        match undispatched_event.event {
+    while let Ok((event, native_handler)) = rx.recv() {
+        match event {
             Event::Button(event) => {
+                native_handler.dispatch();
+
                 match event.target {
                     Button::RightArrow => println!("Left"),
                     Button::UpArrow => println!("Up"),
                     Button::LeftArrow => println!("Right"),
                     Button::DownArrow => println!("Down"),
-                    _ => {
-                        undispatched_event.dispatch();
-                        continue;
-                    }
+                    _ => {}
                 };
-                undispatched_event.block();
             }
-            Event::MouseCursor(cursor) => {
-                println!("position: {:?}", cursor);
-                undispatched_event.dispatch();
+
+            Event::Cursor(e) => {
+                native_handler.block();
+
+                // Reverses mouse cursor movement
+                let (dx, dy) = e.delta;
+                mouse::move_relative(-dx, -dy);
             }
-            Event::MouseWheel(speed) => {
-                println!("speed: {}", speed);
-                undispatched_event.dispatch()
+
+            Event::Wheel(e) => {
+                native_handler.dispatch();
+                println!("delta: {}", e.delta);
             }
         }
     }

@@ -1,3 +1,5 @@
+//! Definition of keyboard and mouse button.
+
 use variant_count::VariantCount;
 
 /// A button input action.
@@ -7,12 +9,17 @@ pub enum ButtonAction {
     Release,
 }
 
+/// Indicates whether the button is on the keyboard or mouse.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy)]
 pub enum ButtonKind {
+    /// On the keyboard
     Key,
+
+    /// On the mouse
     Mouse,
 }
 
+/// Keyboard or mouse buttons.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, Copy, VariantCount)]
 pub enum Button {
     LeftButton,

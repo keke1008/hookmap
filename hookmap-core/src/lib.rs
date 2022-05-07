@@ -1,14 +1,16 @@
-//! A core library for [`hookmap`].
+//! A core library of [hookmap].
 //!
-//! [`hookmap`]: https://crates.io/crates/hookmap
+//! [hookmap]: https://crates.io/crates/hookmap
 //!
-//! This library provides abstracted input emulation and global hooks for keyboard and mouse.
+//! This library provides input simulation and global hooks for keyboard and mouse.
 //!
 //! ## Feature flags
 //!
-//! * `block-input-event`: Set button events to be blocked by default.
-//! * `us-keyboard-layout` (default): Set the variants of [`Button`] to the buttons on the us keyboard.
-//! * `japanese-keyboard-layout`: Set the variants of [`Button`] to the buttons on the japanese keyboard.
+//! * `us-keyboard-layout` (default): Use US keyboard layout. This changes the [`Button`] variant.
+//! * `japanese-keyboard-layout`: Use Japanese keyboard layout. This changes the [`Button`] variant.
+//!
+//! [`Button`]: button::Button
+//!
 
 pub mod button;
 pub mod event;
