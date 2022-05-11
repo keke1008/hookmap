@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use super::{
     button_arg::{ButtonArg, ButtonArgElementTag},
-    hook::{HookProcess, HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, RemapHook},
+    hook::{HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, Process, RemapHook},
     modifiers::Modifiers,
     storage::HotkeyStorage,
 };
@@ -44,13 +44,13 @@ impl HotkeyEntry {
     pub(super) fn on_press(
         &self,
         targets: ButtonArg,
-        process: HookProcess<ButtonEvent>,
+        process: Process<ButtonEvent>,
         context: Context,
     ) {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             context.modifiers.into(),
-            HotkeyAction::Callback(process),
+            HotkeyAction::Process(process),
             context.native_event_operation,
         ));
         for target in targets.iter() {
@@ -68,14 +68,14 @@ impl HotkeyEntry {
     pub(super) fn on_release(
         &self,
         targets: ButtonArg,
-        process: HookProcess<ButtonEvent>,
+        process: Process<ButtonEvent>,
         context: Context,
     ) {
         let mut storage = self.storage.borrow_mut();
         if context.modifiers.is_none() {
             let hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Any,
-                HotkeyAction::Callback(process),
+                HotkeyAction::Process(process),
                 context.native_event_operation,
             ));
 
@@ -96,7 +96,7 @@ impl HotkeyEntry {
             let is_active = Arc::default();
             let inactivation_hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Activation(Arc::clone(&is_active)),
-                HotkeyAction::Callback(Arc::clone(&process)),
+                HotkeyAction::Process(process.clone()),
                 context.native_event_operation,
             ));
             let is_active = Arc::clone(&is_active);
@@ -126,7 +126,7 @@ impl HotkeyEntry {
         }
     }
 
-    pub(super) fn mouse_wheel(&self, process: HookProcess<WheelEvent>, context: Context) {
+    pub(super) fn mouse_wheel(&self, process: Process<WheelEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
             context.modifiers.into(),
             process,
@@ -135,7 +135,7 @@ impl HotkeyEntry {
         self.storage.borrow_mut().register_mouse_wheel_hotkey(hook);
     }
 
-    pub(super) fn mouse_cursor(&self, process: HookProcess<CursorEvent>, context: Context) {
+    pub(super) fn mouse_cursor(&self, process: Process<CursorEvent>, context: Context) {
         let hook = Arc::new(MouseHook::new(
             context.modifiers.into(),
             process,

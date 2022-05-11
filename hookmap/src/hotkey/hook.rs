@@ -4,12 +4,32 @@ use hookmap_core::event::{ButtonEvent, NativeEventOperation};
 use super::modifiers::Modifiers;
 use crate::hook::Hook;
 
+use std::fmt::Debug;
 use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc,
 };
 
-pub(super) type HookProcess<E> = Arc<dyn Fn(E) + Send + Sync>;
+#[derive(Clone)]
+pub struct Process<E>(Arc<dyn Fn(E) + Send + Sync>);
+
+impl<E> Debug for Process<E> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_tuple("Process").field(&"Fn").finish()
+    }
+}
+
+impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for Process<E> {
+    fn from(this: F) -> Self {
+        Process(Arc::new(this))
+    }
+}
+
+impl<E, F: Fn(E) + Send + Sync + 'static> From<Arc<F>> for Process<E> {
+    fn from(this: Arc<F>) -> Self {
+        Process(this)
+    }
+}
 
 pub(super) enum HotkeyCondition {
     Any,
@@ -34,7 +54,7 @@ impl From<Option<Arc<Modifiers>>> for HotkeyCondition {
 }
 
 pub(super) enum HotkeyAction<E> {
-    Callback(HookProcess<E>),
+    Process(Process<E>),
     Activate(Arc<AtomicBool>),
     Noop,
 }
@@ -42,7 +62,7 @@ pub(super) enum HotkeyAction<E> {
 impl<E> HotkeyAction<E> {
     pub(super) fn run(&self, event: E) {
         match self {
-            HotkeyAction::Callback(callback) => callback(event),
+            HotkeyAction::Process(callback) => callback.0(event),
             HotkeyAction::Activate(is_active) => is_active.store(true, Ordering::SeqCst),
             HotkeyAction::Noop => {}
         }
@@ -51,19 +71,19 @@ impl<E> HotkeyAction<E> {
 
 pub(super) struct HotkeyHook {
     condition: HotkeyCondition,
-    process: HotkeyAction<ButtonEvent>,
+    action: HotkeyAction<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
 impl HotkeyHook {
     pub(super) fn new(
         condition: HotkeyCondition,
-        process: HotkeyAction<ButtonEvent>,
+        action: HotkeyAction<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         HotkeyHook {
             condition,
-            process,
+            action,
             native_event_operation,
         }
     }
@@ -123,7 +143,7 @@ impl Hook<ButtonEvent> for ButtonHook {
 
     fn run(&self, event: ButtonEvent) {
         match self {
-            ButtonHook::Hotkey(hook) => hook.process.run(event),
+            ButtonHook::Hotkey(hook) => hook.action.run(event),
             ButtonHook::Remap(hook) => match event.action {
                 ButtonAction::Press => hook.button.press(),
                 ButtonAction::Release => hook.button.release(),
@@ -144,14 +164,14 @@ impl From<Arc<RemapHook>> for ButtonHook {
 
 pub(super) struct MouseHook<E> {
     condition: Condition,
-    process: HookProcess<E>,
+    process: Process<E>,
     native_event_operation: NativeEventOperation,
 }
 
 impl<E> MouseHook<E> {
     pub(super) fn new(
         condition: Condition,
-        process: HookProcess<E>,
+        process: Process<E>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         MouseHook {
@@ -174,7 +194,7 @@ impl<E> Hook<E> for MouseHook<E> {
     }
 
     fn run(&self, event: E) {
-        (self.process)(event);
+        self.process.0(event);
     }
 }
 

@@ -9,36 +9,15 @@ mod storage;
 
 pub use button_arg::ButtonArg;
 
-use modifiers::Modifiers;
-
 use crate::runtime::Runtime;
 use entry::{Context, HotkeyEntry};
-use hook::HookProcess;
+use hook::Process;
+use modifiers::Modifiers;
+
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+
 use std::sync::Arc;
-
-pub trait IntoHookProcess<E> {
-    fn into(self) -> HookProcess<E>;
-}
-
-impl<E> IntoHookProcess<E> for HookProcess<E> {
-    fn into(self) -> HookProcess<E> {
-        self
-    }
-}
-
-impl<E, F: Fn(E) + Send + Sync + 'static> IntoHookProcess<E> for F {
-    fn into(self) -> HookProcess<E> {
-        Arc::new(self)
-    }
-}
-
-impl<E, F: Fn(E) + Send + Sync + 'static> IntoHookProcess<E> for Arc<F> {
-    fn into(self) -> HookProcess<E> {
-        self
-    }
-}
 
 /// Methods for registering hotkeys.
 pub trait RegisterHotkey {
@@ -70,7 +49,7 @@ pub trait RegisterHotkey {
     fn on_press(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self;
 
     /// Run `process` when `target` is released.
@@ -88,7 +67,7 @@ pub trait RegisterHotkey {
     fn on_release(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self;
 
     /// Run `process` when a mouse wheel is rotated.
@@ -103,7 +82,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_wheel(Arc::new(|e: WheelEvent| println!("Delta: {}", e.delta)));
     /// ```
     ///
-    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self;
+    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self;
 
     /// Run `process` when a mouse cursor is moved.
     ///
@@ -117,7 +96,7 @@ pub trait RegisterHotkey {
     /// hotkey.mouse_cursor(Arc::new(|e: CursorEvent| println!("movement distance: {:?}", e.delta)));
     /// ```
     ///
-    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self;
+    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self;
 
     /// Disables the button and blocks events.
     ///
@@ -229,7 +208,7 @@ impl RegisterHotkey for Hotkey {
     fn on_press(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self {
         self.entry
             .on_press(target.into(), process.into(), self.context.clone());
@@ -239,19 +218,19 @@ impl RegisterHotkey for Hotkey {
     fn on_release(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self {
         self.entry
             .on_release(target.into(), process.into(), self.context.clone());
         self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self {
+    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
         self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self {
+    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
         self
@@ -309,7 +288,7 @@ impl RegisterHotkey for BranchedHotkey<'_> {
     fn on_press(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self {
         self.entry
             .on_press(target.into(), process.into(), self.context.clone());
@@ -319,19 +298,19 @@ impl RegisterHotkey for BranchedHotkey<'_> {
     fn on_release(
         &self,
         target: impl Into<ButtonArg>,
-        process: impl IntoHookProcess<ButtonEvent>,
+        process: impl Into<Process<ButtonEvent>>,
     ) -> &Self {
         self.entry
             .on_release(target.into(), process.into(), self.context.clone());
         self
     }
 
-    fn mouse_wheel(&self, process: impl IntoHookProcess<WheelEvent>) -> &Self {
+    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self {
         self.entry.mouse_wheel(process.into(), self.context.clone());
         self
     }
 
-    fn mouse_cursor(&self, process: impl IntoHookProcess<CursorEvent>) -> &Self {
+    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self {
         self.entry
             .mouse_cursor(process.into(), self.context.clone());
         self
