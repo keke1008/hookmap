@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use super::{
     button_arg::{ButtonArg, ButtonArgElementTag},
-    hook::{HookProcess, HotkeyCondition, HotkeyHook, HotkeyProcess, MouseHook, RemapHook},
+    hook::{HookProcess, HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, RemapHook},
     modifiers::Modifiers,
     storage::HotkeyStorage,
 };
@@ -50,7 +50,7 @@ impl HotkeyEntry {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             context.modifiers.into(),
-            HotkeyProcess::Callback(process),
+            HotkeyAction::Callback(process),
             context.native_event_operation,
         ));
         for target in targets.iter() {
@@ -75,7 +75,7 @@ impl HotkeyEntry {
         if context.modifiers.is_none() {
             let hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Any,
-                HotkeyProcess::Callback(process),
+                HotkeyAction::Callback(process),
                 context.native_event_operation,
             ));
 
@@ -96,13 +96,13 @@ impl HotkeyEntry {
             let is_active = Arc::default();
             let inactivation_hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Activation(Arc::clone(&is_active)),
-                HotkeyProcess::Callback(Arc::clone(&process)),
+                HotkeyAction::Callback(Arc::clone(&process)),
                 context.native_event_operation,
             ));
             let is_active = Arc::clone(&is_active);
             let activation_hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Modifier(Arc::clone(&modifiers)),
-                HotkeyProcess::Activate(Arc::clone(&is_active)),
+                HotkeyAction::Activate(Arc::clone(&is_active)),
                 NativeEventOperation::Dispatch,
             ));
 
@@ -148,7 +148,7 @@ impl HotkeyEntry {
         let mut storage = self.storage.borrow_mut();
         let hook = Arc::new(HotkeyHook::new(
             context.modifiers.into(),
-            HotkeyProcess::Noop,
+            HotkeyAction::Noop,
             NativeEventOperation::Block,
         ));
         for target in targets.iter() {

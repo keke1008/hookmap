@@ -33,32 +33,32 @@ impl From<Option<Arc<Modifiers>>> for HotkeyCondition {
     }
 }
 
-pub(super) enum HotkeyProcess<E> {
+pub(super) enum HotkeyAction<E> {
     Callback(HookProcess<E>),
     Activate(Arc<AtomicBool>),
     Noop,
 }
 
-impl<E> HotkeyProcess<E> {
+impl<E> HotkeyAction<E> {
     pub(super) fn run(&self, event: E) {
         match self {
-            HotkeyProcess::Callback(callback) => callback(event),
-            HotkeyProcess::Activate(is_active) => is_active.store(true, Ordering::SeqCst),
-            HotkeyProcess::Noop => {}
+            HotkeyAction::Callback(callback) => callback(event),
+            HotkeyAction::Activate(is_active) => is_active.store(true, Ordering::SeqCst),
+            HotkeyAction::Noop => {}
         }
     }
 }
 
 pub(super) struct HotkeyHook {
     condition: HotkeyCondition,
-    process: HotkeyProcess<ButtonEvent>,
+    process: HotkeyAction<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
 impl HotkeyHook {
     pub(super) fn new(
         condition: HotkeyCondition,
-        process: HotkeyProcess<ButtonEvent>,
+        process: HotkeyAction<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
         HotkeyHook {
