@@ -1,7 +1,7 @@
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, NativeEventOperation};
 
-use super::modifiers::Modifiers;
+use super::context::Modifiers;
 use crate::hook::Hook;
 
 use std::fmt::Debug;

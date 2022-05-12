@@ -2,14 +2,13 @@
 
 #[doc(hidden)]
 pub mod button_arg;
-mod entry;
+mod context;
 mod hook;
-mod modifiers;
 mod storage;
 
 pub use button_arg::{ButtonArg, ButtonArgElementTag};
 
-use self::entry::Context;
+use self::context::Context;
 use self::hook::{HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, Process, RemapHook};
 use self::storage::HotkeyStorage;
 use crate::runtime::Runtime;
