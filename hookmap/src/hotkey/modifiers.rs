@@ -29,6 +29,14 @@ impl Modifiers {
         self.pressed.iter().all(|button| button.is_pressed())
             && self.released.iter().all(|button| button.is_released())
     }
+
+    pub(super) fn iter_pressed(&self) -> std::slice::Iter<Button> {
+        self.pressed.iter()
+    }
+
+    pub(super) fn iter_released(&self) -> std::slice::Iter<Button> {
+        self.released.iter()
+    }
 }
 
 impl From<ButtonArg> for Modifiers {

@@ -7,154 +7,21 @@ mod hook;
 mod modifiers;
 mod storage;
 
-pub use button_arg::ButtonArg;
+pub use button_arg::{ButtonArg, ButtonArgElementTag};
 
+use self::entry::Context;
+use self::hook::{HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, Process, RemapHook};
+use self::storage::HotkeyStorage;
 use crate::runtime::Runtime;
-use entry::{Context, HotkeyEntry};
-use hook::Process;
-use modifiers::Modifiers;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
 use std::sync::Arc;
 
-/// Methods for registering hotkeys.
-pub trait RegisterHotkey {
-    /// Makes `target` behave like a `behavior`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.remap(buttons!(A), Button::B);
-    /// ```
-    ///
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self;
-
-    /// Run `process` when `target` is pressed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.on_press(buttons!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
-    /// ```
-    ///
-    fn on_press(
-        &self,
-        target: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self;
-
-    /// Run `process` when `target` is released.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.on_release(buttons!(A), Arc::new(|e| println!("Released: {:?}", e)));
-    /// ```
-    ///
-    fn on_release(
-        &self,
-        target: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self;
-
-    /// Run `process` when a mouse wheel is rotated.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::WheelEvent};
-    /// use std::sync::Arc;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_wheel(Arc::new(|e: WheelEvent| println!("Delta: {}", e.delta)));
-    /// ```
-    ///
-    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self;
-
-    /// Run `process` when a mouse cursor is moved.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::CursorEvent};
-    /// use std::sync::Arc;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_cursor(Arc::new(|e: CursorEvent| println!("movement distance: {:?}", e.delta)));
-    /// ```
-    ///
-    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self;
-
-    /// Disables the button and blocks events.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.disable(buttons!(A));
-    /// ```
-    ///
-    fn disable(&self, target: impl Into<ButtonArg>) -> &Self;
-
-    /// Adds modifier keys.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// let a_or_b = hotkey.add_modifiers(buttons!(A, B));
-    /// a_or_b.remap(buttons!(C), Button::D);
-    /// ```
-    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey;
-
-    /// If the hotkey registered in the return value of this method is executed,
-    /// the input event will be blocked.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// let blocking_hotkey = hotkey.block_input_event();
-    /// blocking_hotkey.on_press(Button::A, |event| println!("An input event {:?} will be blocked.", event));
-    /// ```
-    ///
-    fn block_input_event(&self) -> BranchedHotkey;
-
-    // If the hotkey registered in the return value of this method is executed,
-    // the input event will not be blocked. However, if any other blocking hotkey
-    // is executed, the input event will be blocked.
-    //
-    // # Examples
-    //
-    // ```
-    // use hookmap::prelude::*;
-    //
-    // let hotkey = Hotkey::new();
-    // let dispatching_hotkey = hotkey.dispatch_input_event();
-    // dispatch_input_event.remap(Button::A, Button::B);
-    // ```
-    //
-    fn dispatch_input_event(&self) -> BranchedHotkey;
+#[derive(Default)]
+pub struct Hotkey {
+    storage: HotkeyStorage,
 }
 
 /// Register Hotkeys.
@@ -169,185 +36,239 @@ pub trait RegisterHotkey {
 /// hotkey.install();
 /// ```
 ///
-#[derive(Default)]
-pub struct Hotkey {
-    entry: HotkeyEntry,
-    context: Context,
-}
-
 impl Hotkey {
-    /// Creates a new insgance of `Hotkey`.
     pub fn new() -> Self {
-        Hotkey::default()
+        Self::default()
     }
 
-    /// Installs registered hotkeys.
-    ///
-    /// # Examples
-    ///
-    /// ```no_run
-    /// use hookmap::hotkey::Hotkey;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.install();
-    /// ```
-    ///
+    pub fn register(&mut self, context: Context) -> Registrar {
+        Registrar {
+            storage: &mut self.storage,
+            context,
+        }
+    }
+
     pub fn install(self) {
-        let runtime = Runtime::new(self.entry.into_inner());
+        let runtime = Runtime::new(self.storage);
         runtime.start();
     }
 }
 
-impl RegisterHotkey for Hotkey {
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self {
-        self.entry
-            .remap(target.into(), behavior, self.context.clone());
-        self
-    }
-
-    fn on_press(
-        &self,
-        target: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self {
-        self.entry
-            .on_press(target.into(), process.into(), self.context.clone());
-        self
-    }
-
-    fn on_release(
-        &self,
-        target: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self {
-        self.entry
-            .on_release(target.into(), process.into(), self.context.clone());
-        self
-    }
-
-    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self {
-        self.entry.mouse_wheel(process.into(), self.context.clone());
-        self
-    }
-
-    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self {
-        self.entry
-            .mouse_cursor(process.into(), self.context.clone());
-        self
-    }
-
-    fn disable(&self, target: impl Into<ButtonArg>) -> &Self {
-        self.entry.disable(target.into(), self.context.clone());
-        self
-    }
-
-    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey {
-        let context = Context {
-            modifiers: Some(Arc::new(Modifiers::from(modifiers.into()))),
-            native_event_operation: self.context.native_event_operation,
-        };
-        BranchedHotkey::new(&self.entry, context)
-    }
-
-    fn block_input_event(&self) -> BranchedHotkey {
-        let context = Context {
-            native_event_operation: NativeEventOperation::Block,
-            modifiers: self.context.modifiers.clone(),
-        };
-        BranchedHotkey::new(&self.entry, context)
-    }
-
-    fn dispatch_input_event(&self) -> BranchedHotkey {
-        let context = Context {
-            native_event_operation: NativeEventOperation::Dispatch,
-            modifiers: self.context.modifiers.clone(),
-        };
-        BranchedHotkey::new(&self.entry, context)
-    }
-}
-
-/// Registers Hotkeys with some conditions.
-pub struct BranchedHotkey<'a> {
-    entry: &'a HotkeyEntry,
+pub struct Registrar<'a> {
+    storage: &'a mut HotkeyStorage,
     context: Context,
 }
 
-impl<'a> BranchedHotkey<'a> {
-    fn new(entry: &'a HotkeyEntry, context: Context) -> Self {
-        BranchedHotkey { entry, context }
-    }
-}
-
-impl RegisterHotkey for BranchedHotkey<'_> {
-    fn remap(&self, target: impl Into<ButtonArg>, behavior: Button) -> &Self {
-        self.entry
-            .remap(target.into(), behavior, self.context.clone());
+impl<'a> Registrar<'a> {
+    /// Makes `target` behave like a `behavior`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.remap(buttons!(A), Button::B);
+    /// ```
+    ///
+    pub fn remap(&mut self, targets: impl Into<ButtonArg>, behavior: Button) -> &mut Self {
+        let hook = Arc::new(RemapHook::new(self.context.to_condition(), behavior));
+        for target in targets.into().iter() {
+            match target.tag {
+                ButtonArgElementTag::Inversion => panic!(),
+                ButtonArgElementTag::Direct => {
+                    self.storage.register_remap(target.value, Arc::clone(&hook));
+                }
+            }
+        }
         self
     }
-
-    fn on_press(
-        &self,
-        target: impl Into<ButtonArg>,
+    /// Run `process` when `target` is pressed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.on_press(buttons!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
+    /// ```
+    ///
+    pub fn on_press(
+        &mut self,
+        targets: impl Into<ButtonArg>,
         process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self {
-        self.entry
-            .on_press(target.into(), process.into(), self.context.clone());
+    ) -> &mut Self {
+        let hook = Arc::new(HotkeyHook::new(
+            self.context.to_hotkey_condition(),
+            HotkeyAction::Process(process.into()),
+            self.context.native_event_operation,
+        ));
+        for target in targets.into().iter() {
+            match target.tag {
+                ButtonArgElementTag::Direct => {
+                    self.storage
+                        .register_hotkey_on_press(target.value, Arc::clone(&hook));
+                }
+                ButtonArgElementTag::Inversion => {
+                    self.storage
+                        .register_hotkey_on_release(target.value, Arc::clone(&hook));
+                }
+            }
+        }
         self
     }
 
-    fn on_release(
-        &self,
-        target: impl Into<ButtonArg>,
+    /// Run `process` when `target` is released.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.on_release(buttons!(A), Arc::new(|e| println!("Released: {:?}", e)));
+    /// ```
+    ///
+    pub fn on_release(
+        &mut self,
+        targets: impl Into<ButtonArg>,
         process: impl Into<Process<ButtonEvent>>,
-    ) -> &Self {
-        self.entry
-            .on_release(target.into(), process.into(), self.context.clone());
+    ) -> &mut Self {
+        let targets = targets.into();
+        let condition = self.context.to_hotkey_condition();
+        let process = HotkeyAction::Process(process.into());
+        if self.context.modifiers.is_none() {
+            let hook = Arc::new(HotkeyHook::new(
+                condition,
+                process,
+                self.context.native_event_operation,
+            ));
+
+            for target in targets.iter() {
+                match target.tag {
+                    ButtonArgElementTag::Direct => {
+                        self.storage
+                            .register_hotkey_on_release(target.value, Arc::clone(&hook));
+                    }
+                    ButtonArgElementTag::Inversion => {
+                        self.storage
+                            .register_hotkey_on_press(target.value, Arc::clone(&hook));
+                    }
+                }
+            }
+            return self;
+        }
+
+        for target in targets.iter() {
+            let is_active = Arc::default();
+            let inactivation_hook = Arc::new(HotkeyHook::new(
+                HotkeyCondition::Activation(Arc::clone(&is_active)),
+                process.clone(),
+                self.context.native_event_operation,
+            ));
+            let activation_hook = Arc::new(HotkeyHook::new(
+                condition.clone(),
+                HotkeyAction::Activate(is_active),
+                NativeEventOperation::Dispatch,
+            ));
+
+            match target.tag {
+                ButtonArgElementTag::Direct => {
+                    self.storage
+                        .register_hotkey_on_press(target.value, Arc::clone(&activation_hook));
+                    self.storage
+                        .register_hotkey_on_release(target.value, Arc::clone(&inactivation_hook));
+                }
+                ButtonArgElementTag::Inversion => {
+                    self.storage
+                        .register_hotkey_on_release(target.value, Arc::clone(&activation_hook));
+                    self.storage
+                        .register_hotkey_on_press(target.value, Arc::clone(&inactivation_hook));
+                }
+            }
+            for target in self.context.iter_pressed() {
+                self.storage
+                    .register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
+            }
+            for target in self.context.iter_released() {
+                self.storage
+                    .register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
+            }
+        }
         self
     }
 
-    fn mouse_wheel(&self, process: impl Into<Process<WheelEvent>>) -> &Self {
-        self.entry.mouse_wheel(process.into(), self.context.clone());
+    /// Run `process` when a mouse wheel is rotated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::WheelEvent};
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.mouse_wheel(Arc::new(|e: WheelEvent| println!("Delta: {}", e.delta)));
+    /// ```
+    ///
+    pub fn mouse_wheel(&mut self, process: impl Into<Process<WheelEvent>>) -> &mut Self {
+        let hook = Arc::new(MouseHook::new(
+            self.context.to_condition(),
+            process.into(),
+            self.context.native_event_operation,
+        ));
+        self.storage.register_mouse_wheel_hotkey(hook);
         self
     }
 
-    fn mouse_cursor(&self, process: impl Into<Process<CursorEvent>>) -> &Self {
-        self.entry
-            .mouse_cursor(process.into(), self.context.clone());
+    /// Run `process` when a mouse cursor is moved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::CursorEvent};
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.mouse_cursor(Arc::new(|e: CursorEvent| println!("movement distance: {:?}", e.delta)));
+    /// ```
+    ///
+    pub fn mouse_cursor(&mut self, process: impl Into<Process<CursorEvent>>) -> &mut Self {
+        let hook = Arc::new(MouseHook::new(
+            self.context.to_condition(),
+            process.into(),
+            self.context.native_event_operation,
+        ));
+        self.storage.register_mouse_cursor_hotkey(hook);
         self
     }
 
-    fn disable(&self, target: impl Into<ButtonArg>) -> &Self {
-        self.entry.disable(target.into(), self.context.clone());
+    /// Disables the button and blocks events.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use std::sync::Arc;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// hotkey.disable(buttons!(A));
+    /// ```
+    ///
+    pub fn disable(&mut self, targets: impl Into<ButtonArg>) -> &mut Self {
+        let hook = Arc::new(HotkeyHook::new(
+            self.context.to_hotkey_condition(),
+            HotkeyAction::Noop,
+            NativeEventOperation::Block,
+        ));
+        for target in targets.into().iter() {
+            self.storage
+                .register_hotkey_on_press(target.value, Arc::clone(&hook));
+            self.storage
+                .register_hotkey_on_release(target.value, Arc::clone(&hook));
+        }
         self
-    }
-
-    fn add_modifiers(&self, modifiers: impl Into<ButtonArg>) -> BranchedHotkey {
-        let new = Modifiers::from(modifiers.into());
-        let modifiers = if let Some(modifiers) = &self.context.modifiers {
-            modifiers.merge(new)
-        } else {
-            new
-        };
-        let context = Context {
-            modifiers: Some(Arc::new(modifiers)),
-            native_event_operation: self.context.native_event_operation,
-        };
-        BranchedHotkey::new(self.entry, context)
-    }
-
-    fn block_input_event(&self) -> BranchedHotkey {
-        let context = Context {
-            native_event_operation: NativeEventOperation::Block,
-            modifiers: self.context.modifiers.clone(),
-        };
-        BranchedHotkey::new(self.entry, context)
-    }
-
-    fn dispatch_input_event(&self) -> BranchedHotkey {
-        let context = Context {
-            native_event_operation: NativeEventOperation::Dispatch,
-            modifiers: self.context.modifiers.clone(),
-        };
-        BranchedHotkey::new(self.entry, context)
     }
 }

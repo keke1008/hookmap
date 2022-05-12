@@ -31,6 +31,7 @@ impl<E, F: Fn(E) + Send + Sync + 'static> From<Arc<F>> for Process<E> {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(super) enum HotkeyCondition {
     Any,
     Activation(Arc<AtomicBool>),
@@ -53,6 +54,7 @@ impl From<Option<Arc<Modifiers>>> for HotkeyCondition {
     }
 }
 
+#[derive(Debug, Clone)]
 pub(super) enum HotkeyAction<E> {
     Process(Process<E>),
     Activate(Arc<AtomicBool>),

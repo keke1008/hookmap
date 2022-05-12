@@ -9,7 +9,7 @@
 //! * `block-input-event`: Set button events to be blocked by default.
 
 pub mod hotkey;
-pub mod utils;
+// pub mod utils;
 
 #[doc(hidden)]
 pub mod macros;
@@ -37,9 +37,9 @@ pub mod prelude {
         devices::{Button, ButtonAction},
         event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent},
         hotkey,
-        hotkey::{Hotkey, RegisterHotkey},
+        hotkey::Hotkey,
         interceptor::{Filter, Interceptor},
         seq,
-        utils::Utils,
+        // utils::Utils,
     };
 }
