@@ -1,5 +1,5 @@
 use super::button_arg::{ButtonArg, ButtonArgElementTag};
-use super::hook::{Condition, HotkeyCondition};
+use super::hook::Condition;
 use crate::{button::Button, event::NativeEventOperation};
 
 use std::sync::Arc;
@@ -52,12 +52,6 @@ impl Context {
         self.modifiers
             .clone()
             .map_or(Condition::Any, Condition::Modifier)
-    }
-
-    pub(super) fn to_hotkey_condition(&self) -> HotkeyCondition {
-        self.modifiers
-            .clone()
-            .map_or(HotkeyCondition::Any, HotkeyCondition::Modifier)
     }
 
     pub(super) fn iter_pressed(&self) -> impl Iterator<Item = &Button> {

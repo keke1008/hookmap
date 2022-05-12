@@ -9,7 +9,7 @@ mod storage;
 pub use button_arg::{ButtonArg, ButtonArgElementTag};
 pub use context::{Context, ContextBuilder};
 
-use self::hook::{HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, Process, RemapHook};
+use self::hook::{Condition, HotkeyAction, HotkeyHook, MouseHook, Process, RemapHook};
 use self::storage::HotkeyStorage;
 use crate::runtime::Runtime;
 
@@ -100,7 +100,7 @@ impl<'a> Registrar<'a> {
         process: impl Into<Process<ButtonEvent>>,
     ) -> &mut Self {
         let hook = Arc::new(HotkeyHook::new(
-            self.context.to_hotkey_condition(),
+            self.context.to_condition(),
             HotkeyAction::Process(process.into()),
             self.context.native_event_operation(),
         ));
@@ -137,7 +137,7 @@ impl<'a> Registrar<'a> {
         process: impl Into<Process<ButtonEvent>>,
     ) -> &mut Self {
         let targets = targets.into();
-        let condition = self.context.to_hotkey_condition();
+        let condition = self.context.to_condition();
         let process = HotkeyAction::Process(process.into());
         if self.context.has_no_modifiers() {
             let hook = Arc::new(HotkeyHook::new(
@@ -164,7 +164,7 @@ impl<'a> Registrar<'a> {
         for target in targets.iter() {
             let is_active = Arc::default();
             let inactivation_hook = Arc::new(HotkeyHook::new(
-                HotkeyCondition::Activation(Arc::clone(&is_active)),
+                Condition::Activation(Arc::clone(&is_active)),
                 process.clone(),
                 self.context.native_event_operation(),
             ));
@@ -258,7 +258,7 @@ impl<'a> Registrar<'a> {
     ///
     pub fn disable(&mut self, targets: impl Into<ButtonArg>) -> &mut Self {
         let hook = Arc::new(HotkeyHook::new(
-            self.context.to_hotkey_condition(),
+            self.context.to_condition(),
             HotkeyAction::Noop,
             NativeEventOperation::Block,
         ));

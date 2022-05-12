@@ -32,25 +32,19 @@ impl<E, F: Fn(E) + Send + Sync + 'static> From<Arc<F>> for Process<E> {
 }
 
 #[derive(Debug, Clone)]
-pub(super) enum HotkeyCondition {
+pub(super) enum Condition {
     Any,
     Activation(Arc<AtomicBool>),
     Modifier(Arc<Modifiers>),
 }
 
-impl HotkeyCondition {
+impl Condition {
     fn is_satisfied(&self) -> bool {
         match self {
-            HotkeyCondition::Any => true,
-            HotkeyCondition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
-            HotkeyCondition::Modifier(modifiers) => modifiers.meets_conditions(),
+            Condition::Any => true,
+            Condition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
+            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
         }
-    }
-}
-
-impl From<Option<Arc<Modifiers>>> for HotkeyCondition {
-    fn from(this: Option<Arc<Modifiers>>) -> Self {
-        this.map_or(HotkeyCondition::Any, HotkeyCondition::Modifier)
     }
 }
 
@@ -72,14 +66,14 @@ impl<E> HotkeyAction<E> {
 }
 
 pub(super) struct HotkeyHook {
-    condition: HotkeyCondition,
+    condition: Condition,
     action: HotkeyAction<ButtonEvent>,
     native_event_operation: NativeEventOperation,
 }
 
 impl HotkeyHook {
     pub(super) fn new(
-        condition: HotkeyCondition,
+        condition: Condition,
         action: HotkeyAction<ButtonEvent>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
@@ -95,26 +89,6 @@ impl HotkeyHook {
     }
 }
 
-pub(super) enum Condition {
-    Any,
-    Modifier(Arc<Modifiers>),
-}
-
-impl Condition {
-    fn is_satisfied(&self) -> bool {
-        match self {
-            Condition::Any => true,
-            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
-        }
-    }
-}
-
-impl From<Option<Arc<Modifiers>>> for Condition {
-    fn from(this: Option<Arc<Modifiers>>) -> Condition {
-        this.map_or(Condition::Any, Condition::Modifier)
-    }
-}
-
 pub(super) struct RemapHook {
     condition: Condition,
     button: Button,
@@ -122,6 +96,7 @@ pub(super) struct RemapHook {
 
 impl RemapHook {
     pub(super) fn new(condition: Condition, button: Button) -> Self {
+        assert!(!matches!(condition, Condition::Activation(_)));
         RemapHook { condition, button }
     }
 
@@ -176,6 +151,7 @@ impl<E> MouseHook<E> {
         process: Process<E>,
         native_event_operation: NativeEventOperation,
     ) -> Self {
+        assert!(!matches!(condition, Condition::Activation(_)));
         MouseHook {
             condition,
             process,
