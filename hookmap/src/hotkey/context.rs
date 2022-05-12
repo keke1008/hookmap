@@ -5,12 +5,49 @@ use crate::{button::Button, event::NativeEventOperation};
 use std::sync::Arc;
 
 #[derive(Debug, Default, Clone)]
+pub struct ContextBuilder {
+    modifiers: Option<Modifiers>,
+    native_event_operation: NativeEventOperation,
+}
+
+impl ContextBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn modifiers(mut self, modifiers: ButtonArg) -> Self {
+        self.modifiers = Some(modifiers.into());
+        self
+    }
+
+    pub fn native_event_operation(mut self, operation: NativeEventOperation) -> Self {
+        self.native_event_operation = operation;
+        self
+    }
+
+    pub fn build(self) -> Context {
+        Context {
+            modifiers: self.modifiers.map(Arc::new),
+            native_event_operation: self.native_event_operation,
+        }
+    }
+}
+
+#[derive(Debug, Default, Clone)]
 pub struct Context {
-    pub(super) modifiers: Option<Arc<Modifiers>>,
-    pub(super) native_event_operation: NativeEventOperation,
+    modifiers: Option<Arc<Modifiers>>,
+    native_event_operation: NativeEventOperation,
 }
 
 impl Context {
+    pub(super) fn native_event_operation(&self) -> NativeEventOperation {
+        self.native_event_operation
+    }
+
+    pub(super) fn has_no_modifiers(&self) -> bool {
+        self.modifiers.is_none()
+    }
+
     pub(super) fn to_condition(&self) -> Condition {
         self.modifiers
             .clone()
@@ -34,8 +71,8 @@ impl Context {
 
 #[derive(Clone, Debug, Default)]
 pub(crate) struct Modifiers {
-    pub pressed: Vec<Button>,
-    pub released: Vec<Button>,
+    pressed: Vec<Button>,
+    released: Vec<Button>,
 }
 
 impl Modifiers {

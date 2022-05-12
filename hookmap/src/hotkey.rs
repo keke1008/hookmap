@@ -7,8 +7,8 @@ mod hook;
 mod storage;
 
 pub use button_arg::{ButtonArg, ButtonArgElementTag};
+pub use context::{Context, ContextBuilder};
 
-use self::context::Context;
 use self::hook::{HotkeyAction, HotkeyCondition, HotkeyHook, MouseHook, Process, RemapHook};
 use self::storage::HotkeyStorage;
 use crate::runtime::Runtime;
@@ -102,7 +102,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(HotkeyHook::new(
             self.context.to_hotkey_condition(),
             HotkeyAction::Process(process.into()),
-            self.context.native_event_operation,
+            self.context.native_event_operation(),
         ));
         for target in targets.into().iter() {
             match target.tag {
@@ -139,11 +139,11 @@ impl<'a> Registrar<'a> {
         let targets = targets.into();
         let condition = self.context.to_hotkey_condition();
         let process = HotkeyAction::Process(process.into());
-        if self.context.modifiers.is_none() {
+        if self.context.has_no_modifiers() {
             let hook = Arc::new(HotkeyHook::new(
                 condition,
                 process,
-                self.context.native_event_operation,
+                self.context.native_event_operation(),
             ));
 
             for target in targets.iter() {
@@ -166,7 +166,7 @@ impl<'a> Registrar<'a> {
             let inactivation_hook = Arc::new(HotkeyHook::new(
                 HotkeyCondition::Activation(Arc::clone(&is_active)),
                 process.clone(),
-                self.context.native_event_operation,
+                self.context.native_event_operation(),
             ));
             let activation_hook = Arc::new(HotkeyHook::new(
                 condition.clone(),
@@ -216,7 +216,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(MouseHook::new(
             self.context.to_condition(),
             process.into(),
-            self.context.native_event_operation,
+            self.context.native_event_operation(),
         ));
         self.storage.register_mouse_wheel_hotkey(hook);
         self
@@ -238,7 +238,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(MouseHook::new(
             self.context.to_condition(),
             process.into(),
-            self.context.native_event_operation,
+            self.context.native_event_operation(),
         ));
         self.storage.register_mouse_cursor_hotkey(hook);
         self

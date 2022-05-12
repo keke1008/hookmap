@@ -37,7 +37,7 @@ pub mod prelude {
         devices::{Button, ButtonAction},
         event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent},
         hotkey,
-        hotkey::Hotkey,
+        hotkey::{ContextBuilder, Hotkey},
         interceptor::{Filter, Interceptor},
         seq,
         // utils::Utils,
