@@ -1,39 +1,17 @@
-use crate::button::Button;
+use hookmap_core::button::Button;
 use std::borrow::Borrow;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub enum ButtonArgElementTag {
-    Direct,
-    Inversion,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ButtonArgUnit<T> {
+    Plain(T),
+    Not(T),
 }
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
-pub struct ButtonArgElement<T> {
-    pub tag: ButtonArgElementTag,
-    pub value: T,
-}
-
-impl<T> ButtonArgElement<T> {
-    pub fn direct(value: T) -> Self {
-        ButtonArgElement {
-            tag: ButtonArgElementTag::Direct,
-            value,
-        }
-    }
-
-    pub fn inversion(value: T) -> Self {
-        ButtonArgElement {
-            tag: ButtonArgElementTag::Inversion,
-            value,
-        }
-    }
-}
-
-impl<T: Clone> ButtonArgElement<T> {
+impl<T: Clone> ButtonArgUnit<T> {
     pub fn invert(&self) -> Self {
-        match self.tag {
-            ButtonArgElementTag::Direct => ButtonArgElement::inversion(self.value.clone()),
-            ButtonArgElementTag::Inversion => ButtonArgElement::direct(self.value.clone()),
+        match self {
+            Self::Plain(v) => Self::Not(v.clone()),
+            Self::Not(v) => Self::Plain(v.clone()),
         }
     }
 }
@@ -41,17 +19,42 @@ impl<T: Clone> ButtonArgElement<T> {
 /// A struct to pass multiple buttons to a function.
 /// This struct constructs by [`buttons!`].
 #[derive(Clone, PartialEq, Eq, Debug, Default)]
-pub struct ButtonArg(Vec<ButtonArgElement<Button>>);
+pub struct ButtonArg(Vec<ButtonArgUnit<Button>>);
 
 impl ButtonArg {
-    pub(super) fn iter(&self) -> impl Iterator<Item = ButtonArgElement<Button>> + '_ {
+    pub(crate) fn invert(&self) -> ButtonArg {
+        let inner = self.0.iter().map(|unit| unit.invert()).collect();
+        ButtonArg(inner)
+    }
+
+    pub(crate) fn is_all_plain(&self) -> bool {
+        self.0
+            .iter()
+            .all(|unit| matches!(unit, ButtonArgUnit::Plain(_)))
+    }
+
+    pub(crate) fn iter(&self) -> impl Iterator<Item = ButtonArgUnit<Button>> + '_ {
         self.0.iter().copied()
+    }
+
+    pub(crate) fn iter_plain(&self) -> impl Iterator<Item = Button> + '_ {
+        self.0.iter().filter_map(|unit| match unit {
+            ButtonArgUnit::Plain(button) => Some(*button),
+            ButtonArgUnit::Not(_) => None,
+        })
+    }
+
+    pub(crate) fn iter_not(&self) -> impl Iterator<Item = Button> + '_ {
+        self.0.iter().filter_map(|unit| match unit {
+            ButtonArgUnit::Not(button) => Some(*button),
+            ButtonArgUnit::Plain(_) => None,
+        })
     }
 }
 
 impl From<Button> for ButtonArg {
     fn from(button: Button) -> Self {
-        ButtonArg(vec![ButtonArgElement::direct(button)])
+        ButtonArg(vec![ButtonArgUnit::Plain(button)])
     }
 }
 
@@ -66,11 +69,11 @@ where
 
 #[doc(hidden)]
 pub trait ButtonArgChain<T> {
-    fn chain(self, next: ButtonArgElement<T>) -> ButtonArg;
+    fn chain(self, next: ButtonArgUnit<T>) -> ButtonArg;
 }
 
 impl ButtonArgChain<Button> for ButtonArg {
-    fn chain(mut self, next: ButtonArgElement<Button>) -> ButtonArg {
+    fn chain(mut self, next: ButtonArgUnit<Button>) -> ButtonArg {
         self.0.push(next);
         self
     }
@@ -80,16 +83,12 @@ impl<T> ButtonArgChain<T> for ButtonArg
 where
     T: Borrow<ButtonArg>,
 {
-    fn chain(mut self, next: ButtonArgElement<T>) -> ButtonArg {
-        let element = next.value.borrow();
-        match next.tag {
-            ButtonArgElementTag::Direct => {
-                self.0.extend(element.iter());
-            }
-            ButtonArgElementTag::Inversion => {
-                self.0.extend(element.iter().map(|x| x.invert()));
-            }
-        }
+    fn chain(mut self, next: ButtonArgUnit<T>) -> ButtonArg {
+        let mut next = match next {
+            ButtonArgUnit::Plain(v) => v.borrow().clone(),
+            ButtonArgUnit::Not(v) => v.borrow().invert(),
+        };
+        self.0.append(&mut next.0);
         self
     }
 }
@@ -161,12 +160,12 @@ macro_rules! buttons {
     };
 
     (@inner $chain:tt !$button:tt $($tail:tt)*) => {{
-        let element = ButtonArgElement::inversion($crate::button_name!($button));
+        let element = ButtonArgUnit::Not($crate::button_name!($button));
         $crate::buttons!(@inner ($chain.chain(element)) $($tail)*)
     }};
 
     (@inner $chain:tt $button:tt $($tail:tt)*) => {{
-        let element = ButtonArgElement::direct($crate::button_name!($button));
+        let element = ButtonArgUnit::Plain($crate::button_name!($button));
         $crate::buttons!(@inner ($chain.chain(element)) $($tail)*)
     }};
 
@@ -176,7 +175,7 @@ macro_rules! buttons {
 
     ($($args:tt)*) => {{
         #[allow(unused_imports)]
-        use $crate::hotkey::button_arg::{ButtonArgElement, ButtonArgChain, ButtonArg};
+        use $crate::macros::button_arg::{ButtonArgChain, ButtonArg, ButtonArgUnit};
         $crate::buttons!(@inner (ButtonArg::default()) $($args)*)
     }};
 }
@@ -190,47 +189,35 @@ mod tests {
         use Button::*;
         assert_eq!(
             buttons!(A),
-            ButtonArg(vec![ButtonArgElement::direct(Button::A)])
+            ButtonArg(vec![ButtonArgUnit::Plain(Button::A)])
         );
+        assert_eq!(buttons!(!A), ButtonArg(vec![ButtonArgUnit::Not(A)]));
         assert_eq!(
-            buttons!(!A),
-            ButtonArg(vec![ButtonArgElement::inversion(A)])
+            buttons!(A, !B),
+            ButtonArg(vec![ButtonArgUnit::Plain(A), ButtonArgUnit::Not(B)])
         );
         assert_eq!(
             buttons!(A, !B),
-            ButtonArg(vec![
-                ButtonArgElement::direct(A),
-                ButtonArgElement::inversion(B)
-            ])
+            ButtonArg(vec![ButtonArgUnit::Plain(A), ButtonArgUnit::Not(B)])
         );
-        assert_eq!(
-            buttons!(A, !B),
-            ButtonArg(vec![
-                ButtonArgElement::direct(A),
-                ButtonArgElement::inversion(B)
-            ])
-        );
-        let button_args = ButtonArg(vec![
-            ButtonArgElement::direct(A),
-            ButtonArgElement::inversion(B),
-        ]);
+        let button_args = ButtonArg(vec![ButtonArgUnit::Plain(A), ButtonArgUnit::Not(B)]);
         assert_eq!(buttons!([&button_args]), button_args);
         assert_eq!(
             buttons!([&button_args], C, !D),
             ButtonArg(vec![
-                ButtonArgElement::direct(A),
-                ButtonArgElement::inversion(B),
-                ButtonArgElement::direct(C),
-                ButtonArgElement::inversion(D)
+                ButtonArgUnit::Plain(A),
+                ButtonArgUnit::Not(B),
+                ButtonArgUnit::Plain(C),
+                ButtonArgUnit::Not(D)
             ])
         );
         assert_eq!(
             buttons!(C, !D, [button_args]),
             ButtonArg(vec![
-                ButtonArgElement::direct(C),
-                ButtonArgElement::inversion(D),
-                ButtonArgElement::direct(A),
-                ButtonArgElement::inversion(B)
+                ButtonArgUnit::Plain(C),
+                ButtonArgUnit::Not(D),
+                ButtonArgUnit::Plain(A),
+                ButtonArgUnit::Not(B)
             ]),
         );
     }

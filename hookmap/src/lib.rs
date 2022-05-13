@@ -14,32 +14,27 @@ pub mod hotkey;
 #[doc(hidden)]
 pub mod macros;
 
-mod button;
 mod hook;
 mod runtime;
 
-/// Items used for button and mouse event.
-pub mod event {
-    pub use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
-}
-
-/// keyboard and mouse, and their inputs.
-pub mod devices {
-    pub use super::button::{Button, ButtonAction, Sequence, SequenceOperation};
-}
-
 pub use runtime::interceptor;
+
+/// Representation of keyboard and mouse events.
+pub mod device {
+    pub use hookmap_core::button::{Button, ButtonAction, ButtonKind};
+    pub use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+    pub use hookmap_core::mouse;
+}
 
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
+    // Macros
+    pub use super::{buttons, hotkey, seq};
+
     pub use super::{
-        buttons,
-        devices::{Button, ButtonAction},
-        event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent},
-        hotkey,
+        device::*,
         hotkey::{ContextBuilder, Hotkey},
         interceptor::{Filter, Interceptor},
-        seq,
         // utils::Utils,
     };
 }

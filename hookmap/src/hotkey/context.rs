@@ -1,7 +1,9 @@
-use super::button_arg::{ButtonArg, ButtonArgElementTag};
+use hookmap_core::button::Button;
+use hookmap_core::event::NativeEventOperation;
+
 use super::hook::Condition;
 use crate::hook::ButtonState;
-use crate::{button::Button, event::NativeEventOperation};
+use crate::macros::button_arg::ButtonArg;
 
 use std::sync::Arc;
 
@@ -103,14 +105,9 @@ impl Modifiers {
 
 impl From<ButtonArg> for Modifiers {
     fn from(args: ButtonArg) -> Self {
-        let mut pressed = vec![];
-        let mut released = vec![];
-        for arg in args.iter() {
-            match arg.tag {
-                ButtonArgElementTag::Direct => pressed.push(arg.value),
-                ButtonArgElementTag::Inversion => released.push(arg.value),
-            }
+        Self {
+            pressed: args.iter_plain().collect(),
+            released: args.iter_not().collect(),
         }
-        Self { pressed, released }
     }
 }

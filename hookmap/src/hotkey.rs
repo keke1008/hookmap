@@ -1,16 +1,14 @@
 //! Registering Hotkeys.
 
-#[doc(hidden)]
-pub mod button_arg;
 mod context;
 mod hook;
 mod storage;
 
-pub use button_arg::{ButtonArg, ButtonArgElementTag};
-pub use context::{Context, ContextBuilder};
+pub use self::context::{Context, ContextBuilder};
 
 use self::hook::{Condition, HotkeyAction, HotkeyHook, MouseHook, Process, RemapHook};
 use self::storage::HotkeyStorage;
+use crate::macros::button_arg::{ButtonArg, ButtonArgUnit};
 use crate::runtime::Runtime;
 
 use hookmap_core::button::Button;
@@ -71,14 +69,12 @@ impl<'a> Registrar<'a> {
     /// ```
     ///
     pub fn remap(&mut self, targets: impl Into<ButtonArg>, behavior: Button) -> &mut Self {
+        let targets = targets.into();
         let hook = Arc::new(RemapHook::new(self.context.to_condition(), behavior));
-        for target in targets.into().iter() {
-            match target.tag {
-                ButtonArgElementTag::Inversion => panic!(),
-                ButtonArgElementTag::Direct => {
-                    self.storage.register_remap(target.value, Arc::clone(&hook));
-                }
-            }
+        assert!(targets.is_all_plain());
+
+        for target in targets.iter_plain() {
+            self.storage.register_remap(target, Arc::clone(&hook));
         }
         self
     }
@@ -99,22 +95,20 @@ impl<'a> Registrar<'a> {
         targets: impl Into<ButtonArg>,
         process: impl Into<Process<ButtonEvent>>,
     ) -> &mut Self {
+        let targets = targets.into();
         let hook = Arc::new(HotkeyHook::new(
             self.context.to_condition(),
             HotkeyAction::Process(process.into()),
             self.context.native_event_operation(),
         ));
-        for target in targets.into().iter() {
-            match target.tag {
-                ButtonArgElementTag::Direct => {
-                    self.storage
-                        .register_hotkey_on_press(target.value, Arc::clone(&hook));
-                }
-                ButtonArgElementTag::Inversion => {
-                    self.storage
-                        .register_hotkey_on_release(target.value, Arc::clone(&hook));
-                }
-            }
+
+        for target in targets.iter_plain() {
+            self.storage
+                .register_hotkey_on_press(target, Arc::clone(&hook));
+        }
+        for target in targets.iter_not() {
+            self.storage
+                .register_hotkey_on_release(target, Arc::clone(&hook));
         }
         self
     }
@@ -139,6 +133,7 @@ impl<'a> Registrar<'a> {
         let targets = targets.into();
         let condition = self.context.to_condition();
         let process = HotkeyAction::Process(process.into());
+
         if self.context.has_no_modifiers() {
             let hook = Arc::new(HotkeyHook::new(
                 condition,
@@ -146,17 +141,13 @@ impl<'a> Registrar<'a> {
                 self.context.native_event_operation(),
             ));
 
-            for target in targets.iter() {
-                match target.tag {
-                    ButtonArgElementTag::Direct => {
-                        self.storage
-                            .register_hotkey_on_release(target.value, Arc::clone(&hook));
-                    }
-                    ButtonArgElementTag::Inversion => {
-                        self.storage
-                            .register_hotkey_on_press(target.value, Arc::clone(&hook));
-                    }
-                }
+            for target in targets.iter_plain() {
+                self.storage
+                    .register_hotkey_on_release(target, Arc::clone(&hook));
+            }
+            for target in targets.iter_not() {
+                self.storage
+                    .register_hotkey_on_press(target, Arc::clone(&hook));
             }
             return self;
         }
@@ -174,20 +165,21 @@ impl<'a> Registrar<'a> {
                 NativeEventOperation::Dispatch,
             ));
 
-            match target.tag {
-                ButtonArgElementTag::Direct => {
+            match target {
+                ButtonArgUnit::Plain(target) => {
                     self.storage
-                        .register_hotkey_on_press(target.value, Arc::clone(&activation_hook));
+                        .register_hotkey_on_press(target, Arc::clone(&activation_hook));
                     self.storage
-                        .register_hotkey_on_release(target.value, Arc::clone(&inactivation_hook));
+                        .register_hotkey_on_release(target, Arc::clone(&inactivation_hook));
                 }
-                ButtonArgElementTag::Inversion => {
+                ButtonArgUnit::Not(target) => {
                     self.storage
-                        .register_hotkey_on_release(target.value, Arc::clone(&activation_hook));
+                        .register_hotkey_on_release(target, Arc::clone(&activation_hook));
                     self.storage
-                        .register_hotkey_on_press(target.value, Arc::clone(&inactivation_hook));
+                        .register_hotkey_on_press(target, Arc::clone(&inactivation_hook));
                 }
             }
+
             for target in self.context.iter_pressed() {
                 self.storage
                     .register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
@@ -262,12 +254,16 @@ impl<'a> Registrar<'a> {
             HotkeyAction::Noop,
             NativeEventOperation::Block,
         ));
-        for target in targets.into().iter() {
+        let targets = targets.into();
+        assert!(targets.is_all_plain());
+
+        for target in targets.iter_plain() {
             self.storage
-                .register_hotkey_on_press(target.value, Arc::clone(&hook));
+                .register_hotkey_on_press(target, Arc::clone(&hook));
             self.storage
-                .register_hotkey_on_release(target.value, Arc::clone(&hook));
+                .register_hotkey_on_release(target, Arc::clone(&hook));
         }
+
         self
     }
 }
