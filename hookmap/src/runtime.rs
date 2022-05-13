@@ -1,4 +1,5 @@
 mod button_state;
+mod event_broker;
 pub mod interceptor;
 
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
@@ -69,9 +70,9 @@ where
         while let Ok((event, native_handler)) = event_receiver.recv() {
             match event {
                 Event::Button(event) => {
-                    if interceptor::event_sender::send(event) == NativeEventOperation::Block {
+                    if interceptor::publish_event(event) == NativeEventOperation::Block {
                         native_handler.block();
-                        return;
+                        continue;
                     }
                     self.handle_event(HookStorage::fetch_button_hook, event, native_handler);
                 }
