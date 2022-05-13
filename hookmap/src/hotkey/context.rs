@@ -7,6 +7,17 @@ use crate::macros::button_arg::ButtonArg;
 
 use std::sync::Arc;
 
+/// Represents hotkey information.
+///
+/// # Examples
+///
+/// ```
+/// use hookmap::prelude::*;
+/// Context::new()
+///     .modifiers(buttons!(A, B, C))
+///     .native_event_operation(NativeEventOperation::Block);
+/// ```
+///
 #[derive(Debug, Default, Clone)]
 pub struct Context {
     modifiers: Option<Arc<Modifiers>>,
@@ -14,10 +25,32 @@ pub struct Context {
 }
 
 impl Context {
+    /// Creates a new instance of [`Context`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// let context = Context::new();
+    /// ```
+    ///
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Merges other [`Context`] into self.
+    /// `other` will not be changed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// let context = Context::new().modifiers(buttons!(A, B));
+    /// Context::new()
+    ///     .modifiers(buttons!(C, D))
+    ///     .merge(&context);
+    /// ```
+    ///
     pub fn merge(mut self, other: &Self) -> Self {
         self.modifiers = match (self.modifiers.as_ref(), other.modifiers.as_ref()) {
             (Some(s), Some(o)) => Some(Arc::new(s.merge(o))),
@@ -35,11 +68,31 @@ impl Context {
         self
     }
 
+    /// Adds modifier keys to the hotkey to be registered.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// Context::new()
+    ///     .modifiers(buttons!(A, B));
+    /// ```
+    ///
     pub fn modifiers(mut self, modifiers: impl Into<ButtonArg>) -> Self {
         self.modifiers = Some(Arc::new(Modifiers::from(modifiers.into())));
         self
     }
 
+    /// Indicates whether to block the native event when the hotkey is active.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// Context::new()
+    ///     .native_event_operation(NativeEventOperation::Block);
+    /// ```
+    ///
     pub fn native_event_operation(mut self, native_event_operation: NativeEventOperation) -> Self {
         self.native_event_operation = native_event_operation;
         self

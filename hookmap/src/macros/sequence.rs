@@ -111,28 +111,27 @@ impl Sequence {
 }
 
 /// Sends keyboard input.
-/// Unlike send!, seq! does not ignore modifier keys.
 ///
 /// # Examples
 ///
 /// ```no_run
 /// use hookmap::*;
-/// seq!(A, B);
+/// seq!(A, B).send();
 /// ```
 ///
 /// Use `down` and `up` to press and release keys.
 ///
 /// ```no_run
 /// use hookmap::*;
-/// seq!(LCtrl down, A, LCtrl up);
+/// seq!(LCtrl down, A, LCtrl up).send();
 /// ```
 ///
 /// Use `with(...)` to specify the keys to hold down when sending.
 ///
 /// ```no_run
 /// use hookmap::*;
-/// seq!(with(LShift, LCtrl), Tab);
-/// seq!(LShift down, LCtrl down, Tab, LShift up, LCtrl up); // equals to above
+/// seq!(with(LShift, LCtrl), Tab).send();
+/// seq!(LShift down, LCtrl down, Tab, LShift up, LCtrl up).send(); // equals to above
 /// ```
 ///
 #[macro_export]

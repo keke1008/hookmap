@@ -16,28 +16,53 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelE
 
 use std::sync::Arc;
 
-#[derive(Debug, Default)]
-pub struct Hotkey {
-    storage: HotkeyStorage,
-}
-
-/// Register Hotkeys.
+/// Registers and installs hotkeys.
 ///
 /// # Examples
 ///
 /// ```no_run
 /// use hookmap::prelude::*;
 ///
-/// let hotkey = Hotkey::new();
-/// hotkey.remap(buttons!(A), Button::B);
+/// let mut hotkey = Hotkey::new();
+/// hotkey
+///     .register(Context::default())
+///     .remap(buttons!(A, B), Button::C);
 /// hotkey.install();
 /// ```
 ///
+#[derive(Debug, Default)]
+pub struct Hotkey {
+    storage: HotkeyStorage,
+}
+
 impl Hotkey {
+    /// Creates a new instance of [`Hotkey`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    /// ```
+    ///
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Creates a [`Registrar`] to register hotkeys.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .remap(Button::A, Button::B);
+    /// ```
+    ///
     pub fn register(&mut self, context: Context) -> Registrar {
         Registrar {
             storage: &mut self.storage,
@@ -45,12 +70,38 @@ impl Hotkey {
         }
     }
 
+    /// Installs hotkeys and blocks the current thread.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey.install();
+    /// ```
+    ///
     pub fn install(self) {
         let runtime = Runtime::new(self.storage);
         runtime.start();
     }
 }
 
+/// Register hotkeys.
+/// Calls [`Hotkey::register`] to get this instance.
+///
+/// # Examples
+///
+/// ```
+/// use hookmap::prelude::*;
+///
+/// let mut hotkey = Hotkey::new();
+/// hotkey
+///     .register(Context::default())
+///     .remap(Button::A, Button::B)
+///     .on_press(Button::C, |e| println!("{:?}", e));
+///
+/// ```
 pub struct Registrar<'a> {
     storage: &'a mut HotkeyStorage,
     context: Context,
@@ -64,8 +115,10 @@ impl<'a> Registrar<'a> {
     /// ```
     /// use hookmap::prelude::*;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.remap(buttons!(A), Button::B);
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .remap(Button::A, Button::B);
     /// ```
     ///
     pub fn remap(&mut self, targets: impl Into<ButtonArg>, behavior: Button) -> &mut Self {
@@ -84,10 +137,11 @@ impl<'a> Registrar<'a> {
     ///
     /// ```
     /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.on_press(buttons!(A), Arc::new(|e| println!("Pressed: {:?}", e)));
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .on_press(buttons!(A), |e| println!("Pressed: {:?}", e));
     /// ```
     ///
     pub fn on_press(
@@ -119,10 +173,11 @@ impl<'a> Registrar<'a> {
     ///
     /// ```
     /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.on_release(buttons!(A), Arc::new(|e| println!("Released: {:?}", e)));
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .on_release(buttons!(A), |e| println!("Released: {:?}", e));
     /// ```
     ///
     pub fn on_release(
@@ -197,11 +252,12 @@ impl<'a> Registrar<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::WheelEvent};
-    /// use std::sync::Arc;
+    /// use hookmap::prelude::*;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_wheel(Arc::new(|e: WheelEvent| println!("Delta: {}", e.delta)));
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
     /// ```
     ///
     pub fn mouse_wheel(&mut self, process: impl Into<Process<WheelEvent>>) -> &mut Self {
@@ -219,11 +275,12 @@ impl<'a> Registrar<'a> {
     /// # Examples
     ///
     /// ```
-    /// use hookmap::{hotkey::{Hotkey, RegisterHotkey}, event::CursorEvent};
-    /// use std::sync::Arc;
+    /// use hookmap::prelude::*;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.mouse_cursor(Arc::new(|e: CursorEvent| println!("movement distance: {:?}", e.delta)));
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
     pub fn mouse_cursor(&mut self, process: impl Into<Process<CursorEvent>>) -> &mut Self {
@@ -242,10 +299,11 @@ impl<'a> Registrar<'a> {
     ///
     /// ```
     /// use hookmap::prelude::*;
-    /// use std::sync::Arc;
     ///
-    /// let hotkey = Hotkey::new();
-    /// hotkey.disable(buttons!(A));
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .disable(buttons!(A));
     /// ```
     ///
     pub fn disable(&mut self, targets: impl Into<ButtonArg>) -> &mut Self {

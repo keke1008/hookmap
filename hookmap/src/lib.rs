@@ -1,12 +1,11 @@
-//! Register hotkeys and emulate input.
+//! Registers hotkeys and simulates keyboard and mouse input.
 //!
-//! ## Handler order.
+//! # Feature flags
 //!
-//! Handlers are called in the order in which they are registered.
+//! * `us-keyboard-layout` (default): Use US keyboard layout. This changes the [`Button`] variant.
+//! * `japanese-keyboard-layout`: Use Japanese keyboard layout. This changes the [`Button`] variant.
 //!
-//! ## Feature flags
-//!
-//! * `block-input-event`: Set button events to be blocked by default.
+//! [`Button`]: crate::device::Button
 
 pub mod hotkey;
 pub mod utils;

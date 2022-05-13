@@ -12,7 +12,7 @@ pub mod sequence;
 ///
 /// # Example
 /// ```no_run
-/// use hookmap::{button_name, devices::Button};
+/// use hookmap::{button_name, device::Button};
 /// assert_eq!(Button::Key0, button_name!(0));
 /// assert_eq!(Button::A, button_name!(A));
 ///

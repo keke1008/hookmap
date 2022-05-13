@@ -93,7 +93,7 @@ where
     }
 }
 
-/// Passing multiple buttons as an argument for functions like [`RegisterHotkey::remap`].
+/// Passing multiple buttons as an argument for functions.
 ///
 /// This macro produces a value of type [`ButtonArg`].
 ///
@@ -150,8 +150,6 @@ where
 ///     buttons!(!A, !B, !C, D, E),
 /// );
 /// ```
-///
-/// [`RegisterHotkey::remap`]: super::RegisterHotkey::remap
 ///
 #[macro_export]
 macro_rules! buttons {

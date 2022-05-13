@@ -15,33 +15,30 @@ Register hotkeys and simulate keyboard and mosue input.
 use hookmap::prelude::*;
 
 fn main() {
-    let hotkey = Hotkey::new();
+    let mut hotkey = Hotkey::new();
 
-    hotkey!(hotkey => {
+    // Remap H,J,K,L keys as in vim.
+    hotkey
+        .register(Context::default())
+        .remap(Button::H, Button::LeftArrow)
+        .remap(Button::J, Button::DownArrow)
+        .remap(Button::K, Button::UpArrow)
+        .remap(Button::L, Button::RightArrow);
 
-        // Remap H,J,K,L keys as in vim.
-        remap H => LeftArrow;
-        remap J => DownArrow;
-        remap K => UpArrow;
-        remap L => RightArrow;
-
-
-        // if left ctrl is pressed and right shift is not pressed.
-        modifier LCtrl, !RShift {
-
-            // Disable the event so that it does not reach other processes.
-            block {
-
-                // Send Ctrl+A when the Shift and the Space key are pressed.
-                on_press Space => |_| send!(with(LCtrl), A);
-
-                // Sends an uppercase A or B when the A or B key is pressed.
-                on_release A, B => |event| {
-                    send!(with(LShift, [event.target]));
-                };
-            }
-        }
-    });
+    // You can define hotkeys that work only when specific keys are pressed or released.
+    hotkey
+        .register(
+            Context::new()
+                .modifiers(buttons!(LCtrl, !RShift))
+                .native_event_operation(NativeEventOperation::Block),
+        )
+        .on_press(Button::Space, |_| {
+            seq!(with(LCtrl), A).send_ignore_modifiers();
+        })
+        .disable(buttons!(A, B))
+        .on_release(buttons!(A, B), |event: ButtonEvent| {
+            seq!(with(LShift), [event.target]).send_ignore_modifiers();
+        });
 
     hotkey.install();
 }
