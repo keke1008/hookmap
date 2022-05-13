@@ -33,7 +33,7 @@ pub mod prelude {
 
     pub use super::{
         device::*,
-        hotkey::{ContextBuilder, Hotkey},
+        hotkey::{Context, Hotkey},
         interceptor::{Filter, Interceptor},
         // utils::Utils,
     };

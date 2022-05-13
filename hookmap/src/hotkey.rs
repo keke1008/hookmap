@@ -4,7 +4,7 @@ mod context;
 mod hook;
 mod storage;
 
-pub use self::context::{Context, ContextBuilder};
+pub use self::context::Context;
 
 use self::hook::{Condition, HotkeyAction, HotkeyHook, MouseHook, Process, RemapHook};
 use self::storage::HotkeyStorage;
@@ -99,7 +99,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(HotkeyHook::new(
             self.context.to_condition(),
             HotkeyAction::Process(process.into()),
-            self.context.native_event_operation(),
+            self.context.native_event_operation,
         ));
 
         for target in targets.iter_plain() {
@@ -138,7 +138,7 @@ impl<'a> Registrar<'a> {
             let hook = Arc::new(HotkeyHook::new(
                 condition,
                 process,
-                self.context.native_event_operation(),
+                self.context.native_event_operation,
             ));
 
             for target in targets.iter_plain() {
@@ -157,7 +157,7 @@ impl<'a> Registrar<'a> {
             let inactivation_hook = Arc::new(HotkeyHook::new(
                 Condition::Activation(Arc::clone(&is_active)),
                 process.clone(),
-                self.context.native_event_operation(),
+                self.context.native_event_operation,
             ));
             let activation_hook = Arc::new(HotkeyHook::new(
                 condition.clone(),
@@ -208,7 +208,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(MouseHook::new(
             self.context.to_condition(),
             process.into(),
-            self.context.native_event_operation(),
+            self.context.native_event_operation,
         ));
         self.storage.register_mouse_wheel_hotkey(hook);
         self
@@ -230,7 +230,7 @@ impl<'a> Registrar<'a> {
         let hook = Arc::new(MouseHook::new(
             self.context.to_condition(),
             process.into(),
-            self.context.native_event_operation(),
+            self.context.native_event_operation,
         ));
         self.storage.register_mouse_cursor_hotkey(hook);
         self

@@ -8,43 +8,41 @@ use crate::macros::button_arg::ButtonArg;
 use std::sync::Arc;
 
 #[derive(Debug, Default, Clone)]
-pub struct ContextBuilder {
-    modifiers: Option<Modifiers>,
-    native_event_operation: NativeEventOperation,
+pub struct Context {
+    modifiers: Option<Arc<Modifiers>>,
+    pub(crate) native_event_operation: NativeEventOperation,
 }
 
-impl ContextBuilder {
+impl Context {
     pub fn new() -> Self {
         Self::default()
     }
 
+    pub fn merge(mut self, other: &Self) -> Self {
+        self.modifiers = match (self.modifiers.as_ref(), other.modifiers.as_ref()) {
+            (Some(s), Some(o)) => Some(Arc::new(s.merge(o))),
+            (Some(m), None) | (None, Some(m)) => Some(Arc::clone(m)),
+            (None, None) => None,
+        };
+
+        use NativeEventOperation::{Block, Dispatch};
+        self.native_event_operation =
+            match (self.native_event_operation, other.native_event_operation) {
+                (Dispatch, Dispatch) => Dispatch,
+                _ => Block,
+            };
+
+        self
+    }
+
     pub fn modifiers(mut self, modifiers: impl Into<ButtonArg>) -> Self {
-        self.modifiers = Some(modifiers.into().into());
+        self.modifiers = Some(Arc::new(Modifiers::from(modifiers.into())));
         self
     }
 
-    pub fn native_event_operation(mut self, operation: NativeEventOperation) -> Self {
-        self.native_event_operation = operation;
+    pub fn native_event_operation(mut self, native_event_operation: NativeEventOperation) -> Self {
+        self.native_event_operation = native_event_operation;
         self
-    }
-
-    pub fn build(self) -> Context {
-        Context {
-            modifiers: self.modifiers.map(Arc::new),
-            native_event_operation: self.native_event_operation,
-        }
-    }
-}
-
-#[derive(Debug, Default, Clone)]
-pub struct Context {
-    modifiers: Option<Arc<Modifiers>>,
-    native_event_operation: NativeEventOperation,
-}
-
-impl Context {
-    pub(super) fn native_event_operation(&self) -> NativeEventOperation {
-        self.native_event_operation
     }
 
     pub(super) fn has_no_modifiers(&self) -> bool {
@@ -73,7 +71,7 @@ pub(crate) struct Modifiers {
 }
 
 impl Modifiers {
-    pub fn merge(&self, other: Self) -> Self {
+    pub fn merge(&self, other: &Self) -> Self {
         Modifiers {
             pressed: self
                 .pressed
