@@ -6,6 +6,37 @@ use crate::macros::button_arg::ButtonArg;
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::{collections::HashSet, fmt::Debug, sync::Arc};
 
+#[derive(Debug, Clone)]
+struct Target {
+    target: Option<HashSet<Button>>,
+    ignored: Option<HashSet<Button>>,
+}
+
+impl Target {
+    #[allow(clippy::needless_return)]
+    fn filter(&self, button: Button) -> bool {
+        return match &self.target {
+            Some(set) => set.contains(&button),
+            None => true,
+        } && match &self.ignored {
+            Some(set) => !set.contains(&button),
+            None => true,
+        };
+    }
+}
+
+impl From<ButtonArg> for Target {
+    fn from(args: ButtonArg) -> Self {
+        let mut target = args.iter_plain().peekable();
+        let mut ignored = args.iter_not().peekable();
+
+        Target {
+            target: target.peek().copied().map(|_| target.collect()),
+            ignored: ignored.peek().copied().map(|_| ignored.collect()),
+        }
+    }
+}
+
 #[derive(Clone)]
 struct Callback(Arc<dyn Fn(&ButtonEvent) -> bool + Send + Sync>);
 
@@ -38,7 +69,7 @@ impl Debug for Callback {
 ///
 #[derive(Debug, Default, Clone)]
 pub struct Filter {
-    target: Option<HashSet<Button>>,
+    target: Option<Target>,
     action: Option<ButtonAction>,
     callback: Vec<Callback>,
 }
@@ -70,9 +101,7 @@ impl Filter {
     /// ```
     ///
     pub fn target(mut self, target: impl Into<ButtonArg>) -> Self {
-        let target = target.into();
-        assert!(target.is_all_plain());
-        self.target = Some(target.iter_plain().collect());
+        self.target = Some(Target::from(target.into()));
         self
     }
 
@@ -102,7 +131,7 @@ impl Filter {
     fn filter(&self, event: &ButtonEvent) -> bool {
         self.target
             .as_ref()
-            .map_or(true, |target| target.contains(&event.target))
+            .map_or(true, |target| target.filter(event.target))
             && self.action.map_or(true, |action| action == event.action)
             && self.callback.iter().all(|callback| callback.0(event))
     }
@@ -242,9 +271,12 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
-    fn constructing_filter_with_not_button() {
-        Filter::new().target(buttons!(A, B, !C, D));
+    fn filtering_events_by_ignored_target() {
+        let filter = Filter::new().target(buttons!(A, !B));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(true, &filter, Button::A, ButtonAction::Release);
+        test_filter(false, &filter, Button::B, ButtonAction::Press);
+        test_filter(false, &filter, Button::B, ButtonAction::Release);
     }
 
     #[test]
