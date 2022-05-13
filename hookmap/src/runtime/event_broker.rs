@@ -255,117 +255,76 @@ mod tests {
         assert_eq!(rx2.recv().unwrap(), event);
     }
 
+    fn test_filter(expect: bool, filter: &Filter, target: Button, action: ButtonAction) {
+        let event = create_button_event(target, action);
+        assert_eq!(expect, filter.filter(&event));
+    }
+
     #[test]
     fn filtering_events_by_target_matching_conditions() {
         let filter = Filter::new().target(Button::A);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(true, &filter, Button::A, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_target_not_matching_conditions() {
         let filter = Filter::new().target(Button::A);
-
-        let mut event = create_button_event(Button::B, ButtonAction::Press);
-        assert!(!filter.filter(&event));
-
-        event.action = ButtonAction::Press;
-        assert!(!filter.filter(&event));
+        test_filter(false, &filter, Button::B, ButtonAction::Press);
+        test_filter(false, &filter, Button::B, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_targets_matching_conditions() {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(filter.filter(&event));
-
-        event.target = Button::B;
-        assert!(filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(true, &filter, Button::A, ButtonAction::Release);
+        test_filter(true, &filter, Button::B, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_targets_not_matching_conditions() {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets);
-
-        let mut event = create_button_event(Button::C, ButtonAction::Press);
-        assert!(!filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(!filter.filter(&event));
+        test_filter(false, &filter, Button::C, ButtonAction::Press);
+        test_filter(false, &filter, Button::C, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_action() {
         let filter = Filter::new().action(ButtonAction::Press);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(!filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(false, &filter, Button::A, ButtonAction::Release);
 
         let filter = Filter::new().action(ButtonAction::Release);
-
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Press;
-        assert!(!filter.filter(&event));
+        test_filter(false, &filter, Button::A, ButtonAction::Press);
+        test_filter(true, &filter, Button::A, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_target_and_action() {
         let filter = Filter::new().target(Button::A).action(ButtonAction::Press);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(!filter.filter(&event));
-
-        event.target = Button::B;
-        assert!(!filter.filter(&event));
-
-        event.action = ButtonAction::Press;
-        assert!(!filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(false, &filter, Button::A, ButtonAction::Release);
+        test_filter(false, &filter, Button::B, ButtonAction::Press);
+        test_filter(false, &filter, Button::B, ButtonAction::Release);
     }
 
     #[test]
     fn filtering_events_by_targets_and_action() {
         let targets = [Button::A, Button::B].iter().cloned().collect();
         let filter = Filter::new().targets(targets).action(ButtonAction::Press);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.target = Button::B;
-        assert!(filter.filter(&event));
-
-        event.target = Button::C;
-        assert!(!filter.filter(&event));
-
-        event.target = Button::B;
-        event.action = ButtonAction::Release;
-        assert!(!filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(true, &filter, Button::B, ButtonAction::Press);
+        test_filter(false, &filter, Button::B, ButtonAction::Release);
+        test_filter(false, &filter, Button::C, ButtonAction::Press);
     }
 
     #[test]
     fn filtering_events_by_callback() {
         let filter = Filter::new().callback(|e| e.action == ButtonAction::Press);
-
-        let mut event = create_button_event(Button::A, ButtonAction::Press);
-        assert!(filter.filter(&event));
-
-        event.action = ButtonAction::Release;
-        assert!(!filter.filter(&event));
+        test_filter(true, &filter, Button::A, ButtonAction::Press);
+        test_filter(false, &filter, Button::A, ButtonAction::Release);
     }
 }
