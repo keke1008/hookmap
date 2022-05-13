@@ -2,7 +2,7 @@ use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, NativeEventOperation};
 
 use super::context::Modifiers;
-use crate::hook::Hook;
+use crate::hook::{ButtonState, Hook};
 
 use std::fmt::Debug;
 use std::sync::{
@@ -39,11 +39,11 @@ pub(super) enum Condition {
 }
 
 impl Condition {
-    fn is_satisfied(&self) -> bool {
+    fn is_satisfied(&self, state: &impl ButtonState) -> bool {
         match self {
             Condition::Any => true,
             Condition::Activation(is_active) => is_active.swap(false, Ordering::SeqCst),
-            Condition::Modifier(modifiers) => modifiers.meets_conditions(),
+            Condition::Modifier(modifiers) => modifiers.is_matched(state),
         }
     }
 }
@@ -84,8 +84,8 @@ impl HotkeyHook {
         }
     }
 
-    pub(super) fn is_executable(&self) -> bool {
-        self.condition.is_satisfied()
+    pub(super) fn is_executable(&self, state: &impl ButtonState) -> bool {
+        self.condition.is_satisfied(state)
     }
 }
 
@@ -100,8 +100,8 @@ impl RemapHook {
         RemapHook { condition, button }
     }
 
-    pub(super) fn is_executable(&self) -> bool {
-        self.condition.is_satisfied()
+    pub(super) fn is_executable(&self, state: &impl ButtonState) -> bool {
+        self.condition.is_satisfied(state)
     }
 }
 
@@ -161,8 +161,8 @@ impl<E> MouseHook<E> {
 }
 
 impl<E> MouseHook<E> {
-    pub(super) fn is_executable(&self) -> bool {
-        self.condition.is_satisfied()
+    pub(super) fn is_executable(&self, state: &impl ButtonState) -> bool {
+        self.condition.is_satisfied(state)
     }
 }
 

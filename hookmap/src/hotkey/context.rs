@@ -1,5 +1,6 @@
 use super::button_arg::{ButtonArg, ButtonArgElementTag};
 use super::hook::Condition;
+use crate::hook::ButtonState;
 use crate::{button::Button, event::NativeEventOperation};
 
 use std::sync::Arc;
@@ -86,10 +87,9 @@ impl Modifiers {
                 .collect(),
         }
     }
-
-    pub(super) fn meets_conditions(&self) -> bool {
-        self.pressed.iter().all(|button| button.is_pressed())
-            && self.released.iter().all(|button| button.is_released())
+    pub(super) fn is_matched(&self, state: &impl ButtonState) -> bool {
+        self.iter_pressed().all(|&b| state.is_pressed(b))
+            && self.iter_released().all(|&b| state.is_released(b))
     }
 
     pub(super) fn iter_pressed(&self) -> std::slice::Iter<Button> {

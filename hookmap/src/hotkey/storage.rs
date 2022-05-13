@@ -2,7 +2,7 @@ use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
 use super::hook::{ButtonHook, HotkeyHook, MouseHook, RemapHook};
-use crate::hook::HookStorage;
+use crate::hook::{ButtonState, HookStorage};
 use std::{collections::HashMap, sync::Arc};
 
 #[derive(Default)]
@@ -15,10 +15,13 @@ pub(super) struct HotkeyStorage {
 }
 
 impl HotkeyStorage {
-    fn fetch_mouse_hook<E>(hooks: &[Arc<MouseHook<E>>]) -> Vec<Arc<MouseHook<E>>> {
+    fn fetch_mouse_hook<E, S: ButtonState>(
+        hooks: &[Arc<MouseHook<E>>],
+        state: &S,
+    ) -> Vec<Arc<MouseHook<E>>> {
         hooks
             .iter()
-            .filter(|hook| hook.is_executable())
+            .filter(|hook| hook.is_executable(state))
             .map(|hook| Arc::clone(hook))
             .collect()
     }
@@ -49,40 +52,42 @@ impl HookStorage for HotkeyStorage {
     type MouseCursorHook = Arc<MouseHook<CursorEvent>>;
     type MouseWheelHook = Arc<MouseHook<WheelEvent>>;
 
-    fn fetch_button_hook(&self, event: ButtonEvent) -> Vec<ButtonHook> {
-        fn fetch_inner(
-            event: ButtonEvent,
-            remap: &HashMap<Button, Vec<Arc<RemapHook>>>,
-            hotkey: &HashMap<Button, Vec<Arc<HotkeyHook>>>,
-        ) -> Vec<ButtonHook> {
-            let remap_hook = remap
-                .get(&event.target)
-                .into_iter()
-                .flatten()
-                .find(|hook| hook.is_executable())
-                .map(|hook| ButtonHook::from(Arc::clone(hook)));
-            if let Some(hook) = remap_hook {
-                return vec![hook];
-            }
-            hotkey
-                .get(&event.target)
-                .into_iter()
-                .flatten()
-                .filter(|hook| hook.is_executable())
-                .map(|hook| ButtonHook::from(Arc::clone(hook)))
-                .collect()
+    fn fetch_button_hook<S: ButtonState>(&self, event: ButtonEvent, state: &S) -> Vec<ButtonHook> {
+        let remap_hook = self
+            .remap
+            .get(&event.target)
+            .and_then(|hooks| hooks.iter().find(|hook| hook.is_executable(state)));
+        if let Some(hook) = remap_hook {
+            let hook = ButtonHook::from(Arc::clone(hook));
+            return vec![hook];
         }
-        match event.action {
-            ButtonAction::Press => fetch_inner(event, &self.remap, &self.hotkey_on_press),
-            ButtonAction::Release => fetch_inner(event, &self.remap, &self.hotkey_on_release),
-        }
+
+        let hotkey_map = match event.action {
+            ButtonAction::Press => &self.hotkey_on_press,
+            ButtonAction::Release => &self.hotkey_on_release,
+        };
+        hotkey_map
+            .get(&event.target)
+            .into_iter()
+            .flatten()
+            .filter(|hook| hook.is_executable(state))
+            .map(|hook| ButtonHook::from(Arc::clone(hook)))
+            .collect()
     }
 
-    fn fetch_mouse_cursor_hook(&self, _: CursorEvent) -> Vec<Arc<MouseHook<CursorEvent>>> {
-        Self::fetch_mouse_hook(&self.mouse_cursor)
+    fn fetch_mouse_cursor_hook<S: ButtonState>(
+        &self,
+        _: CursorEvent,
+        state: &S,
+    ) -> Vec<Arc<MouseHook<CursorEvent>>> {
+        Self::fetch_mouse_hook(&self.mouse_cursor, state)
     }
 
-    fn fetch_mouse_wheel_hook(&self, _: WheelEvent) -> Vec<Arc<MouseHook<WheelEvent>>> {
-        Self::fetch_mouse_hook(&self.mouse_wheel)
+    fn fetch_mouse_wheel_hook<S: ButtonState>(
+        &self,
+        _: WheelEvent,
+        state: &S,
+    ) -> Vec<Arc<MouseHook<WheelEvent>>> {
+        Self::fetch_mouse_hook(&self.mouse_wheel, state)
     }
 }

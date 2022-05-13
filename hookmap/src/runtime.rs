@@ -1,11 +1,15 @@
+mod button_state;
 pub mod interceptor;
 
-use crate::hook::{Hook, HookStorage};
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
+
+use self::button_state::RealButtonState;
+use crate::hook::{ButtonState, Hook, HookStorage};
+
 use std::thread;
 
 #[derive(Debug)]
-pub(crate) struct Runtime<T>
+pub(crate) struct Runtime<T, S: ButtonState = RealButtonState>
 where
     T: HookStorage + Send + 'static,
     <T as HookStorage>::ButtonHook: Send,
@@ -13,9 +17,10 @@ where
     <T as HookStorage>::MouseCursorHook: Send,
 {
     storage: T,
+    state: S,
 }
 
-impl<T> Runtime<T>
+impl<T> Runtime<T, RealButtonState>
 where
     T: HookStorage + Send,
     <T as HookStorage>::ButtonHook: Send,
@@ -23,19 +28,28 @@ where
     <T as HookStorage>::MouseCursorHook: Send,
 {
     pub(crate) fn new(storage: T) -> Self {
-        Self { storage }
+        Self::with_state(storage, RealButtonState)
+    }
+}
+
+impl<T, S: ButtonState> Runtime<T, S>
+where
+    T: HookStorage + Send + 'static,
+    <T as HookStorage>::ButtonHook: Send,
+    <T as HookStorage>::MouseWheelHook: Send,
+    <T as HookStorage>::MouseCursorHook: Send,
+{
+    pub(crate) fn with_state(storage: T, state: S) -> Self {
+        Self { storage, state }
     }
 
-    fn handle_event<E, U>(
-        &self,
-        fetch: impl FnOnce(&T, E) -> Vec<U>,
-        event: E,
-        native_handler: NativeEventHandler,
-    ) where
+    fn handle_event<F, E, H>(&self, fetch: F, event: E, native_handler: NativeEventHandler)
+    where
+        F: FnOnce(&T, E, &S) -> Vec<H>,
         E: Copy + Send + 'static,
-        U: Hook<E> + Send + 'static,
+        H: Hook<E> + Send + 'static,
     {
-        let hooks = fetch(&self.storage, event);
+        let hooks = fetch(&self.storage, event, &self.state);
         let has_block_operation = hooks
             .iter()
             .map(|hook| hook.native_event_operation())
