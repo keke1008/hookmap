@@ -18,8 +18,8 @@ impl ContextBuilder {
         Self::default()
     }
 
-    pub fn modifiers(mut self, modifiers: ButtonArg) -> Self {
-        self.modifiers = Some(modifiers.into());
+    pub fn modifiers(mut self, modifiers: impl Into<ButtonArg>) -> Self {
+        self.modifiers = Some(modifiers.into().into());
         self
     }
 
