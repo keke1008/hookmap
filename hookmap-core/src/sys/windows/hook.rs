@@ -147,6 +147,9 @@ impl HookHandler {
 }
 
 pub(super) fn create_keyboard_event(hook: &KBDLLHOOKSTRUCT) -> Option<ButtonEvent> {
+    if hook.dwExtraInfo & SHOULD_BE_IGNORED_FLAG != 0 {
+        return None;
+    }
     let action = if hook.flags.0 >> 7 == 0 {
         ButtonAction::Press
     } else {
