@@ -16,7 +16,7 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelE
 
 use std::sync::Arc;
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub struct Hotkey {
     storage: HotkeyStorage,
 }

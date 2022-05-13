@@ -65,6 +65,7 @@ impl<E> HotkeyAction<E> {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct HotkeyHook {
     condition: Condition,
     action: HotkeyAction<ButtonEvent>,
@@ -89,6 +90,7 @@ impl HotkeyHook {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct RemapHook {
     condition: Condition,
     button: Button,
@@ -105,6 +107,7 @@ impl RemapHook {
     }
 }
 
+#[derive(Debug)]
 pub(super) enum ButtonHook {
     Hotkey(Arc<HotkeyHook>),
     Remap(Arc<RemapHook>),
@@ -139,6 +142,7 @@ impl From<Arc<RemapHook>> for ButtonHook {
     }
 }
 
+#[derive(Debug)]
 pub(super) struct MouseHook<E> {
     condition: Condition,
     process: Process<E>,

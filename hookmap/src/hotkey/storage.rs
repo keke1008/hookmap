@@ -5,7 +5,7 @@ use super::hook::{ButtonHook, HotkeyHook, MouseHook, RemapHook};
 use crate::hook::{ButtonState, HookStorage};
 use std::{collections::HashMap, sync::Arc};
 
-#[derive(Default)]
+#[derive(Debug, Default)]
 pub(super) struct HotkeyStorage {
     remap: HashMap<Button, Vec<Arc<RemapHook>>>,
     hotkey_on_press: HashMap<Button, Vec<Arc<HotkeyHook>>>,
