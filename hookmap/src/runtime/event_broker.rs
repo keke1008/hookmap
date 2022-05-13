@@ -1,14 +1,10 @@
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, NativeEventOperation};
 
+use crate::macros::button_arg::ButtonArg;
+
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::{collections::HashSet, fmt::Debug, sync::Arc};
-
-#[derive(Debug, Clone)]
-enum Target {
-    Single(Button),
-    Multiple(Arc<HashSet<Button>>),
-}
 
 #[derive(Clone)]
 struct Callback(Arc<dyn Fn(&ButtonEvent) -> bool + Send + Sync>);
@@ -42,7 +38,7 @@ impl Debug for Callback {
 ///
 #[derive(Debug, Default, Clone)]
 pub struct Filter {
-    target: Option<Target>,
+    target: Option<HashSet<Button>>,
     action: Option<ButtonAction>,
     callback: Vec<Callback>,
 }
@@ -63,39 +59,25 @@ impl Filter {
     }
 
     /// Set the target of events.
-    /// This setting will be overridden by [`Filter::targets`].
+    /// This setting will be overridden by self.
     ///
     /// # Examples
     ///
     /// ```
     /// use hookmap::prelude::*;
     ///
-    /// let filter = Filter::new().target(Button::A);
+    /// let filter = Filter::new().target(buttons!(A, B));
     /// ```
     ///
-    pub fn target(mut self, target: Button) -> Self {
-        self.target = Some(Target::Single(target));
-        self
-    }
-
-    /// Set multiple targets of events.
-    /// This setting will be overridden by [`Filter::target`].
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let targets = [Button::A, Button::B].iter().copied().collect();
-    /// let filter = Filter::new().targets(targets);
-    /// ```
-    ///
-    pub fn targets(mut self, targets: HashSet<Button>) -> Self {
-        self.target = Some(Target::Multiple(Arc::new(targets)));
+    pub fn target(mut self, target: impl Into<ButtonArg>) -> Self {
+        let target = target.into();
+        assert!(target.is_all_plain());
+        self.target = Some(target.iter_plain().collect());
         self
     }
 
     /// Set the action of events.
+    /// This setting will be overridden by self.
     ///
     /// # Examples
     /// ```
@@ -118,12 +100,10 @@ impl Filter {
     }
 
     fn filter(&self, event: &ButtonEvent) -> bool {
-        self.action.map_or(true, |action| action == event.action)
-            && match self.target {
-                Some(Target::Single(button)) => event.target == button,
-                Some(Target::Multiple(ref buttons)) => buttons.contains(&event.target),
-                None => true,
-            }
+        self.target
+            .as_ref()
+            .map_or(true, |target| target.contains(&event.target))
+            && self.action.map_or(true, |action| action == event.action)
             && self.callback.iter().all(|callback| callback.0(event))
     }
 }
@@ -187,6 +167,7 @@ impl EventBroker {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::buttons;
     use hookmap_core::button::{Button, ButtonAction};
 
     fn create_button_event(target: Button, action: ButtonAction) -> ButtonEvent {
@@ -261,32 +242,23 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn constructing_filter_with_not_button() {
+        Filter::new().target(buttons!(A, B, !C, D));
+    }
+
+    #[test]
     fn filtering_events_by_target_matching_conditions() {
-        let filter = Filter::new().target(Button::A);
+        let filter = Filter::new().target(buttons!(A, B));
         test_filter(true, &filter, Button::A, ButtonAction::Press);
         test_filter(true, &filter, Button::A, ButtonAction::Release);
-    }
-
-    #[test]
-    fn filtering_events_by_target_not_matching_conditions() {
-        let filter = Filter::new().target(Button::A);
-        test_filter(false, &filter, Button::B, ButtonAction::Press);
-        test_filter(false, &filter, Button::B, ButtonAction::Release);
-    }
-
-    #[test]
-    fn filtering_events_by_targets_matching_conditions() {
-        let targets = [Button::A, Button::B].iter().cloned().collect();
-        let filter = Filter::new().targets(targets);
-        test_filter(true, &filter, Button::A, ButtonAction::Press);
-        test_filter(true, &filter, Button::A, ButtonAction::Release);
+        test_filter(true, &filter, Button::B, ButtonAction::Press);
         test_filter(true, &filter, Button::B, ButtonAction::Release);
     }
 
     #[test]
-    fn filtering_events_by_targets_not_matching_conditions() {
-        let targets = [Button::A, Button::B].iter().cloned().collect();
-        let filter = Filter::new().targets(targets);
+    fn filtering_events_by_target_not_matching_conditions() {
+        let filter = Filter::new().target(buttons!(A, B));
         test_filter(false, &filter, Button::C, ButtonAction::Press);
         test_filter(false, &filter, Button::C, ButtonAction::Release);
     }
@@ -304,21 +276,13 @@ mod tests {
 
     #[test]
     fn filtering_events_by_target_and_action() {
-        let filter = Filter::new().target(Button::A).action(ButtonAction::Press);
+        let filter = Filter::new()
+            .target(buttons!(A, C))
+            .action(ButtonAction::Press);
         test_filter(true, &filter, Button::A, ButtonAction::Press);
         test_filter(false, &filter, Button::A, ButtonAction::Release);
         test_filter(false, &filter, Button::B, ButtonAction::Press);
         test_filter(false, &filter, Button::B, ButtonAction::Release);
-    }
-
-    #[test]
-    fn filtering_events_by_targets_and_action() {
-        let targets = [Button::A, Button::B].iter().cloned().collect();
-        let filter = Filter::new().targets(targets).action(ButtonAction::Press);
-        test_filter(true, &filter, Button::A, ButtonAction::Press);
-        test_filter(true, &filter, Button::B, ButtonAction::Press);
-        test_filter(false, &filter, Button::B, ButtonAction::Release);
-        test_filter(false, &filter, Button::C, ButtonAction::Press);
     }
 
     #[test]
