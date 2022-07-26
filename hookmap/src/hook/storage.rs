@@ -1,3 +1,4 @@
+use std::hash::Hash;
 use std::{collections::HashMap, sync::Arc};
 
 use hookmap_core::button::{Button, ButtonAction};
@@ -7,15 +8,23 @@ use super::hook::{InputHook, LayerHook, RemapHook};
 use super::layer::LayerIndex;
 use crate::runtime::hook::{self, InputHookStorage, LayerQuery, LayerState, LayerStateUpdate};
 
+fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
+    map.entry(key).or_default().push(value);
+}
+
 #[derive(Debug, Default, Clone)]
 pub(crate) struct LayerHookStorage {
-    pub(crate) on_enabled: HashMap<LayerIndex, Vec<Arc<LayerHook>>>,
-    pub(crate) on_disabled: HashMap<LayerIndex, Vec<Arc<LayerHook>>>,
+    on_enabled: HashMap<LayerIndex, Vec<Arc<LayerHook>>>,
+    on_disabled: HashMap<LayerIndex, Vec<Arc<LayerHook>>>,
 }
 
 impl LayerHookStorage {
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn register_on_disabled(&mut self, layer_id: LayerIndex, hook: Arc<LayerHook>) {
+        push_to_hashmap_vec(&mut self.on_disabled, layer_id, hook);
     }
 }
 
@@ -46,17 +55,45 @@ where
 
 #[derive(Debug, Default, Clone)]
 pub(crate) struct HotkeyStorage {
-    pub(crate) remap_on_press: HashMap<Button, Vec<Arc<RemapHook>>>,
-    pub(crate) remap_on_release: HashMap<Button, Vec<Arc<RemapHook>>>,
-    pub(crate) on_press: HashMap<Button, Vec<Arc<InputHook<ButtonEvent>>>>,
-    pub(crate) on_release: HashMap<Button, Vec<Arc<InputHook<Option<ButtonEvent>>>>>,
-    pub(crate) mouse_cursor: Vec<Arc<InputHook<CursorEvent>>>,
-    pub(crate) mouse_wheel: Vec<Arc<InputHook<WheelEvent>>>,
+    remap_on_press: HashMap<Button, Vec<Arc<RemapHook>>>,
+    remap_on_release: HashMap<Button, Vec<Arc<RemapHook>>>,
+    on_press: HashMap<Button, Vec<Arc<InputHook<ButtonEvent>>>>,
+    on_release: HashMap<Button, Vec<Arc<InputHook<Option<ButtonEvent>>>>>,
+    mouse_cursor: Vec<Arc<InputHook<CursorEvent>>>,
+    mouse_wheel: Vec<Arc<InputHook<WheelEvent>>>,
 }
 
 impl HotkeyStorage {
     pub(crate) fn new() -> Self {
         Self::default()
+    }
+
+    pub(crate) fn register_remap_on_press(&mut self, button: Button, hook: Arc<RemapHook>) {
+        push_to_hashmap_vec(&mut self.remap_on_press, button, hook);
+    }
+
+    pub(crate) fn register_remap_on_release(&mut self, button: Button, hook: Arc<RemapHook>) {
+        push_to_hashmap_vec(&mut self.remap_on_release, button, hook);
+    }
+
+    pub(crate) fn register_on_press(&mut self, button: Button, hook: Arc<InputHook<ButtonEvent>>) {
+        push_to_hashmap_vec(&mut self.on_press, button, hook);
+    }
+
+    pub(crate) fn register_on_release(
+        &mut self,
+        button: Button,
+        hook: Arc<InputHook<Option<ButtonEvent>>>,
+    ) {
+        push_to_hashmap_vec(&mut self.on_release, button, hook);
+    }
+
+    pub(crate) fn register_mouse_cursor(&mut self, hook: Arc<InputHook<CursorEvent>>) {
+        self.mouse_cursor.push(hook);
+    }
+
+    pub(crate) fn register_mouse_wheel(&mut self, hook: Arc<InputHook<WheelEvent>>) {
+        self.mouse_wheel.push(hook);
     }
 }
 

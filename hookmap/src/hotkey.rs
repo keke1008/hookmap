@@ -243,6 +243,22 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
             },
         )
     }
+
+    pub fn inheritance_layer(&mut self, init_state: bool) -> (Layer, Hotkey<&mut Registrar>) {
+        let layer = self
+            .registrar
+            .borrow_mut()
+            .inheritance_layer(&self.context, init_state);
+        let context = self.context.replace_layer_id(layer.id());
+        (
+            layer,
+            Hotkey {
+                registrar: self.registrar.borrow_mut(),
+                context,
+                rx: None,
+            },
+        )
+    }
 }
 
 impl Default for Hotkey<Registrar> {
