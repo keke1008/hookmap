@@ -125,3 +125,107 @@ impl hook::LayerState for LayerState {
 }
 
 pub(crate) type LayerQuerySender = hook::LayerQuerySender<LayerIndex>;
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use hook::LayerState as _;
+
+    fn create_state_and_root(init_state: bool) -> (LayerState, LayerIndex) {
+        let mut state = LayerState::new();
+        let root = state.create_root_layer(init_state);
+        (state, root)
+    }
+
+    #[test]
+    fn default_enabled_root_layer() {
+        let (state, root) = create_state_and_root(true);
+        assert!(state.is_enabled(root));
+    }
+
+    #[test]
+    fn default_disabled_root_layer() {
+        let (state, root) = create_state_and_root(false);
+        assert!(!state.is_enabled(root));
+    }
+
+    #[test]
+    fn enabled_root_layer() {
+        let (state, root) = create_state_and_root(false);
+        state.update_enable(root);
+        assert!(state.is_enabled(root));
+    }
+
+    #[test]
+    fn disabled_root_layer() {
+        let (state, root) = create_state_and_root(true);
+        state.update_disable(root);
+        assert!(!state.is_enabled(root));
+    }
+
+    fn test_parent_and_child_layer(
+        init_parent: bool,
+        init_child: bool,
+        parent_enabled: bool,
+        child_enabled: bool,
+    ) {
+        let mut state = LayerState::new();
+        let parent = state.create_root_layer(init_parent);
+        let child = state.create_layer(parent, init_child);
+        assert_eq!(state.is_enabled(parent), parent_enabled);
+        assert_eq!(state.is_enabled(child), child_enabled);
+    }
+
+    #[test]
+    fn enabled_parent_and_enabled_child() {
+        test_parent_and_child_layer(true, true, false, true);
+    }
+
+    #[test]
+    fn enabled_parent_and_disabled_child() {
+        test_parent_and_child_layer(true, false, true, false);
+    }
+
+    #[test]
+    fn disabled_parent_and_enabled_child() {
+        test_parent_and_child_layer(false, true, false, false);
+    }
+
+    #[test]
+    fn disabled_parent_and_disable_child() {
+        test_parent_and_child_layer(false, false, false, false);
+    }
+
+    fn test_parent_and_inheritance_child_layer(
+        init_parent: bool,
+        init_child: bool,
+        parent_enabled: bool,
+        child_enabled: bool,
+    ) {
+        let mut state = LayerState::new();
+        let parent = state.create_root_layer(init_parent);
+        let child = state.create_inheritance_layer(parent, init_child);
+        assert_eq!(state.is_enabled(parent), parent_enabled);
+        assert_eq!(state.is_enabled(child), child_enabled);
+    }
+
+    #[test]
+    fn enabled_parent_and_enabled_inheritance_child() {
+        test_parent_and_inheritance_child_layer(true, true, true, true);
+    }
+
+    #[test]
+    fn enabled_parent_and_disabled_inheritance_child() {
+        test_parent_and_inheritance_child_layer(true, false, true, false);
+    }
+
+    #[test]
+    fn disabled_parent_and_enabled_inheritance_child() {
+        test_parent_and_inheritance_child_layer(false, true, false, false);
+    }
+
+    #[test]
+    fn disabled_parent_and_disable_inheritance_child() {
+        test_parent_and_inheritance_child_layer(false, false, false, false);
+    }
+}
