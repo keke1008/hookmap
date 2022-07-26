@@ -77,7 +77,7 @@ where
                     Event::Button(event) => {
                         if let Some(hook) = input_storage.fetch_remap_hook(event, &*state) {
                             handle_input_event(vec![hook], Some(event), native_handler);
-                            return;
+                            continue;
                         }
                         match event.action {
                             ButtonAction::Press => {
