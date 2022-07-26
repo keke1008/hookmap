@@ -108,11 +108,11 @@ impl hook::LayerState for LayerState {
         state
             .iter()
             .zip(layer.ancestors_mask.as_raw_slice().iter())
-            .any(|(state, ancestor)| (ancestor & !state.load(Ordering::Relaxed) != 0))
+            .all(|(state, ancestor)| (ancestor & !state.load(Ordering::Relaxed) == 0))
             && state
                 .iter()
                 .zip(layer.descendant_mask.as_raw_slice().iter())
-                .any(|(state, descendant)| (descendant & state.load(Ordering::Relaxed)) != 0)
+                .all(|(state, descendant)| (descendant & state.load(Ordering::Relaxed)) == 0)
     }
 
     fn update_enable(&self, index: LayerIndex) {
