@@ -170,4 +170,11 @@ impl Registrar {
         let layer_id = self.state.create_layer(context.layer_id, init_state);
         Layer::new(self.tx.clone(), layer_id)
     }
+
+    pub(super) fn inheritance_layer(&mut self, context: &Context, init_state: bool) -> Layer {
+        let layer_id = self
+            .state
+            .create_inheritance_layer(context.layer_id, init_state);
+        Layer::new(self.tx.clone(), layer_id)
+    }
 }
