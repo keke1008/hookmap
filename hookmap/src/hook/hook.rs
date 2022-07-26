@@ -9,6 +9,12 @@ use crate::runtime::hook::{self, Hook, LayerQuerySender, LayerStateUpdate};
 #[derive(Clone)]
 pub struct Procedure<E>(Arc<dyn Fn(E) + Send + Sync>);
 
+impl<E> Procedure<E> {
+    pub fn new(f: Arc<dyn Fn(E) + Send + Sync>) -> Self {
+        Procedure(f)
+    }
+}
+
 impl<E> std::fmt::Debug for Procedure<E> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Procedure").finish()

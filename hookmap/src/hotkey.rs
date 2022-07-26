@@ -5,6 +5,7 @@ mod registrar;
 
 use std::borrow::BorrowMut;
 use std::sync::mpsc::Receiver;
+use std::sync::Arc;
 
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 use layer::Layer;
@@ -17,6 +18,17 @@ use crate::hook::layer::{LayerIndex, LayerState};
 use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
 use crate::runtime::hook::{layer_query_channel, LayerQuery};
 use crate::runtime::Runtime;
+
+impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for Procedure<E> {
+    fn from(this: F) -> Self {
+        Procedure::new(Arc::new(this))
+    }
+}
+impl<E, F: Fn(E) + Send + Sync + 'static> From<Arc<F>> for Procedure<E> {
+    fn from(this: Arc<F>) -> Self {
+        Procedure::new(this)
+    }
+}
 
 /// Registers and installs hotkeys.
 ///
@@ -126,10 +138,14 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
     ///     .on_press(buttons!(A), |e| println!("Pressed: {:?}", e));
     /// ```
     ///
-    pub fn on_press(&mut self, target: Button, procedure: Procedure<ButtonEvent>) -> &mut Self {
+    pub fn on_press(
+        &mut self,
+        target: Button,
+        procedure: impl Into<Procedure<ButtonEvent>>,
+    ) -> &mut Self {
         self.registrar
             .borrow_mut()
-            .on_press(&self.context, target, procedure);
+            .on_press(&self.context, target, procedure.into());
         self
     }
 
@@ -149,11 +165,11 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
     pub fn on_release(
         &mut self,
         target: Button,
-        procedure: Procedure<Option<ButtonEvent>>,
+        procedure: impl Into<Procedure<Option<ButtonEvent>>>,
     ) -> &mut Self {
         self.registrar
             .borrow_mut()
-            .on_release(&self.context, target, procedure);
+            .on_release(&self.context, target, procedure.into());
         self
     }
 
@@ -170,10 +186,10 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(&mut self, procedure: Procedure<CursorEvent>) -> &mut Self {
+    pub fn mouse_cursor(&mut self, procedure: impl Into<Procedure<CursorEvent>>) -> &mut Self {
         self.registrar
             .borrow_mut()
-            .mouse_cursor(&self.context, procedure);
+            .mouse_cursor(&self.context, procedure.into());
         self
     }
 
@@ -190,10 +206,10 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
     ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
     /// ```
     ///
-    pub fn mouse_wheel(&mut self, procedure: Procedure<WheelEvent>) -> &mut Self {
+    pub fn mouse_wheel(&mut self, procedure: impl Into<Procedure<WheelEvent>>) -> &mut Self {
         self.registrar
             .borrow_mut()
-            .mouse_wheel(&self.context, procedure);
+            .mouse_wheel(&self.context, procedure.into());
         self
     }
 
