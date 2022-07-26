@@ -102,21 +102,19 @@ where
             }
         });
 
-        thread::spawn(move || {
-            while let Ok(query) = layer_rx.recv() {
-                let hooks = match query.update {
-                    LayerStateUpdate::Enabled => {
-                        state_.update_enable(query.id);
-                        layer_storage.fetch(&query, &*state_)
-                    }
-                    LayerStateUpdate::Disabled => {
-                        let hooks = layer_storage.fetch(&query, &*state_);
-                        state_.update_disable(query.id);
-                        hooks
-                    }
-                };
-                thread::spawn(move || hooks.iter().for_each(|hook| hook.run(None)));
-            }
-        });
+        while let Ok(query) = layer_rx.recv() {
+            let hooks = match query.update {
+                LayerStateUpdate::Enabled => {
+                    state_.update_enable(query.id);
+                    layer_storage.fetch(&query, &*state_)
+                }
+                LayerStateUpdate::Disabled => {
+                    let hooks = layer_storage.fetch(&query, &*state_);
+                    state_.update_disable(query.id);
+                    hooks
+                }
+            };
+            thread::spawn(move || hooks.iter().for_each(|hook| hook.run(None)));
+        }
     }
 }
