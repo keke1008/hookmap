@@ -1,20 +1,22 @@
 //! Registering Hotkeys.
 
-mod context;
-mod hook;
-mod storage;
+mod layer;
+mod registrar;
 
-pub use self::context::Context;
+use std::borrow::BorrowMut;
+use std::sync::mpsc::Receiver;
 
-use self::hook::{Condition, HotkeyAction, HotkeyHook, MouseHook, Process, RemapHook};
-use self::storage::HotkeyStorage;
-use crate::macros::button_arg::{ButtonArg, ButtonArgUnit};
-use crate::runtime::Runtime;
+use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
+use layer::Layer;
+use registrar::{Context, Registrar};
 
 use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
-use std::sync::Arc;
+use crate::hook::hook::Procedure;
+use crate::hook::layer::{LayerIndex, LayerState};
+use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
+use crate::runtime::hook::{layer_query_channel, LayerQuery};
+use crate::runtime::Runtime;
 
 /// Registers and installs hotkeys.
 ///
@@ -30,12 +32,14 @@ use std::sync::Arc;
 /// hotkey.install();
 /// ```
 ///
-#[derive(Debug, Default)]
-pub struct Hotkey {
-    storage: HotkeyStorage,
+#[derive(Debug)]
+pub struct Hotkey<T: BorrowMut<Registrar>> {
+    registrar: T,
+    context: Context,
+    rx: Option<Receiver<LayerQuery<LayerIndex>>>,
 }
 
-impl Hotkey {
+impl Hotkey<Registrar> {
     /// Creates a new instance of [`Hotkey`].
     ///
     /// # Examples
@@ -47,26 +51,19 @@ impl Hotkey {
     /// ```
     ///
     pub fn new() -> Self {
-        Self::default()
-    }
+        let mut state = LayerState::new();
+        let context = Context::new(
+            state.create_root_layer(true),
+            hookmap_core::event::NativeEventOperation::Dispatch,
+        );
 
-    /// Creates a [`Registrar`] to register hotkeys.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    /// hotkey
-    ///     .register(Context::default())
-    ///     .remap(Button::A, Button::B);
-    /// ```
-    ///
-    pub fn register(&mut self, context: Context) -> Registrar {
-        Registrar {
-            storage: &mut self.storage,
+        let (tx, rx) = layer_query_channel();
+        let registrar = Registrar::new(state, LayerHookStorage::new(), HotkeyStorage::new(), tx);
+
+        Self {
+            registrar,
             context,
+            rx: Some(rx),
         }
     }
 
@@ -82,32 +79,20 @@ impl Hotkey {
     /// ```
     ///
     pub fn install(self) {
-        let runtime = Runtime::new(self.storage);
-        runtime.start();
+        let Registrar {
+            state,
+            layer_storage,
+            hotkey_storage,
+            ..
+        } = self.registrar;
+
+        let runtime = Runtime::new(layer_storage, hotkey_storage, state);
+        let input_rx = hookmap_core::install_hook();
+        runtime.start(self.rx.unwrap(), input_rx);
     }
 }
 
-/// Register hotkeys.
-/// Calls [`Hotkey::register`] to get this instance.
-///
-/// # Examples
-///
-/// ```
-/// use hookmap::prelude::*;
-///
-/// let mut hotkey = Hotkey::new();
-/// hotkey
-///     .register(Context::default())
-///     .remap(Button::A, Button::B)
-///     .on_press(Button::C, |e| println!("{:?}", e));
-///
-/// ```
-pub struct Registrar<'a> {
-    storage: &'a mut HotkeyStorage,
-    context: Context,
-}
-
-impl<'a> Registrar<'a> {
+impl<T: BorrowMut<Registrar>> Hotkey<T> {
     /// Makes `target` behave like a `behavior`.
     ///
     /// # Examples
@@ -121,16 +106,13 @@ impl<'a> Registrar<'a> {
     ///     .remap(Button::A, Button::B);
     /// ```
     ///
-    pub fn remap(&mut self, targets: impl Into<ButtonArg>, behavior: Button) -> &mut Self {
-        let targets = targets.into();
-        let hook = Arc::new(RemapHook::new(self.context.to_condition(), behavior));
-        assert!(targets.is_all_plain());
-
-        for target in targets.iter_plain() {
-            self.storage.register_remap(target, Arc::clone(&hook));
-        }
+    pub fn remap(&mut self, target: Button, behavior: Button) -> &mut Self {
+        self.registrar
+            .borrow_mut()
+            .remap(&self.context, target, behavior);
         self
     }
+
     /// Run `process` when `target` is pressed.
     ///
     /// # Examples
@@ -144,26 +126,10 @@ impl<'a> Registrar<'a> {
     ///     .on_press(buttons!(A), |e| println!("Pressed: {:?}", e));
     /// ```
     ///
-    pub fn on_press(
-        &mut self,
-        targets: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &mut Self {
-        let targets = targets.into();
-        let hook = Arc::new(HotkeyHook::new(
-            self.context.to_condition(),
-            HotkeyAction::Process(process.into()),
-            self.context.native_event_operation,
-        ));
-
-        for target in targets.iter_plain() {
-            self.storage
-                .register_hotkey_on_press(target, Arc::clone(&hook));
-        }
-        for target in targets.iter_not() {
-            self.storage
-                .register_hotkey_on_release(target, Arc::clone(&hook));
-        }
+    pub fn on_press(&mut self, target: Button, procedure: Procedure<ButtonEvent>) -> &mut Self {
+        self.registrar
+            .borrow_mut()
+            .on_press(&self.context, target, procedure);
         self
     }
 
@@ -182,91 +148,12 @@ impl<'a> Registrar<'a> {
     ///
     pub fn on_release(
         &mut self,
-        targets: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
+        target: Button,
+        procedure: Procedure<Option<ButtonEvent>>,
     ) -> &mut Self {
-        let targets = targets.into();
-        let condition = self.context.to_condition();
-        let process = HotkeyAction::Process(process.into());
-
-        if self.context.has_no_modifiers() {
-            let hook = Arc::new(HotkeyHook::new(
-                condition,
-                process,
-                self.context.native_event_operation,
-            ));
-
-            for target in targets.iter_plain() {
-                self.storage
-                    .register_hotkey_on_release(target, Arc::clone(&hook));
-            }
-            for target in targets.iter_not() {
-                self.storage
-                    .register_hotkey_on_press(target, Arc::clone(&hook));
-            }
-            return self;
-        }
-
-        for target in targets.iter() {
-            let is_active = Arc::default();
-            let inactivation_hook = Arc::new(HotkeyHook::new(
-                Condition::Activation(Arc::clone(&is_active)),
-                process.clone(),
-                self.context.native_event_operation,
-            ));
-            let activation_hook = Arc::new(HotkeyHook::new(
-                condition.clone(),
-                HotkeyAction::Activate(is_active),
-                NativeEventOperation::Dispatch,
-            ));
-
-            match target {
-                ButtonArgUnit::Plain(target) => {
-                    self.storage
-                        .register_hotkey_on_press(target, Arc::clone(&activation_hook));
-                    self.storage
-                        .register_hotkey_on_release(target, Arc::clone(&inactivation_hook));
-                }
-                ButtonArgUnit::Not(target) => {
-                    self.storage
-                        .register_hotkey_on_release(target, Arc::clone(&activation_hook));
-                    self.storage
-                        .register_hotkey_on_press(target, Arc::clone(&inactivation_hook));
-                }
-            }
-
-            for target in self.context.iter_pressed() {
-                self.storage
-                    .register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
-            }
-            for target in self.context.iter_released() {
-                self.storage
-                    .register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
-            }
-        }
-        self
-    }
-
-    /// Run `process` when a mouse wheel is rotated.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    /// hotkey
-    ///     .register(Context::default())
-    ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
-    /// ```
-    ///
-    pub fn mouse_wheel(&mut self, process: impl Into<Process<WheelEvent>>) -> &mut Self {
-        let hook = Arc::new(MouseHook::new(
-            self.context.to_condition(),
-            process.into(),
-            self.context.native_event_operation,
-        ));
-        self.storage.register_mouse_wheel_hotkey(hook);
+        self.registrar
+            .borrow_mut()
+            .on_release(&self.context, target, procedure);
         self
     }
 
@@ -283,13 +170,30 @@ impl<'a> Registrar<'a> {
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(&mut self, process: impl Into<Process<CursorEvent>>) -> &mut Self {
-        let hook = Arc::new(MouseHook::new(
-            self.context.to_condition(),
-            process.into(),
-            self.context.native_event_operation,
-        ));
-        self.storage.register_mouse_cursor_hotkey(hook);
+    pub fn mouse_cursor(&mut self, procedure: Procedure<CursorEvent>) -> &mut Self {
+        self.registrar
+            .borrow_mut()
+            .mouse_cursor(&self.context, procedure);
+        self
+    }
+
+    /// Run `process` when a mouse wheel is rotated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .register(Context::default())
+    ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
+    /// ```
+    ///
+    pub fn mouse_wheel(&mut self, procedure: Procedure<WheelEvent>) -> &mut Self {
+        self.registrar
+            .borrow_mut()
+            .mouse_wheel(&self.context, procedure);
         self
     }
 
@@ -306,22 +210,27 @@ impl<'a> Registrar<'a> {
     ///     .disable(buttons!(A));
     /// ```
     ///
-    pub fn disable(&mut self, targets: impl Into<ButtonArg>) -> &mut Self {
-        let hook = Arc::new(HotkeyHook::new(
-            self.context.to_condition(),
-            HotkeyAction::Noop,
-            NativeEventOperation::Block,
-        ));
-        let targets = targets.into();
-        assert!(targets.is_all_plain());
-
-        for target in targets.iter_plain() {
-            self.storage
-                .register_hotkey_on_press(target, Arc::clone(&hook));
-            self.storage
-                .register_hotkey_on_release(target, Arc::clone(&hook));
-        }
-
+    pub fn disable(&mut self, target: Button) -> &mut Self {
+        self.registrar.borrow_mut().disable(&self.context, target);
         self
+    }
+
+    pub fn layer(&mut self, init_state: bool) -> (Layer, Hotkey<&mut Registrar>) {
+        let layer = self.registrar.borrow_mut().layer(&self.context, init_state);
+        let context = self.context.replace_layer_id(layer.id());
+        (
+            layer,
+            Hotkey {
+                registrar: self.registrar.borrow_mut(),
+                context,
+                rx: None,
+            },
+        )
+    }
+}
+
+impl Default for Hotkey<Registrar> {
+    fn default() -> Self {
+        Self::new()
     }
 }

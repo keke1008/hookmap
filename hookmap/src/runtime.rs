@@ -1,88 +1,122 @@
-mod button_state;
-mod event_broker;
-pub mod interceptor;
+pub(crate) mod hook;
 
+use hookmap_core::button::ButtonAction;
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
-use self::button_state::RealButtonState;
-use crate::hook::{ButtonState, Hook, HookStorage};
+use hook::{
+    Hook, InputHook, InputHookStorage, LayerHookStrage, LayerIdentifier, LayerQuery, LayerState,
+    LayerStateUpdate,
+};
 
+use std::sync::mpsc::Receiver;
+use std::sync::Arc;
 use std::thread;
 
-#[derive(Debug)]
-pub(crate) struct Runtime<T, S: ButtonState = RealButtonState>
+fn handle_input_event<E, H>(hooks: Vec<H>, event: E, native_handler: NativeEventHandler)
 where
-    T: HookStorage + Send + 'static,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
+    E: Send + Copy + 'static,
+    H: InputHook<E> + 'static,
 {
-    storage: T,
+    let has_block_operation = hooks
+        .iter()
+        .map(|hook| hook.native_event_operation())
+        .any(|operation| operation == NativeEventOperation::Block);
+    let operation = if has_block_operation {
+        NativeEventOperation::Block
+    } else {
+        NativeEventOperation::Dispatch
+    };
+    native_handler.handle(operation);
+    std::thread::spawn(move || hooks.iter().for_each(move |hook| hook.run(event)));
+}
+
+#[derive(Debug)]
+pub(crate) struct Runtime<ID, L, I, S>
+where
+    ID: LayerIdentifier + 'static,
+    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
+    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
+    S: LayerState<LayerIdentifier = ID> + 'static,
+{
+    layer_storage: L,
+    input_storage: I,
     state: S,
 }
 
-impl<T> Runtime<T, RealButtonState>
+impl<ID, L, I, S> Runtime<ID, L, I, S>
 where
-    T: HookStorage + Send,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
+    ID: LayerIdentifier + 'static,
+    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
+    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
+    S: LayerState<LayerIdentifier = ID> + 'static,
 {
-    pub(crate) fn new(storage: T) -> Self {
-        Self::with_state(storage, RealButtonState)
-    }
-}
-
-impl<T, S: ButtonState> Runtime<T, S>
-where
-    T: HookStorage + Send + 'static,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
-{
-    pub(crate) fn with_state(storage: T, state: S) -> Self {
-        Self { storage, state }
+    pub(crate) fn new(layer_storage: L, input_storage: I, state: S) -> Self {
+        Self {
+            layer_storage,
+            input_storage,
+            state,
+        }
     }
 
-    fn handle_event<F, E, H>(&self, fetch: F, event: E, native_handler: NativeEventHandler)
-    where
-        F: FnOnce(&T, E, &S) -> Vec<H>,
-        E: Copy + Send + 'static,
-        H: Hook<E> + Send + 'static,
-    {
-        let hooks = fetch(&self.storage, event, &self.state);
-        let has_block_operation = hooks
-            .iter()
-            .map(|hook| hook.native_event_operation())
-            .any(|operation| operation == NativeEventOperation::Block);
-        let operation = if has_block_operation {
-            NativeEventOperation::Block
-        } else {
-            NativeEventOperation::Dispatch
-        };
-        native_handler.handle(operation);
-        thread::spawn(move || hooks.iter().for_each(|hook| hook.run(event)));
-    }
+    pub(crate) fn start(
+        self,
+        layer_rx: Receiver<LayerQuery<ID>>,
+        input_rx: Receiver<(Event, NativeEventHandler)>,
+    ) {
+        let Runtime {
+            layer_storage,
+            input_storage,
+            state,
+        } = self;
+        let state = Arc::new(state);
+        let state_ = Arc::clone(&state);
 
-    pub(crate) fn start(&self) {
-        let event_receiver = hookmap_core::install_hook();
-
-        while let Ok((event, native_handler)) = event_receiver.recv() {
-            match event {
-                Event::Button(event) => {
-                    if interceptor::publish_event(event) == NativeEventOperation::Block {
-                        native_handler.block();
-                        continue;
+        thread::spawn(move || {
+            while let Ok((event, native_handler)) = input_rx.recv() {
+                match event {
+                    Event::Button(event) => {
+                        if let Some(hook) = input_storage.fetch_remap_hook(event, &*state) {
+                            handle_input_event(vec![hook], Some(event), native_handler);
+                            return;
+                        }
+                        match event.action {
+                            ButtonAction::Press => {
+                                let hooks = input_storage.fetch_on_press_hook(event, &*state);
+                                handle_input_event(hooks, event, native_handler);
+                            }
+                            ButtonAction::Release => {
+                                let hooks = input_storage.fetch_on_release_hook(event, &*state);
+                                handle_input_event(hooks, Some(event), native_handler)
+                            }
+                        }
                     }
-                    self.handle_event(HookStorage::fetch_button_hook, event, native_handler);
-                }
-                Event::Wheel(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_wheel_hook, event, native_handler);
-                }
-                Event::Cursor(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_cursor_hook, event, native_handler);
+                    Event::Wheel(event) => {
+                        let hooks = input_storage.fetch_mouse_wheel_hook(event, &*state);
+                        handle_input_event(hooks, event, native_handler);
+                    }
+                    Event::Cursor(event) => {
+                        let hooks = input_storage.fetch_mouse_cursor_hook(event, &*state);
+                        handle_input_event(hooks, event, native_handler);
+                    }
                 }
             }
-        }
+        });
+
+        thread::spawn(move || {
+            while let Ok(query) = layer_rx.recv() {
+                let hooks = match query.update {
+                    LayerStateUpdate::Enabled => {
+                        state_.update_enable(query.id);
+                        layer_storage.fetch(&query, &*state_)
+                    }
+                    LayerStateUpdate::Disabled => {
+                        let hooks = layer_storage.fetch(&query, &*state_);
+                        state_.update_disable(query.id);
+                        hooks
+                    }
+                };
+                thread::spawn(move || hooks.iter().for_each(|hook| hook.run(None)));
+            }
+        });
     }
 }

@@ -8,15 +8,13 @@
 //! [`Button`]: crate::device::Button
 
 pub mod hotkey;
-pub mod utils;
+// pub mod utils;
 
 #[doc(hidden)]
 pub mod macros;
 
 mod hook;
 mod runtime;
-
-pub use runtime::interceptor;
 
 /// Representation of keyboard and mouse events.
 pub mod device {
@@ -28,12 +26,11 @@ pub mod device {
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
     // Macros
-    pub use super::{buttons, hotkey, seq};
+    pub use super::{buttons, seq};
 
     pub use super::{
         device::*,
-        hotkey::{Context, Hotkey},
-        interceptor::{Filter, Interceptor},
-        utils,
+        hotkey::Hotkey,
+        // utils,
     };
 }
