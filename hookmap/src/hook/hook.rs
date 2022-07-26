@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use hookmap_core::button::{Button, ButtonAction};
-use hookmap_core::event::{ButtonEvent, NativeEventOperation};
+use hookmap_core::button::Button;
+use hookmap_core::event::NativeEventOperation;
 
 use super::layer::LayerIndex;
-use crate::runtime::hook::{self, Hook, LayerQuerySender, LayerStateUpdate};
+use crate::runtime::hook::{self, LayerQuerySender, LayerStateUpdate};
 
 #[derive(Clone)]
 pub struct Procedure<E>(Arc<dyn Fn(E) + Send + Sync>);
@@ -23,7 +23,12 @@ impl<E> std::fmt::Debug for Procedure<E> {
 
 #[derive(Debug, Clone)]
 pub(crate) enum HookAction<E> {
-    Procedure(Procedure<E>),
+    Procedure {
+        procedure: Procedure<E>,
+        native: NativeEventOperation,
+    },
+    Press(Button),
+    Release(Button),
     EnableLayer {
         tx: LayerQuerySender<LayerIndex>,
         id: LayerIndex,
@@ -32,111 +37,46 @@ pub(crate) enum HookAction<E> {
         tx: LayerQuerySender<LayerIndex>,
         id: LayerIndex,
     },
-    Noop,
-}
-
-impl<E> HookAction<E> {
-    fn run(&self, event: E) {
-        match self {
-            Self::Procedure(procedure) => procedure.0(event),
-            Self::EnableLayer { tx, id } => tx.send(LayerStateUpdate::Enabled, *id),
-            Self::DisableLayer { tx, id } => tx.send(LayerStateUpdate::Disabled, *id),
-            Self::Noop => {}
-        }
-    }
+    Block,
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct LayerHook {
-    layer_id: LayerIndex,
-    action: HookAction<Option<ButtonEvent>>,
-}
-
-impl LayerHook {
-    pub(crate) fn new(layer_id: LayerIndex, action: HookAction<Option<ButtonEvent>>) -> Self {
-        Self { layer_id, action }
-    }
-
-    pub(crate) fn id(&self) -> LayerIndex {
-        self.layer_id
-    }
-}
-
-impl Hook<Option<ButtonEvent>> for LayerHook {
-    fn run(&self, event: Option<ButtonEvent>) {
-        self.action.run(event);
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct InputHook<E> {
+pub(crate) struct Hook<E> {
     layer_id: LayerIndex,
     action: HookAction<E>,
-    native_event_operation: NativeEventOperation,
 }
 
-impl<E> InputHook<E> {
-    pub(crate) fn new(
-        layer_id: LayerIndex,
-        action: HookAction<E>,
-        native_event_operation: NativeEventOperation,
-    ) -> Self {
-        Self {
-            layer_id,
-            action,
-            native_event_operation,
-        }
+impl<E> Hook<E> {
+    pub(crate) fn new(layer_id: LayerIndex, action: HookAction<E>) -> Self {
+        Self { layer_id, action }
     }
-
-    pub(crate) fn id(&self) -> LayerIndex {
+    pub(crate) fn layer_id(&self) -> LayerIndex {
         self.layer_id
     }
 }
 
-impl<E> Hook<E> for InputHook<E> {
+impl<E> hook::Hook<E> for Hook<E> {
     fn run(&self, event: E) {
-        self.action.run(event);
-    }
-}
-
-impl<E> hook::InputHook<E> for InputHook<E> {
-    fn native_event_operation(&self) -> NativeEventOperation {
-        self.native_event_operation
-    }
-}
-
-#[derive(Debug, Clone)]
-pub(crate) struct RemapHook {
-    layer_id: LayerIndex,
-    button: Button,
-}
-
-impl RemapHook {
-    pub(crate) fn new(layer_id: LayerIndex, button: Button) -> Self {
-        Self { layer_id, button }
-    }
-}
-
-impl Hook<Option<ButtonEvent>> for RemapHook {
-    fn run(&self, event: Option<ButtonEvent>) {
-        match event {
-            Some(e) => match e.action {
-                ButtonAction::Press => self.button.press(),
-                ButtonAction::Release => self.button.release(),
-            },
-            None => self.button.release(),
+        match &self.action {
+            HookAction::Procedure { procedure, .. } => procedure.0(event),
+            HookAction::Press(button) => button.press(),
+            HookAction::Release(button) => button.release(),
+            HookAction::EnableLayer { tx, id } => tx.send(LayerStateUpdate::Enabled, *id),
+            HookAction::DisableLayer { tx, id } => tx.send(LayerStateUpdate::Disabled, *id),
+            HookAction::Block => {}
         }
     }
 }
 
-impl hook::InputHook<Option<ButtonEvent>> for RemapHook {
+impl<E> hook::InputHook<E> for Hook<E> {
     fn native_event_operation(&self) -> NativeEventOperation {
-        NativeEventOperation::Block
-    }
-}
-
-impl RemapHook {
-    pub(crate) fn id(&self) -> LayerIndex {
-        self.layer_id
+        match &self.action {
+            HookAction::Procedure { native, .. } => *native,
+            HookAction::Press(_) => NativeEventOperation::Block,
+            HookAction::Release(_) => NativeEventOperation::Block,
+            HookAction::EnableLayer { .. } => NativeEventOperation::Block,
+            HookAction::DisableLayer { .. } => NativeEventOperation::Dispatch,
+            HookAction::Block => NativeEventOperation::Block,
+        }
     }
 }
