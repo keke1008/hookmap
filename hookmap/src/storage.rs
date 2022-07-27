@@ -12,8 +12,21 @@ use crate::runtime::{self, InputHookStorage, LayerCollection, LayerQuery, LayerS
 pub(crate) use hook::{Hook, HookAction, Procedure};
 pub(crate) use layer::{LayerIndex, LayerQuerySender, LayerTree};
 
+#[inline]
 fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
     map.entry(key).or_default().push(value);
+}
+
+#[inline]
+fn filter_by_state_and_clone<E, S>(hooks: &[Arc<Hook<E>>], state: &S) -> Vec<Arc<Hook<E>>>
+where
+    S: LayerCollection<LayerIdentifier = LayerIndex>,
+{
+    hooks
+        .iter()
+        .filter(|hook| state.is_enabled(hook.layer_id()))
+        .cloned()
+        .collect()
 }
 
 type ButtonHook = Arc<Hook<ButtonEvent>>;
@@ -49,16 +62,10 @@ where
             LayerState::Enabled => &self.on_enabled,
             LayerState::Disabled => &self.on_disabled,
         };
-
-        if let Some(hooks) = hooks.get(&query.id) {
-            hooks
-                .iter()
-                .filter(|hook| state.is_enabled(hook.layer_id()))
-                .map(Arc::clone)
-                .collect()
-        } else {
-            Vec::new()
-        }
+        hooks
+            .get(&query.id)
+            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .unwrap_or_default()
     }
 }
 
@@ -124,42 +131,24 @@ impl<S: LayerCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for H
     }
 
     fn fetch_on_press_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnPressHook> {
-        if let Some(hooks) = self.on_press.get(&event.target) {
-            hooks
-                .iter()
-                .filter(|hook| state.is_enabled(hook.layer_id()))
-                .cloned()
-                .collect()
-        } else {
-            Vec::new()
-        }
+        self.on_press
+            .get(&event.target)
+            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .unwrap_or_default()
     }
 
     fn fetch_on_release_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnReleaseHook> {
-        if let Some(hooks) = self.on_release.get(&event.target) {
-            hooks
-                .iter()
-                .filter(|hook| state.is_enabled(hook.layer_id()))
-                .cloned()
-                .collect()
-        } else {
-            Vec::new()
-        }
+        self.on_release
+            .get(&event.target)
+            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .unwrap_or_default()
     }
 
     fn fetch_mouse_cursor_hook(&self, _: CursorEvent, state: &S) -> Vec<Self::MouseCursorHook> {
-        self.mouse_cursor
-            .iter()
-            .filter(|hook| state.is_enabled(hook.layer_id()))
-            .cloned()
-            .collect()
+        filter_by_state_and_clone(&self.mouse_cursor, state)
     }
 
     fn fetch_mouse_wheel_hook(&self, _: WheelEvent, state: &S) -> Vec<Self::MouseWheelHook> {
-        self.mouse_wheel
-            .iter()
-            .filter(|hook| state.is_enabled(hook.layer_id()))
-            .cloned()
-            .collect()
+        filter_by_state_and_clone(&self.mouse_wheel, state)
     }
 }
