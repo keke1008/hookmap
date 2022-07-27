@@ -4,8 +4,8 @@ use hookmap_core::button::ButtonAction;
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
 use hook::{
-    Hook, InputHook, InputHookStorage, LayerHookStrage, LayerIdentifier, LayerQuery, LayerState,
-    LayerStateUpdate,
+    Hook, InputHook, InputHookStorage, LayerCollection, LayerHookStrage, LayerIdentifier,
+    LayerQuery, LayerState,
 };
 
 use std::sync::mpsc::Receiver;
@@ -36,7 +36,7 @@ where
     ID: LayerIdentifier + 'static,
     L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
     I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerState<LayerIdentifier = ID> + 'static,
+    S: LayerCollection<LayerIdentifier = ID> + 'static,
 {
     layer_storage: L,
     input_storage: I,
@@ -48,7 +48,7 @@ where
     ID: LayerIdentifier + 'static,
     L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
     I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerState<LayerIdentifier = ID> + 'static,
+    S: LayerCollection<LayerIdentifier = ID> + 'static,
 {
     pub(crate) fn new(layer_storage: L, input_storage: I, state: S) -> Self {
         Self {
@@ -104,11 +104,11 @@ where
 
         while let Ok(query) = layer_rx.recv() {
             let hooks = match query.update {
-                LayerStateUpdate::Enabled => {
+                LayerState::Enabled => {
                     state_.update_enable(query.id);
                     layer_storage.fetch(&query, &*state_)
                 }
-                LayerStateUpdate::Disabled => {
+                LayerState::Disabled => {
                     let hooks = layer_storage.fetch(&query, &*state_);
                     state_.update_disable(query.id);
                     hooks

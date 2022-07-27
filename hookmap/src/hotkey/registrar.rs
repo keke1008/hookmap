@@ -6,8 +6,9 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelE
 use super::layer::Layer;
 
 use crate::hook::hook::{Hook, HookAction, Procedure};
-use crate::hook::layer::{LayerIndex, LayerQuerySender, LayerState};
+use crate::hook::layer::{LayerIndex, LayerQuerySender, LayerTree};
 use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
+use crate::runtime::hook::LayerState;
 
 #[derive(Debug)]
 pub(super) struct Context {
@@ -34,7 +35,7 @@ impl Context {
 #[doc(hidden)]
 #[derive(Debug)]
 pub struct Registrar {
-    pub(super) state: LayerState,
+    pub(super) state: LayerTree,
     pub(super) layer_storage: LayerHookStorage,
     pub(super) hotkey_storage: HotkeyStorage,
     tx: LayerQuerySender,
@@ -42,7 +43,7 @@ pub struct Registrar {
 
 impl Registrar {
     pub(super) fn new(
-        state: LayerState,
+        state: LayerTree,
         layer_storage: LayerHookStorage,
         hotkey_storage: HotkeyStorage,
         tx: LayerQuerySender,
@@ -60,7 +61,9 @@ impl Registrar {
         self.hotkey_storage
             .register_remap_on_press(target, on_press_hook);
 
-        let enabled_layer = self.state.create_inheritance_layer(context.layer_id, false);
+        let enabled_layer = self
+            .state
+            .create_inheritance_layer(context.layer_id, LayerState::Disabled);
 
         let on_release_hook = Arc::new(Hook::new(enabled_layer, HookAction::Release(behavior)));
         self.hotkey_storage
@@ -90,7 +93,9 @@ impl Registrar {
         target: Button,
         procedure: Procedure<Option<ButtonEvent>>,
     ) {
-        let enabled_layer = self.state.create_inheritance_layer(context.layer_id, false);
+        let enabled_layer = self
+            .state
+            .create_inheritance_layer(context.layer_id, LayerState::Disabled);
 
         let enable_layer_hook = Arc::new(Hook::new(
             context.layer_id,
@@ -158,12 +163,12 @@ impl Registrar {
             .register_on_release(target, disable_on_release_hook);
     }
 
-    pub(super) fn layer(&mut self, context: &Context, init_state: bool) -> Layer {
+    pub(super) fn layer(&mut self, context: &Context, init_state: LayerState) -> Layer {
         let layer_id = self.state.create_layer(context.layer_id, init_state);
         Layer::new(self.tx.clone(), layer_id)
     }
 
-    pub(super) fn inheritance_layer(&mut self, context: &Context, init_state: bool) -> Layer {
+    pub(super) fn inheritance_layer(&mut self, context: &Context, init_state: LayerState) -> Layer {
         let layer_id = self
             .state
             .create_inheritance_layer(context.layer_id, init_state);

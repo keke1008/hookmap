@@ -14,10 +14,12 @@ use registrar::{Context, Registrar};
 use hookmap_core::button::Button;
 
 use crate::hook::hook::Procedure;
-use crate::hook::layer::{LayerIndex, LayerState};
+use crate::hook::layer::{LayerIndex, LayerTree};
 use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
 use crate::runtime::hook::{layer_query_channel, LayerQuery};
 use crate::runtime::Runtime;
+
+pub use crate::runtime::hook::LayerState;
 
 impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for Procedure<E> {
     fn from(this: F) -> Self {
@@ -63,9 +65,9 @@ impl Hotkey<Registrar> {
     /// ```
     ///
     pub fn new() -> Self {
-        let mut state = LayerState::new();
+        let mut state = LayerTree::new();
         let context = Context::new(
-            state.create_root_layer(true),
+            state.create_root_layer(LayerState::Enabled),
             hookmap_core::event::NativeEventOperation::Dispatch,
         );
 
@@ -231,7 +233,7 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
         self
     }
 
-    pub fn layer(&mut self, init_state: bool) -> (Layer, Hotkey<&mut Registrar>) {
+    pub fn layer(&mut self, init_state: LayerState) -> (Layer, Hotkey<&mut Registrar>) {
         let layer = self.registrar.borrow_mut().layer(&self.context, init_state);
         let context = self.context.replace_layer_id(layer.id());
         (
@@ -244,7 +246,7 @@ impl<T: BorrowMut<Registrar>> Hotkey<T> {
         )
     }
 
-    pub fn inheritance_layer(&mut self, init_state: bool) -> (Layer, Hotkey<&mut Registrar>) {
+    pub fn inheritance_layer(&mut self, init_state: LayerState) -> (Layer, Hotkey<&mut Registrar>) {
         let layer = self
             .registrar
             .borrow_mut()

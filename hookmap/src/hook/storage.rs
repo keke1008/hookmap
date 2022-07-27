@@ -6,7 +6,7 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
 use super::hook::Hook;
 use super::layer::LayerIndex;
-use crate::runtime::hook::{self, InputHookStorage, LayerQuery, LayerState, LayerStateUpdate};
+use crate::runtime::hook::{self, InputHookStorage, LayerCollection, LayerQuery, LayerState};
 
 fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
     map.entry(key).or_default().push(value);
@@ -35,15 +35,15 @@ impl LayerHookStorage {
 
 impl<S> hook::LayerHookStrage<S> for LayerHookStorage
 where
-    S: LayerState<LayerIdentifier = LayerIndex>,
+    S: LayerCollection<LayerIdentifier = LayerIndex>,
 {
     type LayerIdentifier = LayerIndex;
     type Hook = OptionalButtonHook;
 
     fn fetch(&self, query: &LayerQuery<Self::LayerIdentifier>, state: &S) -> Vec<Self::Hook> {
         let hooks = match query.update {
-            LayerStateUpdate::Enabled => &self.on_enabled,
-            LayerStateUpdate::Disabled => &self.on_disabled,
+            LayerState::Enabled => &self.on_enabled,
+            LayerState::Disabled => &self.on_disabled,
         };
 
         if let Some(hooks) = hooks.get(&query.id) {
@@ -98,7 +98,7 @@ impl HotkeyStorage {
     }
 }
 
-impl<S: LayerState<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
+impl<S: LayerCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
     type LayerIdentifier = LayerIndex;
 
     type RemapHook = OptionalButtonHook;

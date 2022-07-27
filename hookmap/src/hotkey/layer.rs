@@ -1,6 +1,6 @@
 use crate::{
     hook::layer::{LayerIndex, LayerQuerySender},
-    runtime::hook::LayerStateUpdate,
+    runtime::hook::LayerState,
 };
 
 #[derive(Debug, Clone)]
@@ -19,10 +19,10 @@ impl Layer {
     }
 
     pub fn enable(&self) {
-        self.tx.send(LayerStateUpdate::Enabled, self.layer_id);
+        self.tx.send(LayerState::Enabled, self.layer_id);
     }
 
     pub fn disable(&self) {
-        self.tx.send(LayerStateUpdate::Disabled, self.layer_id);
+        self.tx.send(LayerState::Disabled, self.layer_id);
     }
 }

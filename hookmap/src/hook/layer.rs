@@ -1,4 +1,4 @@
-use crate::runtime::hook;
+use crate::runtime::hook::{self, LayerCollection, LayerIdentifier, LayerState};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -7,7 +7,7 @@ use bitvec::{bitvec, prelude::BitVec};
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct LayerIndex(usize);
 
-impl hook::LayerIdentifier for LayerIndex {}
+impl LayerIdentifier for LayerIndex {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Layer {
@@ -16,7 +16,7 @@ struct Layer {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub(crate) struct LayerState {
+pub(crate) struct LayerTree {
     layers: Vec<Layer>,
     state: BitVec<AtomicUsize>,
 }
@@ -36,13 +36,13 @@ fn set_with_extend(bits: &mut BitVec, index: usize, value: bool) {
     bits.set(index, value);
 }
 
-impl LayerState {
+impl LayerTree {
     pub(crate) fn new() -> Self {
         Self::default()
     }
 
-    pub(crate) fn create_root_layer(&mut self, init_state: bool) -> LayerIndex {
-        self.state.push(init_state);
+    pub(crate) fn create_root_layer(&mut self, init_state: LayerState) -> LayerIndex {
+        self.state.push(init_state == LayerState::Enabled);
 
         let len = self.state.len();
         let mut enable_mask = bitvec![0; len];
@@ -61,9 +61,9 @@ impl LayerState {
     pub(crate) fn create_inheritance_layer(
         &mut self,
         parent: LayerIndex,
-        init_state: bool,
+        init_state: LayerState,
     ) -> LayerIndex {
-        self.state.push(init_state);
+        self.state.push(init_state == LayerState::Enabled);
 
         let len = self.state.len();
         let new_index = len - 1;
@@ -80,7 +80,11 @@ impl LayerState {
         LayerIndex(new_index)
     }
 
-    pub(crate) fn create_layer(&mut self, parent: LayerIndex, init_state: bool) -> LayerIndex {
+    pub(crate) fn create_layer(
+        &mut self,
+        parent: LayerIndex,
+        init_state: LayerState,
+    ) -> LayerIndex {
         let new_index = self.create_inheritance_layer(parent, init_state);
 
         let ancestors_mask = self.layers[parent.0].ancestors_mask.clone();
@@ -98,7 +102,7 @@ impl LayerState {
     }
 }
 
-impl hook::LayerState for LayerState {
+impl LayerCollection for LayerTree {
     type LayerIdentifier = LayerIndex;
 
     fn is_enabled(&self, index: LayerIndex) -> bool {
@@ -129,47 +133,47 @@ pub(crate) type LayerQuerySender = hook::LayerQuerySender<LayerIndex>;
 #[cfg(test)]
 mod tests {
     use super::*;
-    use hook::LayerState as _;
+    use LayerState::*;
 
-    fn create_state_and_root(init_state: bool) -> (LayerState, LayerIndex) {
-        let mut state = LayerState::new();
+    fn create_state_and_root(init_state: LayerState) -> (LayerTree, LayerIndex) {
+        let mut state = LayerTree::new();
         let root = state.create_root_layer(init_state);
         (state, root)
     }
 
     #[test]
     fn default_enabled_root_layer() {
-        let (state, root) = create_state_and_root(true);
+        let (state, root) = create_state_and_root(Enabled);
         assert!(state.is_enabled(root));
     }
 
     #[test]
     fn default_disabled_root_layer() {
-        let (state, root) = create_state_and_root(false);
+        let (state, root) = create_state_and_root(Disabled);
         assert!(!state.is_enabled(root));
     }
 
     #[test]
     fn enabled_root_layer() {
-        let (state, root) = create_state_and_root(false);
+        let (state, root) = create_state_and_root(Disabled);
         state.update_enable(root);
         assert!(state.is_enabled(root));
     }
 
     #[test]
     fn disabled_root_layer() {
-        let (state, root) = create_state_and_root(true);
+        let (state, root) = create_state_and_root(Enabled);
         state.update_disable(root);
         assert!(!state.is_enabled(root));
     }
 
     fn test_parent_and_child_layer(
-        init_parent: bool,
-        init_child: bool,
+        init_parent: LayerState,
+        init_child: LayerState,
         parent_enabled: bool,
         child_enabled: bool,
     ) {
-        let mut state = LayerState::new();
+        let mut state = LayerTree::new();
         let parent = state.create_root_layer(init_parent);
         let child = state.create_layer(parent, init_child);
         assert_eq!(state.is_enabled(parent), parent_enabled);
@@ -178,31 +182,31 @@ mod tests {
 
     #[test]
     fn enabled_parent_and_enabled_child() {
-        test_parent_and_child_layer(true, true, false, true);
+        test_parent_and_child_layer(Enabled, Enabled, false, true);
     }
 
     #[test]
     fn enabled_parent_and_disabled_child() {
-        test_parent_and_child_layer(true, false, true, false);
+        test_parent_and_child_layer(Enabled, Disabled, true, false);
     }
 
     #[test]
     fn disabled_parent_and_enabled_child() {
-        test_parent_and_child_layer(false, true, false, false);
+        test_parent_and_child_layer(Disabled, Enabled, false, false);
     }
 
     #[test]
     fn disabled_parent_and_disable_child() {
-        test_parent_and_child_layer(false, false, false, false);
+        test_parent_and_child_layer(Disabled, Disabled, false, false);
     }
 
     fn test_parent_and_inheritance_child_layer(
-        init_parent: bool,
-        init_child: bool,
+        init_parent: LayerState,
+        init_child: LayerState,
         parent_enabled: bool,
         child_enabled: bool,
     ) {
-        let mut state = LayerState::new();
+        let mut state = LayerTree::new();
         let parent = state.create_root_layer(init_parent);
         let child = state.create_inheritance_layer(parent, init_child);
         assert_eq!(state.is_enabled(parent), parent_enabled);
@@ -211,21 +215,21 @@ mod tests {
 
     #[test]
     fn enabled_parent_and_enabled_inheritance_child() {
-        test_parent_and_inheritance_child_layer(true, true, true, true);
+        test_parent_and_inheritance_child_layer(Enabled, Enabled, true, true);
     }
 
     #[test]
     fn enabled_parent_and_disabled_inheritance_child() {
-        test_parent_and_inheritance_child_layer(true, false, true, false);
+        test_parent_and_inheritance_child_layer(Enabled, Disabled, true, false);
     }
 
     #[test]
     fn disabled_parent_and_enabled_inheritance_child() {
-        test_parent_and_inheritance_child_layer(false, true, false, false);
+        test_parent_and_inheritance_child_layer(Disabled, Enabled, false, false);
     }
 
     #[test]
     fn disabled_parent_and_disable_inheritance_child() {
-        test_parent_and_inheritance_child_layer(false, false, false, false);
+        test_parent_and_inheritance_child_layer(Disabled, Disabled, false, false);
     }
 }

@@ -7,7 +7,7 @@ use std::sync::{
 
 pub(crate) trait LayerIdentifier: Send + Copy {}
 
-pub(crate) trait LayerState: Send + Sync {
+pub(crate) trait LayerCollection: Send + Sync {
     type LayerIdentifier: LayerIdentifier;
 
     fn is_enabled(&self, id: Self::LayerIdentifier) -> bool;
@@ -28,7 +28,7 @@ impl<E, H: Hook<E> + Sync> Hook<E> for Arc<H> {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum LayerStateUpdate {
+pub enum LayerState {
     Enabled,
     Disabled,
 }
@@ -36,7 +36,7 @@ pub(crate) enum LayerStateUpdate {
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct LayerQuery<ID: LayerIdentifier> {
     pub(crate) id: ID,
-    pub(crate) update: LayerStateUpdate,
+    pub(crate) update: LayerState,
 }
 
 #[derive(Debug, Clone)]
@@ -54,14 +54,14 @@ where
 }
 
 impl<ID: LayerIdentifier> LayerQuerySender<ID> {
-    pub(crate) fn send(&self, update: LayerStateUpdate, id: ID) {
+    pub(crate) fn send(&self, update: LayerState, id: ID) {
         self.tx.send(LayerQuery { id, update }).unwrap();
     }
 }
 
 pub(crate) trait LayerHookStrage<S>: Send
 where
-    S: LayerState<LayerIdentifier = Self::LayerIdentifier>,
+    S: LayerCollection<LayerIdentifier = Self::LayerIdentifier>,
 {
     type LayerIdentifier: LayerIdentifier;
     type Hook: Hook<Option<ButtonEvent>>;
@@ -81,7 +81,7 @@ impl<E, H: InputHook<E> + Sync> InputHook<E> for Arc<H> {
 
 pub(crate) trait InputHookStorage<S>: Send
 where
-    S: LayerState<LayerIdentifier = Self::LayerIdentifier>,
+    S: LayerCollection<LayerIdentifier = Self::LayerIdentifier>,
 {
     type LayerIdentifier: LayerIdentifier;
 
