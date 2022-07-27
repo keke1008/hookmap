@@ -9,8 +9,8 @@ use std::thread;
 
 pub use hook::LayerState;
 pub(crate) use hook::{
-    layer_query_channel, Hook, InputHook, InputHookStorage, LayerCollection, LayerHookStrage,
-    LayerIdentifier, LayerQuery, LayerQuerySender,
+    layer_query_channel, Hook, InputHook, InputHookStorage, LayerHookStrage, LayerIdentifier,
+    LayerQuery, LayerQuerySender, LayerStateCollection,
 };
 
 fn handle_input_event<E, H>(hooks: Vec<H>, event: E, native_handler: NativeEventHandler)
@@ -37,7 +37,7 @@ where
     ID: LayerIdentifier + 'static,
     L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
     I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerCollection<LayerIdentifier = ID> + 'static,
+    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
 {
     layer_storage: L,
     input_storage: I,
@@ -49,7 +49,7 @@ where
     ID: LayerIdentifier + 'static,
     L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
     I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerCollection<LayerIdentifier = ID> + 'static,
+    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
 {
     pub(crate) fn new(layer_storage: L, input_storage: I, state: S) -> Self {
         Self {

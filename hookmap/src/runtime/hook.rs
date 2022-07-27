@@ -7,7 +7,7 @@ use std::sync::{
 
 pub(crate) trait LayerIdentifier: Send + Copy {}
 
-pub(crate) trait LayerCollection: Send + Sync {
+pub(crate) trait LayerStateCollection: Send + Sync {
     type LayerIdentifier: LayerIdentifier;
 
     fn is_enabled(&self, id: Self::LayerIdentifier) -> bool;
@@ -61,7 +61,7 @@ impl<ID: LayerIdentifier> LayerQuerySender<ID> {
 
 pub(crate) trait LayerHookStrage<S>: Send
 where
-    S: LayerCollection<LayerIdentifier = Self::LayerIdentifier>,
+    S: LayerStateCollection<LayerIdentifier = Self::LayerIdentifier>,
 {
     type LayerIdentifier: LayerIdentifier;
     type Hook: Hook<Option<ButtonEvent>>;
@@ -81,7 +81,7 @@ impl<E, H: InputHook<E> + Sync> InputHook<E> for Arc<H> {
 
 pub(crate) trait InputHookStorage<S>: Send
 where
-    S: LayerCollection<LayerIdentifier = Self::LayerIdentifier>,
+    S: LayerStateCollection<LayerIdentifier = Self::LayerIdentifier>,
 {
     type LayerIdentifier: LayerIdentifier;
 

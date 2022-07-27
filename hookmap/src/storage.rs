@@ -7,7 +7,7 @@ use std::{collections::HashMap, sync::Arc};
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use crate::runtime::{self, InputHookStorage, LayerCollection, LayerQuery, LayerState};
+use crate::runtime::{self, InputHookStorage, LayerQuery, LayerState, LayerStateCollection};
 
 pub(crate) use hook::{Hook, HookAction, Procedure};
 pub(crate) use layer::{LayerIndex, LayerQuerySender, LayerTree};
@@ -20,7 +20,7 @@ fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, va
 #[inline]
 fn filter_by_state_and_clone<E, S>(hooks: &[Arc<Hook<E>>], state: &S) -> Vec<Arc<Hook<E>>>
 where
-    S: LayerCollection<LayerIdentifier = LayerIndex>,
+    S: LayerStateCollection<LayerIdentifier = LayerIndex>,
 {
     hooks
         .iter()
@@ -52,7 +52,7 @@ impl LayerHookStorage {
 
 impl<S> runtime::LayerHookStrage<S> for LayerHookStorage
 where
-    S: LayerCollection<LayerIdentifier = LayerIndex>,
+    S: LayerStateCollection<LayerIdentifier = LayerIndex>,
 {
     type LayerIdentifier = LayerIndex;
     type Hook = OptionalButtonHook;
@@ -109,7 +109,7 @@ impl HotkeyStorage {
     }
 }
 
-impl<S: LayerCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
+impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
     type LayerIdentifier = LayerIndex;
 
     type RemapHook = OptionalButtonHook;

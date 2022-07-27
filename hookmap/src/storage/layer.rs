@@ -1,4 +1,4 @@
-use crate::runtime::{self, LayerCollection, LayerIdentifier, LayerState};
+use crate::runtime::{self, LayerIdentifier, LayerState, LayerStateCollection};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -102,7 +102,7 @@ impl LayerTree {
     }
 }
 
-impl LayerCollection for LayerTree {
+impl LayerStateCollection for LayerTree {
     type LayerIdentifier = LayerIndex;
 
     fn is_enabled(&self, index: LayerIndex) -> bool {
