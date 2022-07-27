@@ -1,12 +1,16 @@
+mod hook;
+mod layer;
+
 use std::hash::Hash;
 use std::{collections::HashMap, sync::Arc};
 
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use super::hook::Hook;
-use super::layer::LayerIndex;
-use crate::runtime::hook::{self, InputHookStorage, LayerCollection, LayerQuery, LayerState};
+use crate::runtime::{self, InputHookStorage, LayerCollection, LayerQuery, LayerState};
+
+pub(crate) use hook::{Hook, HookAction, Procedure};
+pub(crate) use layer::{LayerIndex, LayerQuerySender, LayerTree};
 
 fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
     map.entry(key).or_default().push(value);
@@ -33,7 +37,7 @@ impl LayerHookStorage {
     }
 }
 
-impl<S> hook::LayerHookStrage<S> for LayerHookStorage
+impl<S> runtime::LayerHookStrage<S> for LayerHookStorage
 where
     S: LayerCollection<LayerIdentifier = LayerIndex>,
 {

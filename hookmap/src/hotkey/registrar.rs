@@ -5,10 +5,11 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelE
 
 use super::layer::Layer;
 
-use crate::hook::hook::{Hook, HookAction, Procedure};
-use crate::hook::layer::{LayerIndex, LayerQuerySender, LayerTree};
-use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
-use crate::runtime::hook::LayerState;
+use crate::runtime::LayerState;
+use crate::storage::{
+    Hook, HookAction, HotkeyStorage, LayerHookStorage, LayerIndex, LayerQuerySender, LayerTree,
+    Procedure,
+};
 
 #[derive(Debug)]
 pub(super) struct Context {

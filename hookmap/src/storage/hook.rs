@@ -4,7 +4,7 @@ use hookmap_core::button::Button;
 use hookmap_core::event::NativeEventOperation;
 
 use super::layer::LayerIndex;
-use crate::runtime::hook::{self, LayerQuerySender, LayerState};
+use crate::runtime::{self, LayerQuerySender, LayerState};
 
 #[derive(Clone)]
 pub struct Procedure<E>(Arc<dyn Fn(E) + Send + Sync>);
@@ -55,7 +55,7 @@ impl<E> Hook<E> {
     }
 }
 
-impl<E> hook::Hook<E> for Hook<E> {
+impl<E> runtime::Hook<E> for Hook<E> {
     fn run(&self, event: E) {
         match &self.action {
             HookAction::Procedure { procedure, .. } => procedure.0(event),
@@ -68,7 +68,7 @@ impl<E> hook::Hook<E> for Hook<E> {
     }
 }
 
-impl<E> hook::InputHook<E> for Hook<E> {
+impl<E> runtime::InputHook<E> for Hook<E> {
     fn native_event_operation(&self) -> NativeEventOperation {
         match &self.action {
             HookAction::Procedure { native, .. } => *native,

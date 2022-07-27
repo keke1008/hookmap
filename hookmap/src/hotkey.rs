@@ -13,13 +13,11 @@ use registrar::{Context, Registrar};
 
 use hookmap_core::button::Button;
 
-use crate::hook::hook::Procedure;
-use crate::hook::layer::{LayerIndex, LayerTree};
-use crate::hook::storage::{HotkeyStorage, LayerHookStorage};
-use crate::runtime::hook::{layer_query_channel, LayerQuery};
 use crate::runtime::Runtime;
+use crate::runtime::{layer_query_channel, LayerQuery};
+use crate::storage::{HotkeyStorage, LayerHookStorage, LayerIndex, LayerTree, Procedure};
 
-pub use crate::runtime::hook::LayerState;
+pub use crate::runtime::LayerState;
 
 impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for Procedure<E> {
     fn from(this: F) -> Self {

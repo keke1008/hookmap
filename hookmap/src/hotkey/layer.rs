@@ -1,6 +1,6 @@
 use crate::{
-    hook::layer::{LayerIndex, LayerQuerySender},
-    runtime::hook::LayerState,
+    runtime::LayerState,
+    storage::{LayerIndex, LayerQuerySender},
 };
 
 #[derive(Debug, Clone)]

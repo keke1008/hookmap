@@ -1,16 +1,17 @@
-pub(crate) mod hook;
+mod hook;
 
 use hookmap_core::button::ButtonAction;
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
-use hook::{
-    Hook, InputHook, InputHookStorage, LayerCollection, LayerHookStrage, LayerIdentifier,
-    LayerQuery, LayerState,
-};
-
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::thread;
+
+pub use hook::LayerState;
+pub(crate) use hook::{
+    layer_query_channel, Hook, InputHook, InputHookStorage, LayerCollection, LayerHookStrage,
+    LayerIdentifier, LayerQuery, LayerQuerySender,
+};
 
 fn handle_input_event<E, H>(hooks: Vec<H>, event: E, native_handler: NativeEventHandler)
 where

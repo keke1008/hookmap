@@ -13,8 +13,8 @@ pub mod hotkey;
 #[doc(hidden)]
 pub mod macros;
 
-mod hook;
 mod runtime;
+mod storage;
 
 /// Representation of keyboard and mouse events.
 pub mod device {

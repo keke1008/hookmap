@@ -1,4 +1,4 @@
-use crate::runtime::hook::{self, LayerCollection, LayerIdentifier, LayerState};
+use crate::runtime::{self, LayerCollection, LayerIdentifier, LayerState};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 
@@ -128,7 +128,7 @@ impl LayerCollection for LayerTree {
     }
 }
 
-pub(crate) type LayerQuerySender = hook::LayerQuerySender<LayerIndex>;
+pub(crate) type LayerQuerySender = runtime::LayerQuerySender<LayerIndex>;
 
 #[cfg(test)]
 mod tests {
