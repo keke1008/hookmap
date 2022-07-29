@@ -1,8 +1,8 @@
 mod hook;
 mod layer;
 
+use std::collections::HashMap;
 use std::hash::Hash;
-use std::{collections::HashMap, sync::Arc};
 
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
@@ -18,21 +18,20 @@ fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, va
 }
 
 #[inline]
-fn filter_by_state_and_clone<E, S>(hooks: &[Arc<Hook<E>>], state: &S) -> Vec<Arc<Hook<E>>>
+fn filter_by_state_and_collect<'a, E, S>(hooks: &'a [Hook<E>], state: &S) -> Vec<&'a Hook<E>>
 where
     S: LayerStateCollection<LayerIdentifier = LayerIndex>,
 {
     hooks
         .iter()
         .filter(|hook| state.is_enabled(hook.layer_id()))
-        .cloned()
         .collect()
 }
 
-type ButtonHook = Arc<Hook<ButtonEvent>>;
-type OptionalButtonHook = Arc<Hook<Option<ButtonEvent>>>;
-type CursorHook = Arc<Hook<CursorEvent>>;
-type WheelHook = Arc<Hook<WheelEvent>>;
+type ButtonHook = Hook<ButtonEvent>;
+type OptionalButtonHook = Hook<Option<ButtonEvent>>;
+type CursorHook = Hook<CursorEvent>;
+type WheelHook = Hook<WheelEvent>;
 
 #[derive(Debug, Default, Clone)]
 pub(crate) struct LayerHookStorage {
@@ -57,14 +56,14 @@ where
     type LayerIdentifier = LayerIndex;
     type Hook = OptionalButtonHook;
 
-    fn fetch(&self, query: &LayerQuery<Self::LayerIdentifier>, state: &S) -> Vec<Self::Hook> {
+    fn fetch(&self, query: &LayerQuery<LayerIndex>, state: &S) -> Vec<&OptionalButtonHook> {
         let hooks = match query.update {
             LayerState::Enabled => &self.on_enabled,
             LayerState::Disabled => &self.on_disabled,
         };
         hooks
             .get(&query.id)
-            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .map(|hooks| filter_by_state_and_collect(hooks, state))
             .unwrap_or_default()
     }
 }
@@ -109,7 +108,10 @@ impl HotkeyStorage {
     }
 }
 
-impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
+impl<S> InputHookStorage<S> for HotkeyStorage
+where
+    S: LayerStateCollection<LayerIdentifier = LayerIndex>,
+{
     type LayerIdentifier = LayerIndex;
 
     type RemapHook = OptionalButtonHook;
@@ -118,7 +120,7 @@ impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> 
     type MouseCursorHook = CursorHook;
     type MouseWheelHook = WheelHook;
 
-    fn fetch_remap_hook(&self, event: ButtonEvent, state: &S) -> Option<Self::RemapHook> {
+    fn fetch_remap_hook(&self, event: ButtonEvent, state: &S) -> Option<&Self::RemapHook> {
         let storage = match event.action {
             ButtonAction::Press => &self.remap_on_press,
             ButtonAction::Release => &self.remap_on_release,
@@ -127,28 +129,27 @@ impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> 
             .get(&event.target)?
             .iter()
             .find(|hook| state.is_enabled(hook.layer_id()))
-            .cloned()
     }
 
-    fn fetch_on_press_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnPressHook> {
+    fn fetch_on_press_hook(&self, event: ButtonEvent, state: &S) -> Vec<&Self::OnPressHook> {
         self.on_press
             .get(&event.target)
-            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .map(|hooks| filter_by_state_and_collect(hooks, state))
             .unwrap_or_default()
     }
 
-    fn fetch_on_release_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnReleaseHook> {
+    fn fetch_on_release_hook(&self, event: ButtonEvent, state: &S) -> Vec<&Self::OnReleaseHook> {
         self.on_release
             .get(&event.target)
-            .map(|hooks| filter_by_state_and_clone(hooks, state))
+            .map(|hooks| filter_by_state_and_collect(hooks, state))
             .unwrap_or_default()
     }
 
-    fn fetch_mouse_cursor_hook(&self, _: CursorEvent, state: &S) -> Vec<Self::MouseCursorHook> {
-        filter_by_state_and_clone(&self.mouse_cursor, state)
+    fn fetch_mouse_cursor_hook(&self, _: CursorEvent, state: &S) -> Vec<&Self::MouseCursorHook> {
+        filter_by_state_and_collect(&self.mouse_cursor, state)
     }
 
-    fn fetch_mouse_wheel_hook(&self, _: WheelEvent, state: &S) -> Vec<Self::MouseWheelHook> {
-        filter_by_state_and_clone(&self.mouse_wheel, state)
+    fn fetch_mouse_wheel_hook(&self, _: WheelEvent, state: &S) -> Vec<&Self::MouseWheelHook> {
+        filter_by_state_and_collect(&self.mouse_wheel, state)
     }
 }

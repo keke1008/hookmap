@@ -1,5 +1,3 @@
-use std::sync::Arc;
-
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
@@ -58,7 +56,7 @@ impl Registrar {
     }
 
     pub(super) fn remap(&mut self, context: &Context, target: Button, behavior: Button) {
-        let on_press_hook = Arc::new(Hook::new(context.layer_id, HookAction::Press(behavior)));
+        let on_press_hook = Hook::new(context.layer_id, HookAction::Press(behavior));
         self.hotkey_storage
             .register_remap_on_press(target, on_press_hook);
 
@@ -66,7 +64,7 @@ impl Registrar {
             .state
             .create_inheritance_layer(context.layer_id, LayerState::Disabled);
 
-        let on_release_hook = Arc::new(Hook::new(enabled_layer, HookAction::Release(behavior)));
+        let on_release_hook = Hook::new(enabled_layer, HookAction::Release(behavior));
         self.hotkey_storage
             .register_remap_on_release(target, on_release_hook);
     }
@@ -77,13 +75,13 @@ impl Registrar {
         target: Button,
         procedure: Procedure<ButtonEvent>,
     ) {
-        let run_action_hook = Arc::new(Hook::new(
+        let run_action_hook = Hook::new(
             context.layer_id,
             HookAction::Procedure {
                 procedure,
                 native: context.native_event_operation,
             },
-        ));
+        );
         self.hotkey_storage
             .register_on_press(target, run_action_hook);
     }
@@ -98,68 +96,68 @@ impl Registrar {
             .state
             .create_inheritance_layer(context.layer_id, LayerState::Disabled);
 
-        let enable_layer_hook = Arc::new(Hook::new(
+        let enable_layer_hook = Hook::new(
             context.layer_id,
             HookAction::EnableLayer {
                 tx: self.tx.clone(),
                 id: enabled_layer,
             },
-        ));
+        );
         self.hotkey_storage
             .register_on_press(target, enable_layer_hook);
 
-        let disable_layer_hook = Arc::new(Hook::new(
+        let disable_layer_hook = Hook::new(
             enabled_layer,
             HookAction::DisableLayer {
                 tx: self.tx.clone(),
                 id: enabled_layer,
             },
-        ));
+        );
         self.hotkey_storage
             .register_on_release(target, disable_layer_hook);
 
-        let run_action_hook = Arc::new(Hook::new(
+        let run_action_hook = Hook::new(
             enabled_layer,
             HookAction::Procedure {
                 procedure,
                 native: context.native_event_operation,
             },
-        ));
+        );
         self.hotkey_storage
-            .register_on_release(target, Arc::clone(&run_action_hook));
+            .register_on_release(target, run_action_hook.clone());
         for ancestor in self.state.iter_ancestors(context.layer_id) {
             self.layer_storage
-                .register_on_disabled(ancestor, Arc::clone(&run_action_hook));
+                .register_on_disabled(ancestor, run_action_hook.clone());
         }
     }
 
     pub(super) fn mouse_cursor(&mut self, context: &Context, procedure: Procedure<CursorEvent>) {
-        let run_action_hook = Arc::new(Hook::new(
+        let run_action_hook = Hook::new(
             context.layer_id,
             HookAction::Procedure {
                 procedure,
                 native: context.native_event_operation,
             },
-        ));
+        );
         self.hotkey_storage.register_mouse_cursor(run_action_hook);
     }
 
     pub(super) fn mouse_wheel(&mut self, context: &Context, procedure: Procedure<WheelEvent>) {
-        let run_action_hook = Arc::new(Hook::new(
+        let run_action_hook = Hook::new(
             context.layer_id,
             HookAction::Procedure {
                 procedure,
                 native: context.native_event_operation,
             },
-        ));
+        );
         self.hotkey_storage.register_mouse_wheel(run_action_hook);
     }
 
     pub(super) fn disable(&mut self, context: &Context, target: Button) {
-        let disable_on_press_hook = Arc::new(Hook::new(context.layer_id, HookAction::Block));
+        let disable_on_press_hook = Hook::new(context.layer_id, HookAction::Block);
         self.hotkey_storage
             .register_on_press(target, disable_on_press_hook);
-        let disable_on_release_hook = Arc::new(Hook::new(context.layer_id, HookAction::Block));
+        let disable_on_release_hook = Hook::new(context.layer_id, HookAction::Block);
         self.hotkey_storage
             .register_on_release(target, disable_on_release_hook);
     }
