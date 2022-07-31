@@ -14,10 +14,10 @@ use registrar::{Context, Registrar};
 use hookmap_core::button::Button;
 
 use crate::runtime::Runtime;
-use crate::runtime::{layer_query_channel, LayerQuery};
-use crate::storage::{HotkeyStorage, LayerHookStorage, LayerIndex, LayerTree, Procedure};
-
-pub use crate::runtime::LayerState;
+use crate::storage::{
+    layer_query_channel, HotkeyStorage, LayerHookStorage, LayerQuery, LayerState, LayerTree,
+    Procedure,
+};
 
 impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for Procedure<E> {
     fn from(this: F) -> Self {
@@ -48,7 +48,7 @@ impl<E, F: Fn(E) + Send + Sync + 'static> From<Arc<F>> for Procedure<E> {
 pub struct Hotkey<T: BorrowMut<Registrar>> {
     registrar: T,
     context: Context,
-    rx: Option<Receiver<LayerQuery<LayerIndex>>>,
+    rx: Option<Receiver<LayerQuery>>,
 }
 
 impl Hotkey<Registrar> {

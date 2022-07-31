@@ -1,4 +1,4 @@
-mod hook;
+// mod hook;
 
 use hookmap_core::button::ButtonAction;
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
@@ -7,16 +7,11 @@ use std::sync::mpsc::Receiver;
 use std::sync::Arc;
 use std::thread;
 
-pub use hook::LayerState;
-pub(crate) use hook::{
-    layer_query_channel, Hook, InputHook, InputHookStorage, LayerHookStrage, LayerIdentifier,
-    LayerQuery, LayerQuerySender, LayerStateCollection,
-};
+use crate::storage::{Hook, HotkeyStorage, LayerHookStorage, LayerQuery, LayerState, LayerTree};
 
-fn handle_input_event<E, H>(hooks: Vec<H>, event: E, native_handler: NativeEventHandler)
+fn handle_input_event<E>(hooks: Vec<Arc<Hook<E>>>, event: E, native_handler: NativeEventHandler)
 where
     E: Send + Copy + 'static,
-    H: InputHook<E> + 'static,
 {
     let has_block_operation = hooks
         .iter()
@@ -32,26 +27,18 @@ where
 }
 
 #[derive(Debug)]
-pub(crate) struct Runtime<ID, L, I, S>
-where
-    ID: LayerIdentifier + 'static,
-    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
-    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
-{
-    layer_storage: L,
-    input_storage: I,
-    state: S,
+pub(crate) struct Runtime {
+    layer_storage: LayerHookStorage,
+    input_storage: HotkeyStorage,
+    state: LayerTree,
 }
 
-impl<ID, L, I, S> Runtime<ID, L, I, S>
-where
-    ID: LayerIdentifier + 'static,
-    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
-    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
-    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
-{
-    pub(crate) fn new(layer_storage: L, input_storage: I, state: S) -> Self {
+impl Runtime {
+    pub(crate) fn new(
+        layer_storage: LayerHookStorage,
+        input_storage: HotkeyStorage,
+        state: LayerTree,
+    ) -> Self {
         Self {
             layer_storage,
             input_storage,
@@ -61,7 +48,7 @@ where
 
     pub(crate) fn start(
         self,
-        layer_rx: Receiver<LayerQuery<ID>>,
+        layer_rx: Receiver<LayerQuery>,
         input_rx: Receiver<(Event, NativeEventHandler)>,
     ) {
         let Runtime {

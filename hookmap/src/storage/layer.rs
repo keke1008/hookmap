@@ -1,13 +1,39 @@
-use crate::runtime::{self, LayerIdentifier, LayerState, LayerStateCollection};
-
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::mpsc::{self, Receiver, SyncSender};
 
 use bitvec::{bitvec, prelude::BitVec};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LayerState {
+    Enabled,
+    Disabled,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) struct LayerQuery {
+    pub(crate) id: LayerIndex,
+    pub(crate) update: LayerState,
+}
+
+#[derive(Debug, Clone)]
+pub(crate) struct LayerQuerySender {
+    tx: SyncSender<LayerQuery>,
+}
+
+pub(crate) fn layer_query_channel() -> (LayerQuerySender, Receiver<LayerQuery>) {
+    const BOUND: usize = 8;
+    let (tx, rx) = mpsc::sync_channel(BOUND);
+    (LayerQuerySender { tx }, rx)
+}
+
+impl LayerQuerySender {
+    pub(crate) fn send(&self, update: LayerState, id: LayerIndex) {
+        self.tx.send(LayerQuery { id, update }).unwrap();
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) struct LayerIndex(usize);
-
-impl LayerIdentifier for LayerIndex {}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct Layer {
@@ -102,10 +128,8 @@ impl LayerTree {
     }
 }
 
-impl LayerStateCollection for LayerTree {
-    type LayerIdentifier = LayerIndex;
-
-    fn is_enabled(&self, index: LayerIndex) -> bool {
+impl LayerTree {
+    pub(crate) fn is_enabled(&self, index: LayerIndex) -> bool {
         let layer = &self.layers[index.0];
         let state = self.state.as_raw_slice();
 
@@ -119,16 +143,14 @@ impl LayerStateCollection for LayerTree {
                 .all(|(state, descendant)| (descendant & state.load(Ordering::Relaxed)) == 0)
     }
 
-    fn update_enable(&self, index: LayerIndex) {
+    pub(crate) fn update_enable(&self, index: LayerIndex) {
         self.state.set_aliased(index.0, true);
     }
 
-    fn update_disable(&self, index: LayerIndex) {
+    pub(crate) fn update_disable(&self, index: LayerIndex) {
         self.state.set_aliased(index.0, false);
     }
 }
-
-pub(crate) type LayerQuerySender = runtime::LayerQuerySender<LayerIndex>;
 
 #[cfg(test)]
 mod tests {

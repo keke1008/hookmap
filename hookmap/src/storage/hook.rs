@@ -3,8 +3,7 @@ use std::sync::Arc;
 use hookmap_core::button::Button;
 use hookmap_core::event::NativeEventOperation;
 
-use super::layer::LayerIndex;
-use crate::runtime::{self, LayerQuerySender, LayerState};
+use super::{LayerIndex, LayerQuerySender, LayerState};
 
 #[derive(Clone)]
 pub struct Procedure<E>(Arc<dyn Fn(E) + Send + Sync>);
@@ -30,11 +29,11 @@ pub(crate) enum HookAction<E> {
     Press(Button),
     Release(Button),
     EnableLayer {
-        tx: LayerQuerySender<LayerIndex>,
+        tx: LayerQuerySender,
         id: LayerIndex,
     },
     DisableLayer {
-        tx: LayerQuerySender<LayerIndex>,
+        tx: LayerQuerySender,
         id: LayerIndex,
     },
     Block,
@@ -53,10 +52,7 @@ impl<E> Hook<E> {
     pub(crate) fn layer_id(&self) -> LayerIndex {
         self.layer_id
     }
-}
-
-impl<E> runtime::Hook<E> for Hook<E> {
-    fn run(&self, event: E) {
+    pub(crate) fn run(&self, event: E) {
         match &self.action {
             HookAction::Procedure { procedure, .. } => procedure.0(event),
             HookAction::Press(button) => button.press(),
@@ -66,10 +62,7 @@ impl<E> runtime::Hook<E> for Hook<E> {
             HookAction::Block => {}
         }
     }
-}
-
-impl<E> runtime::InputHook<E> for Hook<E> {
-    fn native_event_operation(&self) -> NativeEventOperation {
+    pub(crate) fn native_event_operation(&self) -> NativeEventOperation {
         match &self.action {
             HookAction::Procedure { native, .. } => *native,
             HookAction::Press(_) => NativeEventOperation::Block,

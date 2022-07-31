@@ -1,7 +1,4 @@
-use crate::{
-    runtime::LayerState,
-    storage::{LayerIndex, LayerQuerySender},
-};
+use crate::storage::{LayerIndex, LayerQuerySender, LayerState};
 
 #[derive(Debug, Clone)]
 pub struct Layer {

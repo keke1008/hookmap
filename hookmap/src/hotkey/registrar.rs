@@ -5,10 +5,9 @@ use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelE
 
 use super::layer::Layer;
 
-use crate::runtime::LayerState;
 use crate::storage::{
-    Hook, HookAction, HotkeyStorage, LayerHookStorage, LayerIndex, LayerQuerySender, LayerTree,
-    Procedure,
+    Hook, HookAction, HotkeyStorage, LayerHookStorage, LayerIndex, LayerQuerySender, LayerState,
+    LayerTree, Procedure,
 };
 
 #[derive(Debug)]

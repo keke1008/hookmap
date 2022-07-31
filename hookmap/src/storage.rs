@@ -7,10 +7,10 @@ use std::{collections::HashMap, sync::Arc};
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use crate::runtime::{self, InputHookStorage, LayerQuery, LayerState, LayerStateCollection};
-
 pub(crate) use hook::{Hook, HookAction, Procedure};
-pub(crate) use layer::{LayerIndex, LayerQuerySender, LayerTree};
+pub(crate) use layer::{
+    layer_query_channel, LayerIndex, LayerQuery, LayerQuerySender, LayerState, LayerTree,
+};
 
 #[inline]
 fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, value: V) {
@@ -18,10 +18,7 @@ fn push_to_hashmap_vec<K: Eq + Hash, V>(map: &mut HashMap<K, Vec<V>>, key: K, va
 }
 
 #[inline]
-fn filter_by_state_and_clone<E, S>(hooks: &[Arc<Hook<E>>], state: &S) -> Vec<Arc<Hook<E>>>
-where
-    S: LayerStateCollection<LayerIdentifier = LayerIndex>,
-{
+fn filter_by_state_and_clone<E>(hooks: &[Arc<Hook<E>>], state: &LayerTree) -> Vec<Arc<Hook<E>>> {
     hooks
         .iter()
         .filter(|hook| state.is_enabled(hook.layer_id()))
@@ -50,14 +47,8 @@ impl LayerHookStorage {
     }
 }
 
-impl<S> runtime::LayerHookStrage<S> for LayerHookStorage
-where
-    S: LayerStateCollection<LayerIdentifier = LayerIndex>,
-{
-    type LayerIdentifier = LayerIndex;
-    type Hook = OptionalButtonHook;
-
-    fn fetch(&self, query: &LayerQuery<Self::LayerIdentifier>, state: &S) -> Vec<Self::Hook> {
+impl LayerHookStorage {
+    pub(crate) fn fetch(&self, query: &LayerQuery, state: &LayerTree) -> Vec<OptionalButtonHook> {
         let hooks = match query.update {
             LayerState::Enabled => &self.on_enabled,
             LayerState::Disabled => &self.on_disabled,
@@ -109,16 +100,12 @@ impl HotkeyStorage {
     }
 }
 
-impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> for HotkeyStorage {
-    type LayerIdentifier = LayerIndex;
-
-    type RemapHook = OptionalButtonHook;
-    type OnPressHook = ButtonHook;
-    type OnReleaseHook = OptionalButtonHook;
-    type MouseCursorHook = CursorHook;
-    type MouseWheelHook = WheelHook;
-
-    fn fetch_remap_hook(&self, event: ButtonEvent, state: &S) -> Option<Self::RemapHook> {
+impl HotkeyStorage {
+    pub(crate) fn fetch_remap_hook(
+        &self,
+        event: ButtonEvent,
+        state: &LayerTree,
+    ) -> Option<OptionalButtonHook> {
         let storage = match event.action {
             ButtonAction::Press => &self.remap_on_press,
             ButtonAction::Release => &self.remap_on_release,
@@ -130,25 +117,41 @@ impl<S: LayerStateCollection<LayerIdentifier = LayerIndex>> InputHookStorage<S> 
             .cloned()
     }
 
-    fn fetch_on_press_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnPressHook> {
+    pub(crate) fn fetch_on_press_hook(
+        &self,
+        event: ButtonEvent,
+        state: &LayerTree,
+    ) -> Vec<ButtonHook> {
         self.on_press
             .get(&event.target)
             .map(|hooks| filter_by_state_and_clone(hooks, state))
             .unwrap_or_default()
     }
 
-    fn fetch_on_release_hook(&self, event: ButtonEvent, state: &S) -> Vec<Self::OnReleaseHook> {
+    pub(crate) fn fetch_on_release_hook(
+        &self,
+        event: ButtonEvent,
+        state: &LayerTree,
+    ) -> Vec<OptionalButtonHook> {
         self.on_release
             .get(&event.target)
             .map(|hooks| filter_by_state_and_clone(hooks, state))
             .unwrap_or_default()
     }
 
-    fn fetch_mouse_cursor_hook(&self, _: CursorEvent, state: &S) -> Vec<Self::MouseCursorHook> {
+    pub(crate) fn fetch_mouse_cursor_hook(
+        &self,
+        _: CursorEvent,
+        state: &LayerTree,
+    ) -> Vec<CursorHook> {
         filter_by_state_and_clone(&self.mouse_cursor, state)
     }
 
-    fn fetch_mouse_wheel_hook(&self, _: WheelEvent, state: &S) -> Vec<Self::MouseWheelHook> {
+    pub(crate) fn fetch_mouse_wheel_hook(
+        &self,
+        _: WheelEvent,
+        state: &LayerTree,
+    ) -> Vec<WheelHook> {
         filter_by_state_and_clone(&self.mouse_wheel, state)
     }
 }
