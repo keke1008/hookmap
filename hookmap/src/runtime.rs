@@ -1,14 +1,11 @@
 mod hook;
-mod runner;
-
-use crossbeam_utils::thread;
 
 use hookmap_core::button::ButtonAction;
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
 use std::sync::mpsc::Receiver;
-
-use runner::{HookRunner, Message, Task};
+use std::sync::Arc;
+use std::thread;
 
 pub use hook::LayerState;
 pub(crate) use hook::{
@@ -16,10 +13,10 @@ pub(crate) use hook::{
     LayerQuery, LayerQuerySender, LayerStateCollection,
 };
 
-fn handle_native_event<'env, E, H>(hooks: &[&'env H], native_handler: NativeEventHandler)
+fn handle_input_event<E, H>(hooks: Vec<H>, event: E, native_handler: NativeEventHandler)
 where
     E: Send + Copy + 'static,
-    H: InputHook<E>,
+    H: InputHook<E> + 'static,
 {
     let has_block_operation = hooks
         .iter()
@@ -31,15 +28,16 @@ where
         NativeEventOperation::Dispatch
     };
     native_handler.handle(operation);
+    std::thread::spawn(move || hooks.iter().for_each(move |hook| hook.run(event)));
 }
 
 #[derive(Debug)]
 pub(crate) struct Runtime<ID, L, I, S>
 where
-    ID: LayerIdentifier,
-    L: LayerHookStrage<S, LayerIdentifier = ID>,
-    I: InputHookStorage<S, LayerIdentifier = ID>,
-    S: LayerStateCollection<LayerIdentifier = ID>,
+    ID: LayerIdentifier + 'static,
+    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
+    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
+    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
 {
     layer_storage: L,
     input_storage: I,
@@ -48,10 +46,10 @@ where
 
 impl<ID, L, I, S> Runtime<ID, L, I, S>
 where
-    ID: LayerIdentifier,
-    L: LayerHookStrage<S, LayerIdentifier = ID>,
-    I: InputHookStorage<S, LayerIdentifier = ID>,
-    S: LayerStateCollection<LayerIdentifier = ID>,
+    ID: LayerIdentifier + 'static,
+    L: LayerHookStrage<S, LayerIdentifier = ID> + 'static,
+    I: InputHookStorage<S, LayerIdentifier = ID> + 'static,
+    S: LayerStateCollection<LayerIdentifier = ID> + 'static,
 {
     pub(crate) fn new(layer_storage: L, input_storage: I, state: S) -> Self {
         Self {
@@ -71,75 +69,53 @@ where
             input_storage,
             state,
         } = self;
+        let state = Arc::new(state);
+        let state_ = Arc::clone(&state);
 
-        thread::scope(|scope| {
-            let runner = HookRunner::new(scope);
-
-            let queue = runner.queue();
-            let input_thread = scope.spawn(|_| {
-                let (input_rx, queue) = (input_rx, queue);
-
-                while let Ok((event, native_handler)) = input_rx.recv() {
-                    match event {
-                        Event::Button(event) => {
-                            if let Some(hook) = input_storage.fetch_remap_hook(event, &state) {
-                                let hooks = vec![hook];
-                                handle_native_event(&hooks, native_handler);
-                                queue.enqueue(Message::Remap(Task::new(Some(event), hooks)));
-                                continue;
-                            }
-                            match event.action {
-                                ButtonAction::Press => {
-                                    let hooks = input_storage.fetch_on_press_hook(event, &state);
-                                    handle_native_event(&hooks, native_handler);
-                                    queue.enqueue(Message::OnPress(Task::new(event, hooks)));
-                                }
-                                ButtonAction::Release => {
-                                    let hooks = input_storage.fetch_on_release_hook(event, &state);
-                                    handle_native_event(&hooks, native_handler);
-                                    queue
-                                        .enqueue(Message::OnRelease(Task::new(Some(event), hooks)));
-                                }
-                            }
+        thread::spawn(move || {
+            while let Ok((event, native_handler)) = input_rx.recv() {
+                match event {
+                    Event::Button(event) => {
+                        if let Some(hook) = input_storage.fetch_remap_hook(event, &*state) {
+                            handle_input_event(vec![hook], Some(event), native_handler);
+                            continue;
                         }
-                        Event::Wheel(event) => {
-                            let hooks = input_storage.fetch_mouse_wheel_hook(event, &state);
-                            handle_native_event(&hooks, native_handler);
-                            queue.enqueue(Message::Wheel(Task::new(event, hooks)));
-                        }
-                        Event::Cursor(event) => {
-                            let hooks = input_storage.fetch_mouse_cursor_hook(event, &state);
-                            handle_native_event(&hooks, native_handler);
-                            queue.enqueue(Message::Cursor(Task::new(event, hooks)));
+                        match event.action {
+                            ButtonAction::Press => {
+                                let hooks = input_storage.fetch_on_press_hook(event, &*state);
+                                handle_input_event(hooks, event, native_handler);
+                            }
+                            ButtonAction::Release => {
+                                let hooks = input_storage.fetch_on_release_hook(event, &*state);
+                                handle_input_event(hooks, Some(event), native_handler)
+                            }
                         }
                     }
+                    Event::Wheel(event) => {
+                        let hooks = input_storage.fetch_mouse_wheel_hook(event, &*state);
+                        handle_input_event(hooks, event, native_handler);
+                    }
+                    Event::Cursor(event) => {
+                        let hooks = input_storage.fetch_mouse_cursor_hook(event, &*state);
+                        handle_input_event(hooks, event, native_handler);
+                    }
                 }
-            });
+            }
+        });
 
-            let queue = runner.queue();
-            let layer_thread = scope.spawn(|_| {
-                let (layer_rx, queue) = (layer_rx, queue);
-
-                while let Ok(query) = layer_rx.recv() {
-                    let hooks = match query.update {
-                        LayerState::Enabled => {
-                            state.update_enable(query.id);
-                            layer_storage.fetch(&query, &state)
-                        }
-                        LayerState::Disabled => {
-                            let hooks = layer_storage.fetch(&query, &state);
-                            state.update_disable(query.id);
-                            hooks
-                        }
-                    };
-                    queue.enqueue(Message::Layer(Task::new(None, hooks)));
+        while let Ok(query) = layer_rx.recv() {
+            let hooks = match query.update {
+                LayerState::Enabled => {
+                    state_.update_enable(query.id);
+                    layer_storage.fetch(&query, &*state_)
                 }
-            });
-
-            input_thread.join().unwrap();
-            layer_thread.join().unwrap();
-            runner.terminate();
-        })
-        .unwrap();
+                LayerState::Disabled => {
+                    let hooks = layer_storage.fetch(&query, &*state_);
+                    state_.update_disable(query.id);
+                    hooks
+                }
+            };
+            thread::spawn(move || hooks.iter().for_each(|hook| hook.run(None)));
+        }
     }
 }
