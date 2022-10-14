@@ -1,7 +1,7 @@
 //! Items used in macros.
 
 #[doc(hidden)]
-pub mod button_arg;
+mod args;
 
 #[doc(hidden)]
 pub mod sequence;

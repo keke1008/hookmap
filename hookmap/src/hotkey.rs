@@ -1,20 +1,87 @@
 //! Registering Hotkeys.
 
-mod context;
-mod hook;
+pub mod args;
+pub mod interruption;
+pub mod layer;
+
+mod registrar;
 mod storage;
 
-pub use self::context::Context;
-
-use self::hook::{Condition, HotkeyAction, HotkeyHook, MouseHook, Process, RemapHook};
-use self::storage::HotkeyStorage;
-use crate::macros::button_arg::{ButtonArg, ButtonArgUnit};
-use crate::runtime::Runtime;
+use std::cell::RefCell;
+use std::rc::{Rc, Weak};
+use std::sync::Arc;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
-use std::sync::Arc;
+use crate::layer::LayerIndex;
+use crate::runtime::hook::{HookAction, OptionalProcedure, RequiredProcedure};
+use crate::runtime::Runtime;
+
+use self::args::ButtonArgs;
+use self::interruption::Interruption;
+use self::layer::{Layer, LayerCreator};
+use self::registrar::HotkeyStorage;
+
+#[derive(Debug, Default)]
+struct Inner {
+    storage: HotkeyStorage,
+    layer_creator: LayerCreator,
+}
+
+#[derive(Debug)]
+enum InnerMut {
+    Strong(Rc<RefCell<Inner>>),
+    Weak(Weak<RefCell<Inner>>),
+}
+
+impl Default for InnerMut {
+    fn default() -> Self {
+        Self::Strong(Rc::default())
+    }
+}
+
+impl InnerMut {
+    fn new() -> Self {
+        Self::default()
+    }
+
+    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
+        match self {
+            Self::Strong(rc) => f(&mut rc.borrow_mut()),
+            Self::Weak(weak) => f(&mut weak.upgrade().unwrap().borrow_mut()),
+        }
+    }
+
+    fn weak(&self) -> Self {
+        match self {
+            Self::Strong(rc) => Self::Weak(Rc::downgrade(rc)),
+            Self::Weak(weak) => Self::Weak(weak.clone()),
+        }
+    }
+
+    fn into_inner(self) -> Option<Inner> {
+        match self {
+            Self::Strong(rc) => Some(Rc::try_unwrap(rc).unwrap().into_inner()),
+            Self::Weak(_) => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Context {
+    current_layer: LayerIndex,
+    native: NativeEventOperation,
+}
+
+impl Context {
+    fn replace_native(&self, native: NativeEventOperation) -> Self {
+        Self {
+            native,
+            ..self.clone()
+        }
+    }
+}
 
 /// Registers and installs hotkeys.
 ///
@@ -24,15 +91,30 @@ use std::sync::Arc;
 /// use hookmap::prelude::*;
 ///
 /// let mut hotkey = Hotkey::new();
-/// hotkey
-///     .register(Context::default())
-///     .remap(buttons!(A, B), Button::C);
+/// hotkey.remap(Button::A, Button::C);
 /// hotkey.install();
 /// ```
 ///
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Hotkey {
-    storage: HotkeyStorage,
+    inner: InnerMut,
+    context: Context,
+}
+
+impl Default for Hotkey {
+    fn default() -> Self {
+        let mut layer_creator = LayerCreator::new();
+        let root_layer = layer_creator.create_independent_layer(true);
+        let context = Context {
+            current_layer: root_layer,
+            native: NativeEventOperation::Dispatch,
+        };
+
+        Self {
+            inner: InnerMut::new(),
+            context,
+        }
+    }
 }
 
 impl Hotkey {
@@ -50,27 +132,7 @@ impl Hotkey {
         Self::default()
     }
 
-    /// Creates a [`Registrar`] to register hotkeys.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    /// hotkey
-    ///     .register(Context::default())
-    ///     .remap(Button::A, Button::B);
-    /// ```
-    ///
-    pub fn register(&mut self, context: Context) -> Registrar {
-        Registrar {
-            storage: &mut self.storage,
-            context,
-        }
-    }
-
-    /// Installs hotkeys and blocks the current thread.
+    /// Installs hooks and blocks the current thread.
     ///
     /// # Examples
     ///
@@ -82,33 +144,29 @@ impl Hotkey {
     /// ```
     ///
     pub fn install(self) {
-        let runtime = Runtime::new(self.storage);
-        runtime.start();
+        let Inner {
+            storage,
+            layer_creator,
+        } = self
+            .inner
+            .into_inner()
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let (layer_facade, layer_state, layer_tx, layer_rx) = layer_creator.destruct();
+        let (input_storage, interruption_storage, layer_storage) = storage.destruct();
+
+        let runtime = Runtime::new(
+            input_storage,
+            interruption_storage,
+            layer_storage,
+            layer_state,
+            layer_facade,
+        );
+
+        let input_rx = hookmap_core::install_hook();
+        runtime.start(input_rx, layer_tx, layer_rx);
     }
-}
 
-/// Register hotkeys.
-/// Calls [`Hotkey::register`] to get this instance.
-///
-/// # Examples
-///
-/// ```
-/// use hookmap::prelude::*;
-///
-/// let mut hotkey = Hotkey::new();
-/// hotkey
-///     .register(Context::default())
-///     .remap(Button::A, Button::B)
-///     .on_press(Button::C, |e| println!("{:?}", e));
-///
-/// ```
-pub struct Registrar<'a> {
-    storage: &'a mut HotkeyStorage,
-    context: Context,
-}
-
-impl<'a> Registrar<'a> {
-    /// Makes `target` behave like a `behavior`.
+    /// Remaps `target` to `behavior`.
     ///
     /// # Examples
     ///
@@ -117,21 +175,32 @@ impl<'a> Registrar<'a> {
     ///
     /// let mut hotkey = Hotkey::new();
     /// hotkey
-    ///     .register(Context::default())
-    ///     .remap(Button::A, Button::B);
+    ///     .remap(Button::A, Button::B)
+    ///     .remap(Button::C, Button::D);
     /// ```
     ///
-    pub fn remap(&mut self, targets: impl Into<ButtonArg>, behavior: Button) -> &mut Self {
-        let targets = targets.into();
-        let hook = Arc::new(RemapHook::new(self.context.to_condition(), behavior));
-        assert!(targets.is_all_plain());
+    pub fn remap(self, target: impl Into<ButtonArgs>, behavior: Button) -> Self {
+        self.inner.apply(|inner| match &target.into() {
+            ButtonArgs::Each(targets) => inner.storage.remap(
+                self.context.current_layer,
+                targets,
+                behavior,
+                &mut inner.layer_creator,
+            ),
+            ButtonArgs::Not(ignore) => {
+                inner.storage.remap_any(
+                    self.context.current_layer,
+                    Some(Arc::clone(ignore)),
+                    behavior,
+                    &mut inner.layer_creator,
+                );
+            }
+        });
 
-        for target in targets.iter_plain() {
-            self.storage.register_remap(target, Arc::clone(&hook));
-        }
         self
     }
-    /// Run `process` when `target` is pressed.
+
+    /// Registers a `procedure` to be executed when the `target` button is pressed.
     ///
     /// # Examples
     ///
@@ -140,34 +209,38 @@ impl<'a> Registrar<'a> {
     ///
     /// let mut hotkey = Hotkey::new();
     /// hotkey
-    ///     .register(Context::default())
-    ///     .on_press(buttons!(A), |e| println!("Pressed: {:?}", e));
+    ///     .on_press(Button::A, |e| println!("Pressed: {e:?}"));
     /// ```
     ///
     pub fn on_press(
-        &mut self,
-        targets: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &mut Self {
-        let targets = targets.into();
-        let hook = Arc::new(HotkeyHook::new(
-            self.context.to_condition(),
-            HotkeyAction::Process(process.into()),
-            self.context.native_event_operation,
-        ));
+        self,
+        target: impl Into<ButtonArgs>,
+        procedure: impl Into<RequiredProcedure<ButtonEvent>>,
+    ) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
 
-        for target in targets.iter_plain() {
-            self.storage
-                .register_hotkey_on_press(target, Arc::clone(&hook));
-        }
-        for target in targets.iter_not() {
-            self.storage
-                .register_hotkey_on_release(target, Arc::clone(&hook));
-        }
+        self.inner.apply(|inner| match &target.into() {
+            ButtonArgs::Each(targets) => {
+                inner
+                    .storage
+                    .on_press(self.context.current_layer, targets, action);
+            }
+            ButtonArgs::Not(ignore) => {
+                inner.storage.on_press_any(
+                    self.context.current_layer,
+                    Some(Arc::clone(ignore)),
+                    action,
+                );
+            }
+        });
+
         self
     }
 
-    /// Run `process` when `target` is released.
+    /// Registers a `procedure` to be executed when the `target` button is released.
     ///
     /// # Examples
     ///
@@ -176,78 +249,42 @@ impl<'a> Registrar<'a> {
     ///
     /// let mut hotkey = Hotkey::new();
     /// hotkey
-    ///     .register(Context::default())
-    ///     .on_release(buttons!(A), |e| println!("Released: {:?}", e));
+    ///     .on_release(Button::A, |e| println!("Released: {:?}", e));
     /// ```
     ///
     pub fn on_release(
-        &mut self,
-        targets: impl Into<ButtonArg>,
-        process: impl Into<Process<ButtonEvent>>,
-    ) -> &mut Self {
-        let targets = targets.into();
-        let condition = self.context.to_condition();
-        let process = HotkeyAction::Process(process.into());
+        self,
+        target: impl Into<ButtonArgs>,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
 
-        if self.context.has_no_modifiers() {
-            let hook = Arc::new(HotkeyHook::new(
-                condition,
-                process,
-                self.context.native_event_operation,
-            ));
+        self.inner.apply(|inner| match target.into() {
+            ButtonArgs::Each(ref targets) => {
+                inner.storage.on_release(
+                    self.context.current_layer,
+                    targets,
+                    action,
+                    &mut inner.layer_creator,
+                );
+            }
+            ButtonArgs::Not(ignore) => {
+                inner.storage.on_release_any(
+                    self.context.current_layer,
+                    Some(ignore),
+                    action,
+                    &mut inner.layer_creator,
+                );
+            }
+        });
 
-            for target in targets.iter_plain() {
-                self.storage
-                    .register_hotkey_on_release(target, Arc::clone(&hook));
-            }
-            for target in targets.iter_not() {
-                self.storage
-                    .register_hotkey_on_press(target, Arc::clone(&hook));
-            }
-            return self;
-        }
-
-        for target in targets.iter() {
-            let is_active = Arc::default();
-            let inactivation_hook = Arc::new(HotkeyHook::new(
-                Condition::Activation(Arc::clone(&is_active)),
-                process.clone(),
-                self.context.native_event_operation,
-            ));
-            let activation_hook = Arc::new(HotkeyHook::new(
-                condition.clone(),
-                HotkeyAction::Activate(is_active),
-                NativeEventOperation::Dispatch,
-            ));
-
-            match target {
-                ButtonArgUnit::Plain(target) => {
-                    self.storage
-                        .register_hotkey_on_press(target, Arc::clone(&activation_hook));
-                    self.storage
-                        .register_hotkey_on_release(target, Arc::clone(&inactivation_hook));
-                }
-                ButtonArgUnit::Not(target) => {
-                    self.storage
-                        .register_hotkey_on_release(target, Arc::clone(&activation_hook));
-                    self.storage
-                        .register_hotkey_on_press(target, Arc::clone(&inactivation_hook));
-                }
-            }
-
-            for target in self.context.iter_pressed() {
-                self.storage
-                    .register_hotkey_on_release(*target, Arc::clone(&inactivation_hook));
-            }
-            for target in self.context.iter_released() {
-                self.storage
-                    .register_hotkey_on_press(*target, Arc::clone(&inactivation_hook));
-            }
-        }
         self
     }
 
-    /// Run `process` when a mouse wheel is rotated.
+    /// Registers a `procedure` to be executed when the mouse cursor is moved.
     ///
     /// # Examples
     ///
@@ -256,40 +293,48 @@ impl<'a> Registrar<'a> {
     ///
     /// let mut hotkey = Hotkey::new();
     /// hotkey
-    ///     .register(Context::default())
-    ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
-    /// ```
-    ///
-    pub fn mouse_wheel(&mut self, process: impl Into<Process<WheelEvent>>) -> &mut Self {
-        let hook = Arc::new(MouseHook::new(
-            self.context.to_condition(),
-            process.into(),
-            self.context.native_event_operation,
-        ));
-        self.storage.register_mouse_wheel_hotkey(hook);
-        self
-    }
-
-    /// Run `process` when a mouse cursor is moved.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    /// hotkey
-    ///     .register(Context::default())
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(&mut self, process: impl Into<Process<CursorEvent>>) -> &mut Self {
-        let hook = Arc::new(MouseHook::new(
-            self.context.to_condition(),
-            process.into(),
-            self.context.native_event_operation,
-        ));
-        self.storage.register_mouse_cursor_hotkey(hook);
+    pub fn mouse_cursor(self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
+
+        self.inner.apply(|inner| {
+            inner
+                .storage
+                .mouse_cursor(self.context.current_layer, action);
+        });
+
+        self
+    }
+
+    /// Registers a `procedure` to be executed when the mouse wheel is rotated.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    /// hotkey
+    ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
+    /// ```
+    ///
+    pub fn mouse_wheel(self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
+
+        self.inner.apply(|inner| {
+            inner
+                .storage
+                .mouse_wheel(self.context.current_layer, action);
+        });
+
         self
     }
 
@@ -301,27 +346,220 @@ impl<'a> Registrar<'a> {
     /// use hookmap::prelude::*;
     ///
     /// let mut hotkey = Hotkey::new();
-    /// hotkey
-    ///     .register(Context::default())
-    ///     .disable(buttons!(A));
+    /// hotkey.disable(Button::A);
     /// ```
     ///
-    pub fn disable(&mut self, targets: impl Into<ButtonArg>) -> &mut Self {
-        let hook = Arc::new(HotkeyHook::new(
-            self.context.to_condition(),
-            HotkeyAction::Noop,
-            NativeEventOperation::Block,
-        ));
-        let targets = targets.into();
-        assert!(targets.is_all_plain());
-
-        for target in targets.iter_plain() {
-            self.storage
-                .register_hotkey_on_press(target, Arc::clone(&hook));
-            self.storage
-                .register_hotkey_on_release(target, Arc::clone(&hook));
-        }
+    pub fn disable(self, target: impl Into<ButtonArgs>) -> Self {
+        self.inner.apply(|inner| match target.into() {
+            ButtonArgs::Each(ref targets) => {
+                inner.storage.disable(self.context.current_layer, targets)
+            }
+            ButtonArgs::Not(ignore) => {
+                inner
+                    .storage
+                    .disable_any(self.context.current_layer, Some(ignore));
+            }
+        });
 
         self
+    }
+
+    /// Registers a `procedure` that will run when the current layer becomes active.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    ///
+    /// let (layer, child) = hotkey.create_layer(false);
+    /// child.on_layer_activated(|_| println!("Activated"));
+    ///
+    /// hotkey.on_press(Button::A, move |_| layer.enable());
+    /// ```
+    ///
+    pub fn on_layer_activated(self, procedure: impl Into<OptionalProcedure<ButtonEvent>>) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
+
+        self.inner.apply(|inner| {
+            inner
+                .storage
+                .on_layer_activated(self.context.current_layer, action);
+        });
+
+        self
+    }
+
+    /// Registers a `procedure` to be executed when the current layer becomes inactive.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    ///
+    /// let (layer, child) = hotkey.create_layer(true);
+    /// child.on_layer_inactivated(|_|println!("Inactivated"));
+    ///
+    /// hotkey.on_press(Button::A, move |_| layer.disable());
+    /// ```
+    ///
+    pub fn on_layer_inactivated(
+        self,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> Self {
+        let action = HookAction::Procedure {
+            procedure: procedure.into().into(),
+            native: self.context.native,
+        };
+
+        self.inner.apply(|inner| {
+            inner
+                .storage
+                .on_layer_inactivated(self.context.current_layer, action);
+        });
+
+        self
+    }
+
+    /// Creates a new independent layer and returns values to control the new layer and to register hooks
+    /// on the new layer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    ///
+    /// let (layer, child) = hotkey.create_layer(true);
+    /// child.remap(Button::A, Button::B);
+    /// child.on_press(C, move |_| layer.disable());
+    /// ```
+    ///
+    pub fn create_independent_layer(&self, init_state: bool) -> Layer {
+        self.inner.apply(|inner| {
+            let index = inner.layer_creator.create_independent_layer(init_state);
+            inner.layer_creator.wrap_layer(index)
+        })
+    }
+
+    /// Creates a new child layer and returns values to control the new layer and to register hooks
+    /// on the new layer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    ///
+    /// let (layer, child) = hotkey.create_child_layer(true);
+    /// child.remap(Button::A, Button::B);
+    /// child.on_press(C, move |_| layer.disable());
+    /// ```
+    ///
+    pub fn create_child_layer(&self, init_state: bool) -> Layer {
+        self.inner.apply(|inner| {
+            let index = inner
+                .layer_creator
+                .create_child_layer(self.context.current_layer, init_state);
+            inner.layer_creator.wrap_layer(index)
+        })
+    }
+
+    /// Creates a new sync layer and returns values to control the new layer and to
+    /// register hooks on the new layer.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let mut hotkey = Hotkey::new();
+    ///
+    /// let (layer, child) = hotkey.create_sync_layer(true);
+    /// child.remap(Button::A, Button::B);
+    /// child.on_press(C, move |_| layer.disable());
+    /// ```
+    ///
+    pub fn create_sync_layer(&self, init_state: bool) -> Layer {
+        self.inner.apply(|inner| {
+            let index = inner
+                .layer_creator
+                .create_sync_layer(self.context.current_layer, init_state);
+            inner.layer_creator.wrap_layer(index)
+        })
+    }
+
+    /// Gets keyboard events dynamically.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// let i = hotkey.interruption();
+    /// i.spawn(|int| {
+    ///     int.iter().take(3).for_each(|e| println!("{e:?}"));
+    /// });
+    /// ```
+    ///
+    pub fn interruption(&self) -> Interruption {
+        self.inner.apply(|inner| inner.storage.interruption())
+    }
+
+    /// Ensure that events are blocked when hooks registered through the return value of this
+    /// function are executed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// let blocked = hotkey.block();
+    ///
+    /// blocked.on_press(A, |e| println!("{e:?}"));
+    /// ```
+    ///
+    pub fn block(&self) -> Hotkey {
+        Hotkey {
+            inner: self.inner.weak(),
+            context: self.context.replace_native(NativeEventOperation::Block),
+        }
+    }
+
+    /// Ensure that events are not blocked when hooks registered through the return value of this
+    /// function are executed.
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use hookmap::prelude::*;
+    /// use Button::*;
+    ///
+    /// let hotkey = Hotkey::new();
+    /// let blocked = hotkey.dispatch();
+    ///
+    /// blocked.on_press(A, |e| println!("{e:?}"));
+    /// ```
+    ///
+    pub fn dispatch(&self) -> Hotkey {
+        Hotkey {
+            inner: self.inner.weak(),
+            context: self.context.replace_native(NativeEventOperation::Dispatch),
+        }
     }
 }

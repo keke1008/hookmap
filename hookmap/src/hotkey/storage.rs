@@ -1,93 +1,183 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use super::hook::{ButtonHook, HotkeyHook, MouseHook, RemapHook};
-use crate::hook::{ButtonState, HookStorage};
-use std::{collections::HashMap, sync::Arc};
+use crate::layer::{DetectedEvent, LayerAction, LayerFacade, LayerIndex, LayerState};
+
+use crate::runtime::hook::{Hook, HookAction, Procedure};
+use crate::runtime::storage::{InputHookFetcher, LayerHookFetcher};
 
 #[derive(Debug, Default)]
-pub(super) struct HotkeyStorage {
-    remap: HashMap<Button, Vec<Arc<RemapHook>>>,
-    hotkey_on_press: HashMap<Button, Vec<Arc<HotkeyHook>>>,
-    hotkey_on_release: HashMap<Button, Vec<Arc<HotkeyHook>>>,
-    mouse_cursor: Vec<Arc<MouseHook<CursorEvent>>>,
-    mouse_wheel: Vec<Arc<MouseHook<WheelEvent>>>,
+pub(super) struct ButtonHookStorage {
+    specific: HashMap<Button, Vec<Hook<ButtonEvent>>>,
+    any: Vec<Hook<ButtonEvent>>,
 }
 
-impl HotkeyStorage {
-    fn fetch_mouse_hook<E, S: ButtonState>(
-        hooks: &[Arc<MouseHook<E>>],
-        state: &S,
-    ) -> Vec<Arc<MouseHook<E>>> {
-        hooks
-            .iter()
-            .filter(|hook| hook.is_executable(state))
-            .map(|hook| Arc::clone(hook))
-            .collect()
-    }
-
-    pub(super) fn register_remap(&mut self, target: Button, hook: Arc<RemapHook>) {
-        self.remap.entry(target).or_default().push(hook);
-    }
-
-    pub(super) fn register_hotkey_on_press(&mut self, target: Button, hook: Arc<HotkeyHook>) {
-        self.hotkey_on_press.entry(target).or_default().push(hook);
-    }
-
-    pub(super) fn register_hotkey_on_release(&mut self, target: Button, hook: Arc<HotkeyHook>) {
-        self.hotkey_on_release.entry(target).or_default().push(hook);
-    }
-
-    pub(super) fn register_mouse_cursor_hotkey(&mut self, hook: Arc<MouseHook<CursorEvent>>) {
-        self.mouse_cursor.push(hook);
-    }
-
-    pub(super) fn register_mouse_wheel_hotkey(&mut self, hook: Arc<MouseHook<WheelEvent>>) {
-        self.mouse_wheel.push(hook);
-    }
-}
-
-impl HookStorage for HotkeyStorage {
-    type ButtonHook = ButtonHook;
-    type MouseCursorHook = Arc<MouseHook<CursorEvent>>;
-    type MouseWheelHook = Arc<MouseHook<WheelEvent>>;
-
-    fn fetch_button_hook<S: ButtonState>(&self, event: ButtonEvent, state: &S) -> Vec<ButtonHook> {
-        let remap_hook = self
-            .remap
-            .get(&event.target)
-            .and_then(|hooks| hooks.iter().find(|hook| hook.is_executable(state)));
-        if let Some(hook) = remap_hook {
-            let hook = ButtonHook::from(Arc::clone(hook));
-            return vec![hook];
-        }
-
-        let hotkey_map = match event.action {
-            ButtonAction::Press => &self.hotkey_on_press,
-            ButtonAction::Release => &self.hotkey_on_release,
-        };
-        hotkey_map
+impl ButtonHookStorage {
+    fn iter_filter_event(&self, event: &ButtonEvent) -> impl Iterator<Item = &Hook<ButtonEvent>> {
+        self.specific
             .get(&event.target)
             .into_iter()
             .flatten()
-            .filter(|hook| hook.is_executable(state))
-            .map(|hook| ButtonHook::from(Arc::clone(hook)))
+            .chain(self.any.iter())
+    }
+
+    pub(super) fn register_specific(
+        &mut self,
+        layer: LayerIndex,
+        button: Button,
+        action: Arc<HookAction<ButtonEvent>>,
+    ) {
+        self.specific
+            .entry(button)
+            .or_default()
+            .push(Hook::new(layer, action, None));
+    }
+
+    pub(super) fn register_any(
+        &mut self,
+        layer: LayerIndex,
+        ignore: Option<Arc<Vec<Button>>>,
+        action: Arc<HookAction<ButtonEvent>>,
+    ) {
+        self.any.push(Hook::new(layer, action, ignore));
+    }
+}
+
+#[derive(Debug)]
+pub(super) struct MouseHookStorage<E> {
+    hooks: Vec<Hook<E>>,
+}
+
+impl<E> MouseHookStorage<E> {
+    fn fetch(&self, state: &LayerState, facade: &LayerFacade) -> Vec<Arc<HookAction<E>>> {
+        self.hooks
+            .iter()
+            .filter(|hook| facade.is_active(state, hook.layer_index()))
+            .map(Hook::action)
             .collect()
     }
 
-    fn fetch_mouse_cursor_hook<S: ButtonState>(
+    pub(super) fn register(&mut self, layer: LayerIndex, action: Arc<HookAction<E>>) {
+        self.hooks.push(Hook::new(layer, action, None));
+    }
+}
+
+impl<E> Default for MouseHookStorage<E> {
+    fn default() -> Self {
+        Self { hooks: Vec::new() }
+    }
+}
+
+#[derive(Debug, Default)]
+pub(super) struct InputHookStorage {
+    pub(super) on_press_exclusive: ButtonHookStorage,
+    pub(super) on_release_exclusive: ButtonHookStorage,
+    pub(super) on_press: ButtonHookStorage,
+    pub(super) on_release: ButtonHookStorage,
+    pub(super) mouse_cursor: MouseHookStorage<CursorEvent>,
+    pub(super) mouse_wheel: MouseHookStorage<WheelEvent>,
+}
+
+impl InputHookFetcher for InputHookStorage {
+    fn fetch_exclusive_button_hook(
         &self,
-        _: CursorEvent,
-        state: &S,
-    ) -> Vec<Arc<MouseHook<CursorEvent>>> {
-        Self::fetch_mouse_hook(&self.mouse_cursor, state)
+        event: ButtonEvent,
+        state: &LayerState,
+        facade: &LayerFacade,
+    ) -> Option<Arc<HookAction<ButtonEvent>>> {
+        let storage = match event.action {
+            ButtonAction::Press => &self.on_press_exclusive,
+            ButtonAction::Release => &self.on_release_exclusive,
+        };
+        storage
+            .iter_filter_event(&event)
+            .find(|hook| hook.is_runnable(event.target, state, facade))
+            .map(Hook::action)
     }
 
-    fn fetch_mouse_wheel_hook<S: ButtonState>(
+    fn fetch_button_hook(
         &self,
-        _: WheelEvent,
-        state: &S,
-    ) -> Vec<Arc<MouseHook<WheelEvent>>> {
-        Self::fetch_mouse_hook(&self.mouse_wheel, state)
+        event: ButtonEvent,
+        state: &LayerState,
+        facade: &LayerFacade,
+    ) -> Vec<Arc<HookAction<ButtonEvent>>> {
+        let storage = match event.action {
+            ButtonAction::Press => &self.on_press,
+            ButtonAction::Release => &self.on_release,
+        };
+        storage
+            .iter_filter_event(&event)
+            .filter(|hook| hook.is_runnable(event.target, state, facade))
+            .map(Hook::action)
+            .collect()
+    }
+
+    fn fetch_mouse_cursor_hook(
+        &self,
+        state: &LayerState,
+        facade: &LayerFacade,
+    ) -> Vec<Arc<HookAction<CursorEvent>>> {
+        self.mouse_cursor.fetch(state, facade)
+    }
+
+    fn fetch_mouse_wheel_hook(
+        &self,
+        state: &LayerState,
+        facade: &LayerFacade,
+    ) -> Vec<Arc<HookAction<WheelEvent>>> {
+        self.mouse_wheel.fetch(state, facade)
+    }
+}
+
+type LayerHookAction = Arc<HookAction<ButtonEvent>>;
+
+fn assert_is_procedure_optional(action: &LayerHookAction) {
+    if let HookAction::Procedure { procedure, .. } = &**action {
+        assert!(matches!(procedure, Procedure::Optional(_)));
+    }
+}
+
+#[derive(Debug, Default)]
+pub(super) struct LayerHookStorage {
+    on_activated: HashMap<LayerIndex, Vec<LayerHookAction>>,
+    on_inactivated: HashMap<LayerIndex, Vec<LayerHookAction>>,
+}
+
+impl LayerHookStorage {
+    pub(super) fn register_on_activated(&mut self, layer: LayerIndex, action: LayerHookAction) {
+        assert_is_procedure_optional(&action);
+        self.on_activated.entry(layer).or_default().push(action);
+    }
+    pub(super) fn register_on_inactivated(&mut self, layer: LayerIndex, action: LayerHookAction) {
+        assert_is_procedure_optional(&action);
+        self.on_inactivated.entry(layer).or_default().push(action);
+    }
+}
+
+impl LayerHookFetcher for LayerHookStorage {
+    fn fetch(
+        &self,
+        layer: LayerIndex,
+        update: LayerAction,
+        mut state: LayerState,
+        facade: &LayerFacade,
+    ) -> Vec<Arc<HookAction<ButtonEvent>>> {
+        facade
+            .iter_detected(&mut state, layer, update)
+            .flat_map(|detected| {
+                let storage = match detected.event {
+                    DetectedEvent::Activate => &self.on_activated,
+                    DetectedEvent::Inactivate => &self.on_inactivated,
+                };
+                storage
+                    .get(&detected.index)
+                    .into_iter()
+                    .flatten()
+                    .map(Arc::clone)
+            })
+            .collect()
     }
 }

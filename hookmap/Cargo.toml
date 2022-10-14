@@ -13,12 +13,15 @@ documentation = "https://docs.rs/hookmap"
 
 [dependencies]
 hookmap-core = { version = "0.2.0", path = "../hookmap-core" }
-once_cell = "1.8.0"
+bitvec = { version = "1.0.1", features = ["atomic"] }
+
+[dev-dependencies]
+test-case = "2.2.1"
 
 [features]
-us-keyboard-layout = [ "hookmap-core/us-keyboard-layout" ]
-japanese-keyboard-layout = [ "hookmap-core/japanese-keyboard-layout" ]
-default = [ "us-keyboard-layout" ]
+us-keyboard-layout = ["hookmap-core/us-keyboard-layout"]
+japanese-keyboard-layout = ["hookmap-core/japanese-keyboard-layout"]
+default = ["us-keyboard-layout"]
 
 [package.metadata.docs.rs]
 targets = ["x86_64-pc-windows-msvc"]

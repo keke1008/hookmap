@@ -1,88 +1,169 @@
-mod button_state;
-mod event_broker;
-pub mod interceptor;
+mod worker;
+
+pub(crate) mod hook;
+pub(crate) mod interruption;
+pub(crate) mod storage;
+
+use std::sync::mpsc::{Receiver, Sender};
+use std::sync::{Arc, Mutex};
+use std::thread;
 
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
-use self::button_state::RealButtonState;
-use crate::hook::{ButtonState, Hook, HookStorage};
+use crate::layer::{LayerFacade, LayerState};
 
-use std::thread;
+use hook::LayerEvent;
+use storage::{InputHookFetcher, InterruptionFetcher, LayerHookFetcher};
+use worker::{Action, Message, Worker};
 
-#[derive(Debug)]
-pub(crate) struct Runtime<T, S: ButtonState = RealButtonState>
-where
-    T: HookStorage + Send + 'static,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
-{
-    storage: T,
-    state: S,
+use self::hook::HookAction;
+
+pub(crate) struct Runtime<Input, Interruption, Layer> {
+    input_fetcher: Input,
+    interruption_storage: Interruption,
+    layer_fetcher: Layer,
+    layer_state: Arc<Mutex<LayerState>>,
+    layer_facade: LayerFacade,
 }
 
-impl<T> Runtime<T, RealButtonState>
-where
-    T: HookStorage + Send,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
-{
-    pub(crate) fn new(storage: T) -> Self {
-        Self::with_state(storage, RealButtonState)
-    }
-}
-
-impl<T, S: ButtonState> Runtime<T, S>
-where
-    T: HookStorage + Send + 'static,
-    <T as HookStorage>::ButtonHook: Send,
-    <T as HookStorage>::MouseWheelHook: Send,
-    <T as HookStorage>::MouseCursorHook: Send,
-{
-    pub(crate) fn with_state(storage: T, state: S) -> Self {
-        Self { storage, state }
-    }
-
-    fn handle_event<F, E, H>(&self, fetch: F, event: E, native_handler: NativeEventHandler)
-    where
-        F: FnOnce(&T, E, &S) -> Vec<H>,
-        E: Copy + Send + 'static,
-        H: Hook<E> + Send + 'static,
-    {
-        let hooks = fetch(&self.storage, event, &self.state);
-        let has_block_operation = hooks
-            .iter()
-            .map(|hook| hook.native_event_operation())
-            .any(|operation| operation == NativeEventOperation::Block);
-        let operation = if has_block_operation {
-            NativeEventOperation::Block
-        } else {
-            NativeEventOperation::Dispatch
-        };
-        native_handler.handle(operation);
-        thread::spawn(move || hooks.iter().for_each(|hook| hook.run(event)));
-    }
-
-    pub(crate) fn start(&self) {
-        let event_receiver = hookmap_core::install_hook();
-
-        while let Ok((event, native_handler)) = event_receiver.recv() {
-            match event {
-                Event::Button(event) => {
-                    if interceptor::publish_event(event) == NativeEventOperation::Block {
-                        native_handler.block();
-                        continue;
-                    }
-                    self.handle_event(HookStorage::fetch_button_hook, event, native_handler);
-                }
-                Event::Wheel(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_wheel_hook, event, native_handler);
-                }
-                Event::Cursor(event) => {
-                    self.handle_event(HookStorage::fetch_mouse_cursor_hook, event, native_handler);
-                }
-            }
+impl<Input, Interruption, Layer> Runtime<Input, Interruption, Layer> {
+    pub(crate) fn new(
+        input_fetcher: Input,
+        interruption_storage: Interruption,
+        layer_fetcher: Layer,
+        layer_state: Arc<Mutex<LayerState>>,
+        layer_facade: LayerFacade,
+    ) -> Self {
+        Self {
+            input_fetcher,
+            interruption_storage,
+            layer_fetcher,
+            layer_state,
+            layer_facade,
         }
+    }
+}
+
+fn calculate_native<E>(actions: &[Arc<HookAction<E>>]) -> NativeEventOperation {
+    actions
+        .iter()
+        .map(|action| action.native_event_operation())
+        .find(|native| *native == NativeEventOperation::Block)
+        .unwrap_or(NativeEventOperation::Dispatch)
+}
+
+impl<Input, Interruption, Layer> Runtime<Input, Interruption, Layer>
+where
+    Input: InputHookFetcher,
+    Interruption: InterruptionFetcher,
+    Layer: LayerHookFetcher,
+{
+    pub(crate) fn start(
+        self,
+        input_rx: Receiver<(Event, NativeEventHandler)>,
+        layer_tx: Sender<LayerEvent>,
+        layer_rx: Receiver<LayerEvent>,
+    ) {
+        let Runtime {
+            input_fetcher,
+            interruption_storage,
+            layer_fetcher,
+            layer_state,
+            layer_facade,
+        } = self;
+
+        let (worker_tx, worker) = Worker::new(Arc::clone(&layer_state), layer_tx);
+
+        thread::scope(|scope| {
+            let worker_tx_ = worker_tx.clone();
+            scope.spawn(|| {
+                let (input_rx, input_fetcher, worker_tx, mut interruption_storage) =
+                    (input_rx, input_fetcher, worker_tx_, interruption_storage);
+
+                for (event, native_handler) in input_rx.iter() {
+                    let state = layer_state.lock().unwrap();
+
+                    match event {
+                        Event::Button(button_event) => {
+                            let (found, mut native) =
+                                interruption_storage.fetch_raw_hook(button_event);
+                            if found {
+                                native_handler.handle(native);
+                                continue;
+                            }
+
+                            let action = input_fetcher.fetch_exclusive_button_hook(
+                                button_event,
+                                &state,
+                                &layer_facade,
+                            );
+                            native = action
+                                .as_ref()
+                                .map_or(NativeEventOperation::Dispatch, |action| {
+                                    action.native_event_operation()
+                                })
+                                .or(native);
+
+                            if let Some(action) = action {
+                                native_handler.handle(native);
+
+                                let msg = Message::Button(Action::new(button_event, vec![action]));
+                                worker_tx.send(msg).unwrap();
+                                continue;
+                            }
+
+                            let native_ = interruption_storage.fetch_hook(button_event);
+                            native = native.or(native_);
+
+                            let actions = input_fetcher.fetch_button_hook(
+                                button_event,
+                                &state,
+                                &layer_facade,
+                            );
+                            native = native.or(calculate_native(&actions));
+                            native_handler.handle(native);
+
+                            let msg = Message::Button(Action::new(button_event, actions));
+                            worker_tx.send(msg).unwrap();
+                        }
+
+                        Event::Cursor(cursor_event) => {
+                            let actions =
+                                input_fetcher.fetch_mouse_cursor_hook(&state, &layer_facade);
+                            native_handler.handle(calculate_native(&actions));
+
+                            let msg = Message::Cursor(Action::new(cursor_event, actions));
+                            worker_tx.send(msg).unwrap();
+                        }
+
+                        Event::Wheel(wheel_event) => {
+                            let actions =
+                                input_fetcher.fetch_mouse_wheel_hook(&state, &layer_facade);
+                            native_handler.handle(calculate_native(&actions));
+
+                            let msg = Message::Wheel(Action::new(wheel_event, actions));
+                            worker_tx.send(msg).unwrap();
+                        }
+                    }
+                }
+            });
+
+            scope.spawn(|| {
+                let (layer_rx, layer_fetcher, worker_tx) = (layer_rx, layer_fetcher, worker_tx);
+
+                for event in layer_rx.iter() {
+                    let actions = layer_fetcher.fetch(
+                        event.layer,
+                        event.action,
+                        event.snapshot,
+                        &layer_facade,
+                    );
+                    let msg = Message::Optional(Action::new(event.inherited_event, actions));
+                    worker_tx.send(msg).unwrap();
+                }
+            });
+        });
+
+        worker.join();
     }
 }

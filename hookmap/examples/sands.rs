@@ -1,48 +1,30 @@
-use hookmap::macros::button_arg::ButtonArg;
+use std::sync::Arc;
+
 use hookmap::prelude::*;
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    Arc,
-};
+use Button::*;
 
-fn emulate_sands(hotkey: &mut Hotkey, context: &Context, space: Button, ignored: ButtonArg) {
-    let is_other_key_pressed = Arc::new(AtomicBool::default());
+fn sands(hotkey: &Hotkey) {
+    let (space_pressed_layer, space_pressed) = hotkey.create_inheritance_layer(false);
+    let space_pressed_layer = Arc::new(space_pressed_layer);
+    let space_pressed_layer_ = Arc::clone(&space_pressed_layer);
 
-    let mut registrar = hotkey.register(
-        Context::new()
-            .merge(context)
-            .native_event_operation(NativeEventOperation::Block),
-    );
+    hotkey
+        .disable(Space)
+        .on_press(Space, move |_| {
+            space_pressed_layer.enable();
+            Shift.press();
+        })
+        .on_release(Space, |_| Shift.release());
 
-    let is_other_key_pressed_ = Arc::clone(&is_other_key_pressed);
-    registrar.on_press(space, move |_| {
-        is_other_key_pressed_.store(false, Ordering::SeqCst);
-        seq!(LShift down).send();
-    });
+    let ignore = not![Space, LShift, RShift, LCtrl, RCtrl, LAlt, RAlt, LSuper, RSuper];
 
-    let is_other_key_pressed_ = Arc::clone(&is_other_key_pressed);
-    registrar.on_release(space, move |_| {
-        seq!(LShift up).send();
-        if !is_other_key_pressed_.load(Ordering::SeqCst) {
-            seq!([space]).send();
-        }
-    });
-
-    let target = buttons!(![ignored]);
-    let filter = Filter::new().action(ButtonAction::Press).target(target);
-
-    std::thread::spawn(move || {
-        Interceptor::dispatch(filter)
-            .iter()
-            .for_each(|_| is_other_key_pressed.store(true, Ordering::SeqCst))
-    });
+    space_pressed
+        .on_press(ignore, move |_| space_pressed_layer_.disable())
+        .on_release_raw(Space, |_| Space.click());
 }
 
 fn main() {
-    let mut hotkey = Hotkey::new();
-    let ignored = buttons!(Space, LShift, RShift, LCtrl, RCtrl, LAlt, RAlt, LShift, RShift);
-
-    emulate_sands(&mut hotkey, &Context::default(), Button::Space, ignored);
-
+    let hotkey = Hotkey::new();
+    sands(&hotkey);
     hotkey.install();
 }

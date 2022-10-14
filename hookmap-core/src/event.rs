@@ -36,6 +36,15 @@ pub enum NativeEventOperation {
     Dispatch,
 }
 
+impl NativeEventOperation {
+    pub fn or(self, other: Self) -> Self {
+        match self {
+            Self::Block => self,
+            Self::Dispatch => other,
+        }
+    }
+}
+
 impl Default for &NativeEventOperation {
     fn default() -> Self {
         &NativeEventOperation::Dispatch
