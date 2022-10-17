@@ -35,54 +35,24 @@ impl HotkeyStorage {
     pub(super) fn remap(
         &mut self,
         layer: LayerIndex,
-        targets: &[Button],
-        behavior: Button,
-        layer_creator: &mut LayerCreator,
-    ) {
-        for &target in targets {
-            let enabled_layer = layer_creator.create_sync_layer(layer, false);
-
-            self.input_storage.on_press_exclusive.register_specific(
-                layer,
-                target,
-                Arc::new(HookAction::RemapPress {
-                    button: behavior,
-                    layer: enabled_layer,
-                }),
-            );
-
-            self.input_storage.on_release.register_specific(
-                enabled_layer,
-                target,
-                Arc::new(HookAction::RemapRelease {
-                    button: behavior,
-                    layer: enabled_layer,
-                }),
-            );
-        }
-    }
-
-    pub(super) fn remap_any(
-        &mut self,
-        layer: LayerIndex,
-        ignore: Option<Arc<Vec<Button>>>,
+        target: Button,
         behavior: Button,
         layer_creator: &mut LayerCreator,
     ) {
         let enabled_layer = layer_creator.create_sync_layer(layer, false);
 
-        self.input_storage.on_press_exclusive.register_any(
+        self.input_storage.on_press_exclusive.register_specific(
             layer,
-            ignore.clone(),
+            target,
             Arc::new(HookAction::RemapPress {
                 button: behavior,
                 layer: enabled_layer,
             }),
         );
 
-        self.input_storage.on_release.register_any(
-            layer,
-            ignore,
+        self.input_storage.on_release.register_specific(
+            enabled_layer,
+            target,
             Arc::new(HookAction::RemapRelease {
                 button: behavior,
                 layer: enabled_layer,
@@ -93,109 +63,47 @@ impl HotkeyStorage {
     pub(super) fn on_press(
         &mut self,
         layer: LayerIndex,
-        targets: &[Button],
-        action: HookAction<ButtonEvent>,
-    ) {
-        let action = Arc::new(action);
-        for &target in targets {
-            self.input_storage
-                .on_press
-                .register_specific(layer, target, Arc::clone(&action));
-        }
-    }
-
-    pub(super) fn on_press_any(
-        &mut self,
-        layer: LayerIndex,
-        ignore: Option<Arc<Vec<Button>>>,
+        target: Button,
         action: HookAction<ButtonEvent>,
     ) {
         self.input_storage
             .on_press
-            .register_any(layer, ignore, Arc::new(action));
+            .register_specific(layer, target, Arc::new(action));
     }
 
     pub(super) fn on_release(
         &mut self,
         layer: LayerIndex,
-        targets: &[Button],
-        action: HookAction<ButtonEvent>,
-        layer_creator: &mut LayerCreator,
-    ) {
-        let action = Arc::new(action);
-
-        for &target in targets {
-            let enabled_layer = layer_creator.create_sync_layer(layer, false);
-
-            self.input_storage.on_press.register_specific(
-                layer,
-                target,
-                Arc::new(HookAction::EnableLayer(enabled_layer)),
-            );
-
-            self.input_storage.on_release.register_specific(
-                enabled_layer,
-                target,
-                Arc::new(HookAction::DisableLayer(enabled_layer)),
-            );
-
-            self.layer_storage
-                .register_on_inactivated(enabled_layer, Arc::clone(&action));
-        }
-    }
-
-    pub(super) fn on_release_any(
-        &mut self,
-        layer: LayerIndex,
-        ignore: Option<Arc<Vec<Button>>>,
+        target: Button,
         action: HookAction<ButtonEvent>,
         layer_creator: &mut LayerCreator,
     ) {
         let enabled_layer = layer_creator.create_sync_layer(layer, false);
 
-        self.input_storage.on_press.register_any(
+        self.input_storage.on_press.register_specific(
             layer,
-            ignore.clone(),
+            target,
             Arc::new(HookAction::EnableLayer(enabled_layer)),
         );
 
-        self.input_storage
-            .on_release
-            .register_any(layer, ignore, Arc::new(action));
-
-        self.layer_storage
-            .register_on_inactivated(enabled_layer, Arc::new(HookAction::DisableLayer(layer)));
-    }
-
-    pub(super) fn disable(&mut self, layer: LayerIndex, targets: &[Button]) {
-        let on_press_action = Arc::new(HookAction::Block);
-        let on_release_action = Arc::new(HookAction::Block);
-
-        for &target in targets {
-            self.input_storage.on_press.register_specific(
-                layer,
-                target,
-                Arc::clone(&on_press_action),
-            );
-
-            self.input_storage.on_release.register_specific(
-                layer,
-                target,
-                Arc::clone(&on_release_action),
-            );
-        }
-    }
-
-    pub(super) fn disable_any(&mut self, layer: LayerIndex, ignore: Option<Arc<Vec<Button>>>) {
-        self.input_storage.on_press.register_any(
-            layer,
-            ignore.clone(),
-            Arc::new(HookAction::Block),
+        self.input_storage.on_release.register_specific(
+            enabled_layer,
+            target,
+            Arc::new(HookAction::DisableLayer(enabled_layer)),
         );
 
+        self.layer_storage
+            .register_on_inactivated(enabled_layer, Arc::new(action));
+    }
+
+    pub(super) fn disable(&mut self, layer: LayerIndex, target: Button) {
         self.input_storage
             .on_press
-            .register_any(layer, ignore, Arc::new(HookAction::Block));
+            .register_specific(layer, target, Arc::new(HookAction::Block));
+
+        self.input_storage
+            .on_release
+            .register_specific(layer, target, Arc::new(HookAction::Block));
     }
 
     pub(super) fn mouse_cursor(&mut self, layer: LayerIndex, action: HookAction<CursorEvent>) {

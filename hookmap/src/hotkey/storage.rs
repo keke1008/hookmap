@@ -10,18 +10,11 @@ use crate::runtime::hook::{Hook, HookAction, Procedure};
 use crate::runtime::storage::{InputHookFetcher, LayerHookFetcher};
 
 #[derive(Debug, Default)]
-pub(super) struct ButtonHookStorage {
-    specific: HashMap<Button, Vec<Hook<ButtonEvent>>>,
-    any: Vec<Hook<ButtonEvent>>,
-}
+pub(super) struct ButtonHookStorage(HashMap<Button, Vec<Hook<ButtonEvent>>>);
 
 impl ButtonHookStorage {
     fn iter_filter_event(&self, event: &ButtonEvent) -> impl Iterator<Item = &Hook<ButtonEvent>> {
-        self.specific
-            .get(&event.target)
-            .into_iter()
-            .flatten()
-            .chain(self.any.iter())
+        self.0.get(&event.target).into_iter().flatten()
     }
 
     pub(super) fn register_specific(
@@ -30,19 +23,10 @@ impl ButtonHookStorage {
         button: Button,
         action: Arc<HookAction<ButtonEvent>>,
     ) {
-        self.specific
+        self.0
             .entry(button)
             .or_default()
             .push(Hook::new(layer, action, None));
-    }
-
-    pub(super) fn register_any(
-        &mut self,
-        layer: LayerIndex,
-        ignore: Option<Arc<Vec<Button>>>,
-        action: Arc<HookAction<ButtonEvent>>,
-    ) {
-        self.any.push(Hook::new(layer, action, ignore));
     }
 }
 

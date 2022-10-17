@@ -9,7 +9,6 @@ mod storage;
 
 use std::cell::RefCell;
 use std::rc::{Rc, Weak};
-use std::sync::Arc;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
@@ -18,7 +17,6 @@ use crate::layer::LayerIndex;
 use crate::runtime::hook::{HookAction, OptionalProcedure, RequiredProcedure};
 use crate::runtime::Runtime;
 
-use self::args::ButtonArgs;
 use self::interruption::Interruption;
 use self::layer::{Layer, LayerCreator};
 use self::registrar::HotkeyStorage;
@@ -179,22 +177,14 @@ impl Hotkey {
     ///     .remap(Button::C, Button::D);
     /// ```
     ///
-    pub fn remap(self, target: impl Into<ButtonArgs>, behavior: Button) -> Self {
-        self.inner.apply(|inner| match &target.into() {
-            ButtonArgs::Each(targets) => inner.storage.remap(
+    pub fn remap(self, target: Button, behavior: Button) -> Self {
+        self.inner.apply(|inner| {
+            inner.storage.remap(
                 self.context.current_layer,
-                targets,
+                target,
                 behavior,
                 &mut inner.layer_creator,
-            ),
-            ButtonArgs::Not(ignore) => {
-                inner.storage.remap_any(
-                    self.context.current_layer,
-                    Some(Arc::clone(ignore)),
-                    behavior,
-                    &mut inner.layer_creator,
-                );
-            }
+            )
         });
 
         self
@@ -214,27 +204,17 @@ impl Hotkey {
     ///
     pub fn on_press(
         self,
-        target: impl Into<ButtonArgs>,
+        target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
         };
-
-        self.inner.apply(|inner| match &target.into() {
-            ButtonArgs::Each(targets) => {
-                inner
-                    .storage
-                    .on_press(self.context.current_layer, targets, action);
-            }
-            ButtonArgs::Not(ignore) => {
-                inner.storage.on_press_any(
-                    self.context.current_layer,
-                    Some(Arc::clone(ignore)),
-                    action,
-                );
-            }
+        self.inner.apply(|inner| {
+            inner
+                .storage
+                .on_press(self.context.current_layer, target, action);
         });
 
         self
@@ -254,31 +234,20 @@ impl Hotkey {
     ///
     pub fn on_release(
         self,
-        target: impl Into<ButtonArgs>,
+        target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
         };
-
-        self.inner.apply(|inner| match target.into() {
-            ButtonArgs::Each(ref targets) => {
-                inner.storage.on_release(
-                    self.context.current_layer,
-                    targets,
-                    action,
-                    &mut inner.layer_creator,
-                );
-            }
-            ButtonArgs::Not(ignore) => {
-                inner.storage.on_release_any(
-                    self.context.current_layer,
-                    Some(ignore),
-                    action,
-                    &mut inner.layer_creator,
-                );
-            }
+        self.inner.apply(|inner| {
+            inner.storage.on_release(
+                self.context.current_layer,
+                target,
+                action,
+                &mut inner.layer_creator,
+            )
         });
 
         self
@@ -349,17 +318,9 @@ impl Hotkey {
     /// hotkey.disable(Button::A);
     /// ```
     ///
-    pub fn disable(self, target: impl Into<ButtonArgs>) -> Self {
-        self.inner.apply(|inner| match target.into() {
-            ButtonArgs::Each(ref targets) => {
-                inner.storage.disable(self.context.current_layer, targets)
-            }
-            ButtonArgs::Not(ignore) => {
-                inner
-                    .storage
-                    .disable_any(self.context.current_layer, Some(ignore));
-            }
-        });
+    pub fn disable(self, target: Button) -> Self {
+        self.inner
+            .apply(|inner| inner.storage.disable(self.context.current_layer, target));
 
         self
     }
