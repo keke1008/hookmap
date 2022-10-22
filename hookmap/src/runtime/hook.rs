@@ -5,13 +5,17 @@ use std::sync::Arc;
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
-use crate::layer::{LayerAction, LayerFacade, LayerIndex, LayerState};
+use crate::condition::view::View;
+use crate::condition::{
+    detector::FlagChange,
+    flag::{FlagIndex, FlagState},
+};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub(crate) struct LayerEvent {
-    pub(crate) action: LayerAction,
-    pub(crate) layer: LayerIndex,
-    pub(crate) snapshot: LayerState,
+pub(crate) struct FlagEvent {
+    pub(crate) flag_index: FlagIndex,
+    pub(crate) change: FlagChange,
+    pub(crate) snapshot: FlagState,
     pub(crate) inherited_event: Option<ButtonEvent>,
 }
 
@@ -78,14 +82,14 @@ pub(crate) enum HookAction<E> {
     },
     RemapPress {
         button: Button,
-        layer: LayerIndex,
+        flag_index: FlagIndex,
     },
     RemapRelease {
         button: Button,
-        layer: LayerIndex,
+        flag_index: FlagIndex,
     },
-    EnableLayer(LayerIndex),
-    DisableLayer(LayerIndex),
+    EnableFlag(FlagIndex),
+    DisableFlag(FlagIndex),
     Block,
 }
 
@@ -110,46 +114,46 @@ impl IntoInheritedEvent for WheelEvent {}
 fn run_action<E>(
     action: &HookAction<E>,
     event: impl IntoInheritedEvent,
-    state: &LayerState,
-    tx: &Sender<LayerEvent>,
+    state: &FlagState,
+    tx: &Sender<FlagEvent>,
 ) {
     use HookAction::*;
 
     match action {
         Procedure { .. } => unreachable!(),
-        RemapPress { button, layer } => {
-            let event = LayerEvent {
-                action: LayerAction::Enable,
-                layer: *layer,
+        RemapPress { button, flag_index } => {
+            let event = FlagEvent {
+                flag_index: *flag_index,
+                change: FlagChange::Enabled,
                 snapshot: state.clone(),
                 inherited_event: event.into(),
             };
             tx.send(event).unwrap();
             button.press_recursive();
         }
-        RemapRelease { button, layer } => {
+        RemapRelease { button, flag_index } => {
             button.release_recursive();
-            let event = LayerEvent {
-                action: LayerAction::Disable,
-                layer: *layer,
+            let event = FlagEvent {
+                flag_index: *flag_index,
+                change: FlagChange::Disabled,
                 snapshot: state.clone(),
                 inherited_event: event.into(),
             };
             tx.send(event).unwrap();
         }
-        EnableLayer(layer) => {
-            let event = LayerEvent {
-                action: LayerAction::Enable,
-                layer: *layer,
+        EnableFlag(flag_index) => {
+            let event = FlagEvent {
+                flag_index: *flag_index,
+                change: FlagChange::Enabled,
                 snapshot: state.clone(),
                 inherited_event: event.into(),
             };
             tx.send(event).unwrap();
         }
-        DisableLayer(layer) => {
-            let event = LayerEvent {
-                action: LayerAction::Disable,
-                layer: *layer,
+        DisableFlag(flag_index) => {
+            let event = FlagEvent {
+                flag_index: *flag_index,
+                change: FlagChange::Disabled,
                 snapshot: state.clone(),
                 inherited_event: event.into(),
             };
@@ -160,7 +164,7 @@ fn run_action<E>(
 }
 
 impl<E: IntoInheritedEvent> HookAction<E> {
-    pub(super) fn run(&self, event: E, state: &LayerState, tx: &Sender<LayerEvent>) {
+    pub(super) fn run(&self, event: E, state: &FlagState, tx: &Sender<FlagEvent>) {
         match self {
             HookAction::Procedure { procedure, .. } => procedure.call(event),
             _ => run_action(self, event, state, tx),
@@ -172,8 +176,8 @@ impl HookAction<ButtonEvent> {
     pub(super) fn run_optional(
         &self,
         event: Option<ButtonEvent>,
-        state: &LayerState,
-        tx: &Sender<LayerEvent>,
+        state: &FlagState,
+        tx: &Sender<FlagEvent>,
     ) {
         match self {
             HookAction::Procedure { procedure, .. } => procedure.call_optional(event),
@@ -189,7 +193,7 @@ impl<E> HookAction<E> {
         match self {
             Procedure { native, .. } => *native,
             RemapPress { .. } | RemapRelease { .. } => NativeEventOperation::Block,
-            EnableLayer(..) | DisableLayer(..) => NativeEventOperation::Dispatch,
+            EnableFlag(..) | DisableFlag(..) => NativeEventOperation::Dispatch,
             Block => NativeEventOperation::Block,
         }
     }
@@ -197,43 +201,20 @@ impl<E> HookAction<E> {
 
 #[derive(Debug, Clone)]
 pub(crate) struct Hook<E> {
-    layer_index: LayerIndex,
+    view: Arc<View>,
     action: Arc<HookAction<E>>,
-    ignore: Option<Arc<Vec<Button>>>,
 }
 
 impl<E> Hook<E> {
-    pub(crate) fn new(
-        layer_index: LayerIndex,
-        action: Arc<HookAction<E>>,
-        ignore: Option<Arc<Vec<Button>>>,
-    ) -> Self {
-        Self {
-            layer_index,
-            action,
-            ignore,
-        }
-    }
-
-    pub(crate) fn layer_index(&self) -> LayerIndex {
-        self.layer_index
+    pub(crate) fn new(view: Arc<View>, action: Arc<HookAction<E>>) -> Self {
+        Self { view, action }
     }
 
     pub(crate) fn action(&self) -> Arc<HookAction<E>> {
         Arc::clone(&self.action)
     }
 
-    pub(crate) fn is_runnable(
-        &self,
-        target: Button,
-        state: &LayerState,
-        facade: &LayerFacade,
-    ) -> bool {
-        facade.is_active(state, self.layer_index)
-            && self
-                .ignore
-                .as_ref()
-                .map(|ignore| !ignore.contains(&target))
-                .unwrap_or(true)
+    pub(crate) fn is_runnable(&self, state: &FlagState) -> bool {
+        self.view.is_enabled(state)
     }
 }

@@ -4,9 +4,9 @@ use std::thread::{self, JoinHandle};
 
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use crate::layer::LayerState;
+use crate::condition::flag::FlagState;
 
-use super::hook::LayerEvent;
+use super::hook::FlagEvent;
 use super::hook::{HookAction, IntoInheritedEvent};
 
 #[derive(Debug)]
@@ -22,7 +22,7 @@ impl<E: IntoInheritedEvent + Copy, A> Action<E, A> {
 }
 
 impl<E: IntoInheritedEvent + Copy> Action<E> {
-    fn run(&self, state: &LayerState, tx: &Sender<LayerEvent>) {
+    fn run(&self, state: &FlagState, tx: &Sender<FlagEvent>) {
         for action in &self.actions {
             action.run(self.event, state, tx)
         }
@@ -30,7 +30,7 @@ impl<E: IntoInheritedEvent + Copy> Action<E> {
 }
 
 impl Action<Option<ButtonEvent>, ButtonEvent> {
-    fn run(&self, state: &LayerState, tx: &Sender<LayerEvent>) {
+    fn run(&self, state: &FlagState, tx: &Sender<FlagEvent>) {
         for action in &self.actions {
             action.run_optional(self.event, state, tx);
         }
@@ -52,18 +52,18 @@ pub(super) struct Worker {
 
 impl Worker {
     pub(super) fn new(
-        state: Arc<Mutex<LayerState>>,
-        layer_tx: Sender<LayerEvent>,
+        state: Arc<Mutex<FlagState>>,
+        flag_tx: Sender<FlagEvent>,
     ) -> (Sender<Message>, Self) {
         let (tx, rx) = mpsc::channel();
         let handle = thread::spawn(move || {
             for msg in rx.iter() {
-                let state = state.lock().unwrap();
+                let state = state.lock().unwrap().clone();
                 match msg {
-                    Message::Button(action) => action.run(&state, &layer_tx),
-                    Message::Optional(action) => action.run(&state, &layer_tx),
-                    Message::Cursor(action) => action.run(&state, &layer_tx),
-                    Message::Wheel(action) => action.run(&state, &layer_tx),
+                    Message::Button(action) => action.run(&state, &flag_tx),
+                    Message::Optional(action) => action.run(&state, &flag_tx),
+                    Message::Cursor(action) => action.run(&state, &flag_tx),
+                    Message::Wheel(action) => action.run(&state, &flag_tx),
                 }
             }
         });

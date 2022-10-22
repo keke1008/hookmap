@@ -10,36 +10,31 @@ use std::thread;
 
 use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 
-use crate::layer::{LayerFacade, LayerState};
+use crate::condition::flag::FlagState;
 
-use hook::LayerEvent;
-use storage::{InputHookFetcher, InterruptionFetcher, LayerHookFetcher};
+use hook::{FlagEvent, HookAction};
+use storage::{FlagHookFetcher, InputHookFetcher, InterruptionFetcher};
 use worker::{Action, Message, Worker};
 
-use self::hook::HookAction;
-
-pub(crate) struct Runtime<Input, Interruption, Layer> {
+pub(crate) struct Runtime<Input, Interruption, Flag> {
     input_fetcher: Input,
     interruption_storage: Interruption,
-    layer_fetcher: Layer,
-    layer_state: Arc<Mutex<LayerState>>,
-    layer_facade: LayerFacade,
+    flag_fetcher: Flag,
+    flag_state: Arc<Mutex<FlagState>>,
 }
 
-impl<Input, Interruption, Layer> Runtime<Input, Interruption, Layer> {
+impl<Input, Interruption, Flag> Runtime<Input, Interruption, Flag> {
     pub(crate) fn new(
         input_fetcher: Input,
         interruption_storage: Interruption,
-        layer_fetcher: Layer,
-        layer_state: Arc<Mutex<LayerState>>,
-        layer_facade: LayerFacade,
+        flag_fetcher: Flag,
+        flag_state: Arc<Mutex<FlagState>>,
     ) -> Self {
         Self {
             input_fetcher,
             interruption_storage,
-            layer_fetcher,
-            layer_state,
-            layer_facade,
+            flag_fetcher,
+            flag_state,
         }
     }
 }
@@ -52,27 +47,26 @@ fn calculate_native<E>(actions: &[Arc<HookAction<E>>]) -> NativeEventOperation {
         .unwrap_or(NativeEventOperation::Dispatch)
 }
 
-impl<Input, Interruption, Layer> Runtime<Input, Interruption, Layer>
+impl<Input, Interruption, Flag> Runtime<Input, Interruption, Flag>
 where
     Input: InputHookFetcher,
     Interruption: InterruptionFetcher,
-    Layer: LayerHookFetcher,
+    Flag: FlagHookFetcher,
 {
     pub(crate) fn start(
         self,
         input_rx: Receiver<(Event, NativeEventHandler)>,
-        layer_tx: Sender<LayerEvent>,
-        layer_rx: Receiver<LayerEvent>,
+        flag_tx: Sender<FlagEvent>,
+        flag_rx: Receiver<FlagEvent>,
     ) {
         let Runtime {
             input_fetcher,
             interruption_storage,
-            layer_fetcher,
-            layer_state,
-            layer_facade,
+            flag_fetcher,
+            flag_state,
         } = self;
 
-        let (worker_tx, worker) = Worker::new(Arc::clone(&layer_state), layer_tx);
+        let (worker_tx, worker) = Worker::new(Arc::clone(&flag_state), flag_tx);
 
         thread::scope(|scope| {
             let worker_tx_ = worker_tx.clone();
@@ -81,7 +75,7 @@ where
                     (input_rx, input_fetcher, worker_tx_, interruption_storage);
 
                 for (event, native_handler) in input_rx.iter() {
-                    let state = layer_state.lock().unwrap();
+                    let state = flag_state.lock().unwrap();
 
                     match event {
                         Event::Button(button_event) => {
@@ -92,11 +86,8 @@ where
                                 continue;
                             }
 
-                            let action = input_fetcher.fetch_exclusive_button_hook(
-                                button_event,
-                                &state,
-                                &layer_facade,
-                            );
+                            let action =
+                                input_fetcher.fetch_exclusive_button_hook(button_event, &*state);
                             native = action
                                 .as_ref()
                                 .map_or(NativeEventOperation::Dispatch, |action| {
@@ -115,11 +106,7 @@ where
                             let native_ = interruption_storage.fetch_hook(button_event);
                             native = native.or(native_);
 
-                            let actions = input_fetcher.fetch_button_hook(
-                                button_event,
-                                &state,
-                                &layer_facade,
-                            );
+                            let actions = input_fetcher.fetch_button_hook(button_event, &state);
                             native = native.or(calculate_native(&actions));
                             native_handler.handle(native);
 
@@ -128,8 +115,7 @@ where
                         }
 
                         Event::Cursor(cursor_event) => {
-                            let actions =
-                                input_fetcher.fetch_mouse_cursor_hook(&state, &layer_facade);
+                            let actions = input_fetcher.fetch_mouse_cursor_hook(&state);
                             native_handler.handle(calculate_native(&actions));
 
                             let msg = Message::Cursor(Action::new(cursor_event, actions));
@@ -137,8 +123,7 @@ where
                         }
 
                         Event::Wheel(wheel_event) => {
-                            let actions =
-                                input_fetcher.fetch_mouse_wheel_hook(&state, &layer_facade);
+                            let actions = input_fetcher.fetch_mouse_wheel_hook(&state);
                             native_handler.handle(calculate_native(&actions));
 
                             let msg = Message::Wheel(Action::new(wheel_event, actions));
@@ -149,16 +134,12 @@ where
             });
 
             scope.spawn(|| {
-                let (layer_rx, layer_fetcher, worker_tx) = (layer_rx, layer_fetcher, worker_tx);
+                let (flag_rx, flag_fetcher, worker_tx) = (flag_rx, flag_fetcher, worker_tx);
 
-                for event in layer_rx.iter() {
-                    let actions = layer_fetcher.fetch(
-                        event.layer,
-                        event.action,
-                        event.snapshot,
-                        &layer_facade,
-                    );
-                    let msg = Message::Optional(Action::new(event.inherited_event, actions));
+                for event in flag_rx.iter() {
+                    let inherited_event = event.inherited_event;
+                    let actions = flag_fetcher.fetch(event);
+                    let msg = Message::Optional(Action::new(inherited_event, actions));
                     worker_tx.send(msg).unwrap();
                 }
             });

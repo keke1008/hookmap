@@ -3,18 +3,17 @@ use std::sync::{Arc, Mutex};
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use crate::layer::LayerIndex;
+use crate::condition::flag::FlagState;
+use crate::condition::view::{View, ViewBuilder};
 use crate::runtime::{hook::HookAction, interruption::InterruptionStorage};
 
-use super::interruption::Interruption;
-use super::layer::LayerCreator;
-use super::storage::{InputHookStorage, LayerHookStorage};
+use super::storage::{FlagHookStorage, InputHookStorage};
 
 #[derive(Debug, Default)]
 pub(super) struct HotkeyStorage {
     input_storage: InputHookStorage,
     interruption_storage: Arc<Mutex<InterruptionStorage>>,
-    layer_storage: LayerHookStorage,
+    flag_storage: FlagHookStorage,
 }
 
 impl HotkeyStorage {
@@ -23,120 +22,104 @@ impl HotkeyStorage {
     ) -> (
         InputHookStorage,
         Arc<Mutex<InterruptionStorage>>,
-        LayerHookStorage,
+        FlagHookStorage,
     ) {
         (
             self.input_storage,
             self.interruption_storage,
-            self.layer_storage,
+            self.flag_storage,
         )
     }
 
     pub(super) fn remap(
         &mut self,
-        layer: LayerIndex,
+        view: Arc<View>,
         target: Button,
         behavior: Button,
-        layer_creator: &mut LayerCreator,
+        state: &mut FlagState,
     ) {
-        let enabled_layer = layer_creator.create_sync_layer(layer, false);
+        let flag = state.create_flag(false);
+        let enabled_view = Arc::new(ViewBuilder::new().merge(&*view).enabled(flag).build());
 
         self.input_storage.on_press_exclusive.register_specific(
-            layer,
+            view,
             target,
             Arc::new(HookAction::RemapPress {
                 button: behavior,
-                layer: enabled_layer,
+                flag_index: flag,
             }),
         );
 
         self.input_storage.on_release.register_specific(
-            enabled_layer,
+            enabled_view,
             target,
             Arc::new(HookAction::RemapRelease {
                 button: behavior,
-                layer: enabled_layer,
+                flag_index: flag,
             }),
         );
     }
 
     pub(super) fn on_press(
         &mut self,
-        layer: LayerIndex,
+        view: Arc<View>,
         target: Button,
         action: HookAction<ButtonEvent>,
     ) {
         self.input_storage
             .on_press
-            .register_specific(layer, target, Arc::new(action));
+            .register_specific(view, target, Arc::new(action));
     }
 
     pub(super) fn on_release(
         &mut self,
-        layer: LayerIndex,
+        view: Arc<View>,
         target: Button,
         action: HookAction<ButtonEvent>,
-        layer_creator: &mut LayerCreator,
+        state: &mut FlagState,
     ) {
-        let enabled_layer = layer_creator.create_sync_layer(layer, false);
+        let flag = state.create_flag(false);
+        let enabled_view = Arc::new(ViewBuilder::new().merge(&*view).enabled(flag).build());
 
         self.input_storage.on_press.register_specific(
-            layer,
+            view,
             target,
-            Arc::new(HookAction::EnableLayer(enabled_layer)),
+            Arc::new(HookAction::EnableFlag(flag)),
         );
 
         self.input_storage.on_release.register_specific(
-            enabled_layer,
+            Arc::clone(&enabled_view),
             target,
-            Arc::new(HookAction::DisableLayer(enabled_layer)),
+            Arc::new(HookAction::DisableFlag(flag)),
         );
 
-        self.layer_storage
-            .register_on_inactivated(enabled_layer, Arc::new(action));
+        self.flag_storage
+            .register_on_inactivated(enabled_view, Arc::new(action));
     }
 
-    pub(super) fn disable(&mut self, layer: LayerIndex, target: Button) {
-        self.input_storage
-            .on_press
-            .register_specific(layer, target, Arc::new(HookAction::Block));
+    pub(super) fn disable(&mut self, view: Arc<View>, target: Button) {
+        self.input_storage.on_press.register_specific(
+            Arc::clone(&view),
+            target,
+            Arc::new(HookAction::Block),
+        );
 
-        self.input_storage
-            .on_release
-            .register_specific(layer, target, Arc::new(HookAction::Block));
+        self.input_storage.on_release.register_specific(
+            Arc::clone(&view),
+            target,
+            Arc::new(HookAction::Block),
+        );
     }
 
-    pub(super) fn mouse_cursor(&mut self, layer: LayerIndex, action: HookAction<CursorEvent>) {
+    pub(super) fn mouse_cursor(&mut self, view: Arc<View>, action: HookAction<CursorEvent>) {
         self.input_storage
             .mouse_cursor
-            .register(layer, Arc::new(action));
+            .register(view, Arc::new(action));
     }
 
-    pub(super) fn mouse_wheel(&mut self, layer: LayerIndex, action: HookAction<WheelEvent>) {
+    pub(super) fn mouse_wheel(&mut self, view: Arc<View>, action: HookAction<WheelEvent>) {
         self.input_storage
             .mouse_wheel
-            .register(layer, Arc::new(action));
-    }
-
-    pub(super) fn on_layer_activated(
-        &mut self,
-        layer: LayerIndex,
-        action: HookAction<ButtonEvent>,
-    ) {
-        self.layer_storage
-            .register_on_activated(layer, Arc::new(action));
-    }
-
-    pub(super) fn on_layer_inactivated(
-        &mut self,
-        layer: LayerIndex,
-        action: HookAction<ButtonEvent>,
-    ) {
-        self.layer_storage
-            .register_on_inactivated(layer, Arc::new(action));
-    }
-
-    pub(super) fn interruption(&mut self) -> Interruption {
-        Interruption::new(Arc::clone(&self.interruption_storage))
+            .register(view, Arc::new(action));
     }
 }

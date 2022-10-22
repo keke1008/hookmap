@@ -13,7 +13,7 @@ pub mod hotkey;
 #[doc(hidden)]
 pub mod macros;
 
-pub mod layer;
+pub mod condition;
 
 mod runtime;
 
@@ -29,9 +29,5 @@ pub mod prelude {
     // Macros
     pub use super::{each, modifiers, not, seq};
 
-    pub use super::{
-        device::*,
-        hotkey::interruption::{Filter, Interruption, InterruptionReceiver},
-        hotkey::Hotkey,
-    };
+    pub use super::{device::*, hotkey::Hotkey};
 }

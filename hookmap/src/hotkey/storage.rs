@@ -1,13 +1,16 @@
 use std::collections::HashMap;
+use std::hash::Hash;
 use std::sync::Arc;
 
 use hookmap_core::button::{Button, ButtonAction};
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
-use crate::layer::{DetectedEvent, LayerAction, LayerFacade, LayerIndex, LayerState};
+use crate::condition::detector::{Detector, ViewChange};
+use crate::condition::flag::FlagState;
+use crate::condition::view::View;
 
-use crate::runtime::hook::{Hook, HookAction, Procedure};
-use crate::runtime::storage::{InputHookFetcher, LayerHookFetcher};
+use crate::runtime::hook::{FlagEvent, Hook, HookAction, Procedure};
+use crate::runtime::storage::{FlagHookFetcher, InputHookFetcher};
 
 #[derive(Debug, Default)]
 pub(super) struct ButtonHookStorage(HashMap<Button, Vec<Hook<ButtonEvent>>>);
@@ -19,14 +22,14 @@ impl ButtonHookStorage {
 
     pub(super) fn register_specific(
         &mut self,
-        layer: LayerIndex,
+        view: Arc<View>,
         button: Button,
         action: Arc<HookAction<ButtonEvent>>,
     ) {
         self.0
             .entry(button)
             .or_default()
-            .push(Hook::new(layer, action, None));
+            .push(Hook::new(view, action));
     }
 }
 
@@ -36,16 +39,16 @@ pub(super) struct MouseHookStorage<E> {
 }
 
 impl<E> MouseHookStorage<E> {
-    fn fetch(&self, state: &LayerState, facade: &LayerFacade) -> Vec<Arc<HookAction<E>>> {
+    fn fetch(&self, state: &FlagState) -> Vec<Arc<HookAction<E>>> {
         self.hooks
             .iter()
-            .filter(|hook| facade.is_active(state, hook.layer_index()))
+            .filter(|hook| hook.is_runnable(state))
             .map(Hook::action)
             .collect()
     }
 
-    pub(super) fn register(&mut self, layer: LayerIndex, action: Arc<HookAction<E>>) {
-        self.hooks.push(Hook::new(layer, action, None));
+    pub(super) fn register(&mut self, view: Arc<View>, action: Arc<HookAction<E>>) {
+        self.hooks.push(Hook::new(view, action));
     }
 }
 
@@ -69,8 +72,7 @@ impl InputHookFetcher for InputHookStorage {
     fn fetch_exclusive_button_hook(
         &self,
         event: ButtonEvent,
-        state: &LayerState,
-        facade: &LayerFacade,
+        state: &FlagState,
     ) -> Option<Arc<HookAction<ButtonEvent>>> {
         let storage = match event.action {
             ButtonAction::Press => &self.on_press_exclusive,
@@ -78,15 +80,14 @@ impl InputHookFetcher for InputHookStorage {
         };
         storage
             .iter_filter_event(&event)
-            .find(|hook| hook.is_runnable(event.target, state, facade))
+            .find(|hook| hook.is_runnable(state))
             .map(Hook::action)
     }
 
     fn fetch_button_hook(
         &self,
         event: ButtonEvent,
-        state: &LayerState,
-        facade: &LayerFacade,
+        state: &FlagState,
     ) -> Vec<Arc<HookAction<ButtonEvent>>> {
         let storage = match event.action {
             ButtonAction::Press => &self.on_press,
@@ -94,70 +95,83 @@ impl InputHookFetcher for InputHookStorage {
         };
         storage
             .iter_filter_event(&event)
-            .filter(|hook| hook.is_runnable(event.target, state, facade))
+            .filter(|hook| hook.is_runnable(state))
             .map(Hook::action)
             .collect()
     }
 
-    fn fetch_mouse_cursor_hook(
-        &self,
-        state: &LayerState,
-        facade: &LayerFacade,
-    ) -> Vec<Arc<HookAction<CursorEvent>>> {
-        self.mouse_cursor.fetch(state, facade)
+    fn fetch_mouse_cursor_hook(&self, state: &FlagState) -> Vec<Arc<HookAction<CursorEvent>>> {
+        self.mouse_cursor.fetch(state)
     }
 
-    fn fetch_mouse_wheel_hook(
-        &self,
-        state: &LayerState,
-        facade: &LayerFacade,
-    ) -> Vec<Arc<HookAction<WheelEvent>>> {
-        self.mouse_wheel.fetch(state, facade)
+    fn fetch_mouse_wheel_hook(&self, state: &FlagState) -> Vec<Arc<HookAction<WheelEvent>>> {
+        self.mouse_wheel.fetch(state)
     }
 }
 
-type LayerHookAction = Arc<HookAction<ButtonEvent>>;
+type FlagHookAction = Arc<HookAction<ButtonEvent>>;
 
-fn assert_is_procedure_optional(action: &LayerHookAction) {
+fn assert_is_procedure_optional(action: &FlagHookAction) {
     if let HookAction::Procedure { procedure, .. } = &**action {
         assert!(matches!(procedure, Procedure::Optional(_)));
     }
 }
 
+#[derive(Debug, Clone)]
+struct ArcPtrKey<T>(Arc<T>);
+impl<T> Hash for ArcPtrKey<T> {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        Arc::as_ptr(&self.0).hash(state);
+    }
+}
+impl<T> PartialEq for ArcPtrKey<T> {
+    fn eq(&self, other: &Self) -> bool {
+        Arc::ptr_eq(&self.0, &other.0)
+    }
+}
+impl<T> Eq for ArcPtrKey<T> {}
+
 #[derive(Debug, Default)]
-pub(super) struct LayerHookStorage {
-    on_activated: HashMap<LayerIndex, Vec<LayerHookAction>>,
-    on_inactivated: HashMap<LayerIndex, Vec<LayerHookAction>>,
+pub(super) struct FlagHookStorage {
+    on_enabled: HashMap<ArcPtrKey<View>, Vec<FlagHookAction>>,
+    on_disabled: HashMap<ArcPtrKey<View>, Vec<FlagHookAction>>,
+    detector: Detector,
 }
 
-impl LayerHookStorage {
-    pub(super) fn register_on_activated(&mut self, layer: LayerIndex, action: LayerHookAction) {
-        assert_is_procedure_optional(&action);
-        self.on_activated.entry(layer).or_default().push(action);
+impl FlagHookStorage {
+    fn register_view(&mut self, view: &ArcPtrKey<View>) {
+        if self.on_enabled.get(view).is_none() && self.on_disabled.get(view).is_none() {
+            self.detector.observe(Arc::clone(&view.0));
+        }
     }
-    pub(super) fn register_on_inactivated(&mut self, layer: LayerIndex, action: LayerHookAction) {
+
+    pub(super) fn register_on_activated(&mut self, view: Arc<View>, action: FlagHookAction) {
         assert_is_procedure_optional(&action);
-        self.on_inactivated.entry(layer).or_default().push(action);
+
+        let view = ArcPtrKey(view);
+        self.register_view(&view);
+        self.on_enabled.entry(view).or_default().push(action);
+    }
+
+    pub(super) fn register_on_inactivated(&mut self, view: Arc<View>, action: FlagHookAction) {
+        assert_is_procedure_optional(&action);
+        let view = ArcPtrKey(view);
+        self.register_view(&view);
+        self.on_disabled.entry(view).or_default().push(action);
     }
 }
 
-impl LayerHookFetcher for LayerHookStorage {
-    fn fetch(
-        &self,
-        layer: LayerIndex,
-        update: LayerAction,
-        mut state: LayerState,
-        facade: &LayerFacade,
-    ) -> Vec<Arc<HookAction<ButtonEvent>>> {
-        facade
-            .iter_detected(&mut state, layer, update)
+impl FlagHookFetcher for FlagHookStorage {
+    fn fetch(&self, mut event: FlagEvent) -> Vec<Arc<HookAction<ButtonEvent>>> {
+        self.detector
+            .iter_detected(&mut event.snapshot, event.flag_index, event.change)
             .flat_map(|detected| {
-                let storage = match detected.event {
-                    DetectedEvent::Activate => &self.on_activated,
-                    DetectedEvent::Inactivate => &self.on_inactivated,
+                let storage = match detected.change {
+                    ViewChange::Enabled => &self.on_enabled,
+                    ViewChange::Disabled => &self.on_disabled,
                 };
                 storage
-                    .get(&detected.index)
+                    .get(&ArcPtrKey(detected.view))
                     .into_iter()
                     .flatten()
                     .map(Arc::clone)
