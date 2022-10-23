@@ -145,7 +145,7 @@ impl FlagHookStorage {
         }
     }
 
-    pub(super) fn register_on_activated(&mut self, view: Arc<View>, action: FlagHookAction) {
+    pub(super) fn register_on_enabled(&mut self, view: Arc<View>, action: FlagHookAction) {
         assert_is_procedure_optional(&action);
 
         let view = ArcPtrKey(view);
@@ -153,7 +153,7 @@ impl FlagHookStorage {
         self.on_enabled.entry(view).or_default().push(action);
     }
 
-    pub(super) fn register_on_inactivated(&mut self, view: Arc<View>, action: FlagHookAction) {
+    pub(super) fn register_on_disabled(&mut self, view: Arc<View>, action: FlagHookAction) {
         assert_is_procedure_optional(&action);
         let view = ArcPtrKey(view);
         self.register_view(&view);

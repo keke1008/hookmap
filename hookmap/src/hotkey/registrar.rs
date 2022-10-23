@@ -94,7 +94,7 @@ impl HotkeyStorage {
         );
 
         self.flag_storage
-            .register_on_inactivated(enabled_view, Arc::new(action));
+            .register_on_disabled(enabled_view, Arc::new(action));
     }
 
     pub(super) fn disable(&mut self, view: Arc<View>, target: Button) {
