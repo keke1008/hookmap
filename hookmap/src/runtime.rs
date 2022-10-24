@@ -1,7 +1,6 @@
 mod worker;
 
 pub(crate) mod hook;
-pub(crate) mod interruption;
 pub(crate) mod storage;
 
 use std::sync::mpsc::{Receiver, Sender};
@@ -13,26 +12,23 @@ use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
 use crate::condition::flag::FlagState;
 
 use hook::{FlagEvent, HookAction};
-use storage::{FlagHookFetcher, InputHookFetcher, InterruptionFetcher};
+use storage::{FlagHookFetcher, InputHookFetcher};
 use worker::{Action, Message, Worker};
 
-pub(crate) struct Runtime<Input, Interruption, Flag> {
+pub(crate) struct Runtime<Input, Flag> {
     input_fetcher: Input,
-    interruption_storage: Interruption,
     flag_fetcher: Flag,
     flag_state: Arc<Mutex<FlagState>>,
 }
 
-impl<Input, Interruption, Flag> Runtime<Input, Interruption, Flag> {
+impl<Input, Flag> Runtime<Input, Flag> {
     pub(crate) fn new(
         input_fetcher: Input,
-        interruption_storage: Interruption,
         flag_fetcher: Flag,
         flag_state: Arc<Mutex<FlagState>>,
     ) -> Self {
         Self {
             input_fetcher,
-            interruption_storage,
             flag_fetcher,
             flag_state,
         }
@@ -47,10 +43,9 @@ fn calculate_native<E>(actions: &[Arc<HookAction<E>>]) -> NativeEventOperation {
         .unwrap_or(NativeEventOperation::Dispatch)
 }
 
-impl<Input, Interruption, Flag> Runtime<Input, Interruption, Flag>
+impl<Input, Flag> Runtime<Input, Flag>
 where
     Input: InputHookFetcher,
-    Interruption: InterruptionFetcher,
     Flag: FlagHookFetcher,
 {
     pub(crate) fn start(
@@ -61,7 +56,6 @@ where
     ) {
         let Runtime {
             input_fetcher,
-            interruption_storage,
             flag_fetcher,
             flag_state,
         } = self;
@@ -71,29 +65,20 @@ where
         thread::scope(|scope| {
             let worker_tx_ = worker_tx.clone();
             scope.spawn(|| {
-                let (input_rx, input_fetcher, worker_tx, mut interruption_storage) =
-                    (input_rx, input_fetcher, worker_tx_, interruption_storage);
+                let (input_rx, input_fetcher, worker_tx) = (input_rx, input_fetcher, worker_tx_);
 
                 for (event, native_handler) in input_rx.iter() {
                     let state = flag_state.lock().unwrap();
 
                     match event {
                         Event::Button(button_event) => {
-                            let (found, mut native) =
-                                interruption_storage.fetch_raw_hook(button_event);
-                            if found {
-                                native_handler.handle(native);
-                                continue;
-                            }
-
                             let action =
                                 input_fetcher.fetch_exclusive_button_hook(button_event, &*state);
-                            native = action
+                            let mut native = action
                                 .as_ref()
                                 .map_or(NativeEventOperation::Dispatch, |action| {
                                     action.native_event_operation()
-                                })
-                                .or(native);
+                                });
 
                             if let Some(action) = action {
                                 native_handler.handle(native);
@@ -102,9 +87,6 @@ where
                                 worker_tx.send(msg).unwrap();
                                 continue;
                             }
-
-                            let native_ = interruption_storage.fetch_hook(button_event);
-                            native = native.or(native_);
 
                             let actions = input_fetcher.fetch_button_hook(button_event, &state);
                             native = native.or(calculate_native(&actions));

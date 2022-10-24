@@ -174,9 +174,9 @@ impl Hotkey {
             .inner
             .into_inner()
             .expect("`Hotkey::install` must be called with root `Hotkey`.");
-        let (input_storage, interruption_storage, flag_storage) = storage.destruct();
+        let (input_storage, flag_storage) = storage.destruct();
 
-        let runtime = Runtime::new(input_storage, interruption_storage, flag_storage, state);
+        let runtime = Runtime::new(input_storage, flag_storage, state);
 
         let input_rx = hookmap_core::install_hook();
         runtime.start(input_rx, flag_tx, flag_rx);

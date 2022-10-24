@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
 use crate::condition::flag::FlagState;
 
@@ -22,12 +22,6 @@ pub(crate) trait InputHookFetcher: Send {
     fn fetch_mouse_cursor_hook(&self, state: &FlagState) -> Vec<Arc<HookAction<CursorEvent>>>;
 
     fn fetch_mouse_wheel_hook(&self, state: &FlagState) -> Vec<Arc<HookAction<WheelEvent>>>;
-}
-
-pub(crate) trait InterruptionFetcher: Send {
-    fn fetch_raw_hook(&mut self, event: ButtonEvent) -> (bool, NativeEventOperation);
-
-    fn fetch_hook(&mut self, event: ButtonEvent) -> NativeEventOperation;
 }
 
 pub(crate) trait FlagHookFetcher: Send {

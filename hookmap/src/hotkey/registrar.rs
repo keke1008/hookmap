@@ -1,34 +1,23 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
 
 use crate::condition::flag::FlagState;
 use crate::condition::view::{View, ViewBuilder};
-use crate::runtime::{hook::HookAction, interruption::InterruptionStorage};
+use crate::runtime::hook::HookAction;
 
 use super::storage::{FlagHookStorage, InputHookStorage};
 
 #[derive(Debug, Default)]
 pub(super) struct HotkeyStorage {
     input_storage: InputHookStorage,
-    interruption_storage: Arc<Mutex<InterruptionStorage>>,
     flag_storage: FlagHookStorage,
 }
 
 impl HotkeyStorage {
-    pub(super) fn destruct(
-        self,
-    ) -> (
-        InputHookStorage,
-        Arc<Mutex<InterruptionStorage>>,
-        FlagHookStorage,
-    ) {
-        (
-            self.input_storage,
-            self.interruption_storage,
-            self.flag_storage,
-        )
+    pub(super) fn destruct(self) -> (InputHookStorage, FlagHookStorage) {
+        (self.input_storage, self.flag_storage)
     }
 
     pub(super) fn remap(
