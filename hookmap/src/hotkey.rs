@@ -1,7 +1,9 @@
 //! Registering Hotkeys.
 
+pub mod condition;
 pub mod flag;
 
+mod hook;
 mod registrar;
 mod storage;
 
@@ -18,6 +20,7 @@ use crate::condition::view::View;
 use crate::runtime::hook::{FlagEvent, HookAction, OptionalProcedure, RequiredProcedure};
 use crate::runtime::Runtime;
 
+use self::condition::HotkeyCondition;
 use self::registrar::HotkeyStorage;
 
 #[derive(Debug)]
@@ -79,10 +82,26 @@ struct Context {
 }
 
 impl Context {
+    fn replace_view(&self, view: Arc<View>) -> Self {
+        Self {
+            view,
+            ..self.clone()
+        }
+    }
+
     fn replace_native(&self, native: NativeEventOperation) -> Self {
         Self {
             native,
             ..self.clone()
+        }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            view: Arc::default(),
+            native: NativeEventOperation::Dispatch,
         }
     }
 }
@@ -368,6 +387,20 @@ impl Hotkey {
         Hotkey {
             inner: self.inner.weak(),
             context: self.context.replace_native(NativeEventOperation::Dispatch),
+        }
+    }
+
+    pub fn conditional(&self, condition: &mut impl HotkeyCondition) -> Self {
+        let mut root = Hotkey {
+            inner: self.inner.weak(),
+            context: Context::default(),
+        };
+
+        Hotkey {
+            inner: self.inner.weak(),
+            context: self
+                .context
+                .replace_view(condition.view(&mut root, todo!())),
         }
     }
 }

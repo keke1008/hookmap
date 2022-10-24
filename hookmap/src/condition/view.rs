@@ -28,6 +28,13 @@ impl View {
     pub(super) fn iter_disabled_flags(&self) -> impl Iterator<Item = FlagIndex> + '_ {
         self.disabled_flags.iter_ones().map(FlagIndex)
     }
+
+    pub(crate) fn inversed(&self) -> Self {
+        Self {
+            enabled_flags: self.disabled_flags.clone(),
+            disabled_flags: self.enabled_flags.clone(),
+        }
+    }
 }
 
 fn set_with_extend(target: &mut BitVec, index: usize, state: bool) {
@@ -51,13 +58,13 @@ impl ViewBuilder {
         Self::default()
     }
 
-    pub fn enabled(mut self, flag: FlagIndex) -> Self {
-        set_with_extend(&mut self.enabled_flags, flag.0, true);
+    pub fn enabled(mut self, flag: impl Into<FlagIndex>) -> Self {
+        set_with_extend(&mut self.enabled_flags, flag.into().0, true);
         self
     }
 
-    pub fn disabled(mut self, flag: FlagIndex) -> Self {
-        set_with_extend(&mut self.disabled_flags, flag.0, true);
+    pub fn disabled(mut self, flag: impl Into<FlagIndex>) -> Self {
+        set_with_extend(&mut self.disabled_flags, flag.into().0, true);
         self
     }
 
