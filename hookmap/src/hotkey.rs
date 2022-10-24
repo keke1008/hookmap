@@ -176,7 +176,7 @@ impl Hotkey {
     ///     .remap(Button::C, Button::D);
     /// ```
     ///
-    pub fn remap(self, target: Button, behavior: Button) -> Self {
+    pub fn remap(&self, target: Button, behavior: Button) -> &Self {
         self.inner.apply(|inner| {
             inner.storage.remap(
                 Arc::clone(&self.context.view),
@@ -202,10 +202,10 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_press(
-        self,
+        &self,
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
-    ) -> Self {
+    ) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -232,10 +232,10 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_release(
-        self,
+        &self,
         target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) -> Self {
+    ) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -264,7 +264,7 @@ impl Hotkey {
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> Self {
+    pub fn mouse_cursor(&self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -291,7 +291,7 @@ impl Hotkey {
     ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
     /// ```
     ///
-    pub fn mouse_wheel(self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> Self {
+    pub fn mouse_wheel(&self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -317,7 +317,7 @@ impl Hotkey {
     /// hotkey.disable(Button::A);
     /// ```
     ///
-    pub fn disable(self, target: Button) -> Self {
+    pub fn disable(&self, target: Button) -> &Self {
         self.inner.apply(|inner| {
             inner
                 .storage
