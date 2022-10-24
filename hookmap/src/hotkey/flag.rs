@@ -1,4 +1,5 @@
-use std::sync::{mpsc::Sender, Arc, Mutex};
+use std::sync::mpsc::SyncSender;
+use std::sync::{Arc, Mutex};
 
 use hookmap_core::event::ButtonEvent;
 
@@ -10,14 +11,14 @@ use crate::runtime::hook::FlagEvent;
 pub struct Flag {
     index: FlagIndex,
     state: Arc<Mutex<FlagState>>,
-    tx: Sender<FlagEvent>,
+    tx: SyncSender<FlagEvent>,
 }
 
 impl Flag {
     pub(crate) fn new(
         index: FlagIndex,
         state: Arc<Mutex<FlagState>>,
-        tx: Sender<FlagEvent>,
+        tx: SyncSender<FlagEvent>,
     ) -> Self {
         Self { index, state, tx }
     }
@@ -58,5 +59,11 @@ impl Flag {
 
     pub fn disable_with_event(&self, inherited_event: Option<ButtonEvent>) {
         self.send(FlagChange::Disabled, inherited_event);
+    }
+}
+
+impl From<&Flag> for FlagIndex {
+    fn from(flag: &Flag) -> Self {
+        flag.index()
     }
 }

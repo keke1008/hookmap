@@ -1,7 +1,9 @@
 //! Registering Hotkeys.
 
+pub mod condition;
 pub mod flag;
 
+mod hook;
 mod registrar;
 mod storage;
 
@@ -18,6 +20,7 @@ use crate::condition::view::View;
 use crate::runtime::hook::{FlagEvent, HookAction, OptionalProcedure, RequiredProcedure};
 use crate::runtime::Runtime;
 
+use self::condition::HotkeyCondition;
 use self::registrar::HotkeyStorage;
 
 #[derive(Debug)]
@@ -31,9 +34,9 @@ struct Inner {
 impl Default for Inner {
     fn default() -> Self {
         let (flag_tx, flag_rx) = mpsc::channel();
-        Self {
-            storage: Default::default(),
-            state: Default::default(),
+        Inner {
+            storage: HotkeyStorage::default(),
+            state: Arc::default(),
             flag_tx,
             flag_rx,
         }
@@ -41,41 +44,34 @@ impl Default for Inner {
 }
 
 #[derive(Debug)]
-enum InnerMut {
-    Strong(Rc<RefCell<Inner>>),
-    Weak(Weak<RefCell<Inner>>),
-}
-
-impl Default for InnerMut {
-    fn default() -> Self {
-        Self::Strong(Rc::default())
-    }
+struct InnerMut {
+    strong: Option<Rc<RefCell<Inner>>>,
+    weak: Weak<RefCell<Inner>>,
 }
 
 impl InnerMut {
     fn new() -> Self {
-        Self::default()
-    }
-
-    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        match self {
-            Self::Strong(rc) => f(&mut rc.borrow_mut()),
-            Self::Weak(weak) => f(&mut weak.upgrade().unwrap().borrow_mut()),
+        let inner = Rc::default();
+        let weak = Rc::downgrade(&inner);
+        InnerMut {
+            strong: Some(inner),
+            weak,
         }
     }
 
     fn weak(&self) -> Self {
-        match self {
-            Self::Strong(rc) => Self::Weak(Rc::downgrade(rc)),
-            Self::Weak(weak) => Self::Weak(weak.clone()),
+        InnerMut {
+            strong: None,
+            weak: self.weak.clone(),
         }
     }
 
+    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
+        f(&mut self.weak.upgrade().unwrap().borrow_mut())
+    }
+
     fn into_inner(self) -> Option<Inner> {
-        match self {
-            Self::Strong(rc) => Some(Rc::try_unwrap(rc).unwrap().into_inner()),
-            Self::Weak(_) => None,
-        }
+        Rc::try_unwrap(self.strong?).map(RefCell::into_inner).ok()
     }
 }
 
@@ -86,10 +82,26 @@ struct Context {
 }
 
 impl Context {
+    fn replace_view(&self, view: Arc<View>) -> Self {
+        Self {
+            view,
+            ..self.clone()
+        }
+    }
+
     fn replace_native(&self, native: NativeEventOperation) -> Self {
         Self {
             native,
             ..self.clone()
+        }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            view: Arc::default(),
+            native: NativeEventOperation::Dispatch,
         }
     }
 }
@@ -183,7 +195,7 @@ impl Hotkey {
     ///     .remap(Button::C, Button::D);
     /// ```
     ///
-    pub fn remap(self, target: Button, behavior: Button) -> Self {
+    pub fn remap(&self, target: Button, behavior: Button) -> &Self {
         self.inner.apply(|inner| {
             inner.storage.remap(
                 Arc::clone(&self.context.view),
@@ -209,10 +221,10 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_press(
-        self,
+        &self,
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
-    ) -> Self {
+    ) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -239,10 +251,10 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_release(
-        self,
+        &self,
         target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) -> Self {
+    ) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -271,7 +283,7 @@ impl Hotkey {
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> Self {
+    pub fn mouse_cursor(&self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -298,7 +310,7 @@ impl Hotkey {
     ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
     /// ```
     ///
-    pub fn mouse_wheel(self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> Self {
+    pub fn mouse_wheel(&self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> &Self {
         let action = HookAction::Procedure {
             procedure: procedure.into().into(),
             native: self.context.native,
@@ -324,7 +336,7 @@ impl Hotkey {
     /// hotkey.disable(Button::A);
     /// ```
     ///
-    pub fn disable(self, target: Button) -> Self {
+    pub fn disable(&self, target: Button) -> &Self {
         self.inner.apply(|inner| {
             inner
                 .storage
@@ -375,6 +387,20 @@ impl Hotkey {
         Hotkey {
             inner: self.inner.weak(),
             context: self.context.replace_native(NativeEventOperation::Dispatch),
+        }
+    }
+
+    pub fn conditional(&self, condition: &mut impl HotkeyCondition) -> Self {
+        let mut root = Hotkey {
+            inner: self.inner.weak(),
+            context: Context::default(),
+        };
+
+        Hotkey {
+            inner: self.inner.weak(),
+            context: self
+                .context
+                .replace_view(condition.view(&mut root, todo!())),
         }
     }
 }
