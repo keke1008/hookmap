@@ -31,9 +31,9 @@ struct Inner {
 impl Default for Inner {
     fn default() -> Self {
         let (flag_tx, flag_rx) = mpsc::channel();
-        Self {
-            storage: Default::default(),
-            state: Default::default(),
+        Inner {
+            storage: HotkeyStorage::default(),
+            state: Arc::default(),
             flag_tx,
             flag_rx,
         }
@@ -41,41 +41,34 @@ impl Default for Inner {
 }
 
 #[derive(Debug)]
-enum InnerMut {
-    Strong(Rc<RefCell<Inner>>),
-    Weak(Weak<RefCell<Inner>>),
-}
-
-impl Default for InnerMut {
-    fn default() -> Self {
-        Self::Strong(Rc::default())
-    }
+struct InnerMut {
+    strong: Option<Rc<RefCell<Inner>>>,
+    weak: Weak<RefCell<Inner>>,
 }
 
 impl InnerMut {
     fn new() -> Self {
-        Self::default()
-    }
-
-    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        match self {
-            Self::Strong(rc) => f(&mut rc.borrow_mut()),
-            Self::Weak(weak) => f(&mut weak.upgrade().unwrap().borrow_mut()),
+        let inner = Rc::default();
+        let weak = Rc::downgrade(&inner);
+        InnerMut {
+            strong: Some(inner),
+            weak,
         }
     }
 
     fn weak(&self) -> Self {
-        match self {
-            Self::Strong(rc) => Self::Weak(Rc::downgrade(rc)),
-            Self::Weak(weak) => Self::Weak(weak.clone()),
+        InnerMut {
+            strong: None,
+            weak: self.weak.clone(),
         }
     }
 
+    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
+        f(&mut self.weak.upgrade().unwrap().borrow_mut())
+    }
+
     fn into_inner(self) -> Option<Inner> {
-        match self {
-            Self::Strong(rc) => Some(Rc::try_unwrap(rc).unwrap().into_inner()),
-            Self::Weak(_) => None,
-        }
+        Rc::try_unwrap(self.strong?).map(RefCell::into_inner).ok()
     }
 }
 
