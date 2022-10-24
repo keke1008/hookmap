@@ -14,6 +14,7 @@ pub mod hotkey;
 pub mod macros;
 
 pub mod condition;
+pub mod storage;
 
 mod runtime;
 
