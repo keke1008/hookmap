@@ -3,6 +3,7 @@ use std::sync::mpsc::SyncSender;
 use crate::condition::detector::FlagChange;
 use crate::condition::flag::{FlagIndex, FlagState};
 
+use hookmap_core::event::NativeEventOperation;
 use hookmap_core::{button::Button, event::ButtonEvent};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -29,23 +30,28 @@ pub(crate) enum HookAction {
 }
 
 fn send_event(
-    tx: SyncSender<FlagEvent>,
+    tx: &SyncSender<FlagEvent>,
     flag_index: FlagIndex,
     change: FlagChange,
     state: &mut FlagState,
-    event: ButtonEvent,
+    event: Option<ButtonEvent>,
 ) {
     let event = FlagEvent {
         flag_index,
-        change: FlagChange::Enabled,
+        change,
         snapshot: state.clone(),
-        inherited_event: event.into(),
+        inherited_event: event,
     };
     tx.send(event).unwrap();
 }
 
 impl HookAction {
-    fn run(&self, event: ButtonEvent, state: &mut FlagState, tx: &SyncSender<FlagEvent>) {
+    pub(crate) fn run(
+        &self,
+        event: Option<ButtonEvent>,
+        state: &mut FlagState,
+        tx: &SyncSender<FlagEvent>,
+    ) {
         use HookAction::*;
 
         match *self {
@@ -66,6 +72,14 @@ impl HookAction {
                 send_event(tx, flag_index, FlagChange::Disabled, state, event);
             }
             Block => {}
+        }
+    }
+
+    pub(crate) fn native(&self) -> NativeEventOperation {
+        use HookAction::*;
+        match self {
+            RemapPress { .. } | RemapRelease { .. } | Block => NativeEventOperation::Block,
+            EnableFlag(..) | DisableFlag(..) => NativeEventOperation::Dispatch,
         }
     }
 }

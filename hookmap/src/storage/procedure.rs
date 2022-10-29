@@ -1,7 +1,12 @@
-use std::fmt::{Debug, Formatter};
+use std::{
+    fmt::{Debug, Formatter},
+    sync::Arc,
+};
 
-pub struct RequiredProcedure<E>(Box<dyn Fn(E)>);
-pub struct OptionalProcedure<E>(Box<dyn Fn(Option<E>)>);
+use hookmap_core::event::NativeEventOperation;
+
+pub struct RequiredProcedure<E>(Box<dyn Fn(E) + Send + Sync>);
+pub struct OptionalProcedure<E>(Box<dyn Fn(Option<E>) + Send + Sync>);
 
 impl<E> Debug for RequiredProcedure<E> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
@@ -11,6 +16,17 @@ impl<E> Debug for RequiredProcedure<E> {
 impl<E> Debug for OptionalProcedure<E> {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("OptionalProcedure").finish_non_exhaustive()
+    }
+}
+
+impl<E, F: Fn(E) + Send + Sync + 'static> From<F> for RequiredProcedure<E> {
+    fn from(f: F) -> Self {
+        RequiredProcedure(Box::new(f))
+    }
+}
+impl<E, F: Fn(Option<E>) + Send + Sync + 'static> From<F> for OptionalProcedure<E> {
+    fn from(f: F) -> Self {
+        OptionalProcedure(Box::new(f))
     }
 }
 
@@ -38,13 +54,25 @@ impl<E> Procedure<E> {
     }
 }
 
-impl<E, F: Fn(E) + 'static> From<F> for RequiredProcedure<E> {
-    fn from(f: F) -> Self {
-        RequiredProcedure(Box::new(f))
-    }
+#[derive(Debug)]
+pub struct ProcedureHook<E> {
+    procedure: Arc<Procedure<E>>,
+    native: NativeEventOperation,
 }
-impl<E, F: Fn(Option<E>) + 'static> From<F> for OptionalProcedure<E> {
-    fn from(f: F) -> Self {
-        OptionalProcedure(Box::new(f))
+
+impl<E> ProcedureHook<E> {
+    pub fn new(procedure: Procedure<E>, native: NativeEventOperation) -> Self {
+        Self {
+            procedure: procedure.into(),
+            native,
+        }
+    }
+
+    pub fn procedure(&self) -> Arc<Procedure<E>> {
+        Arc::clone(&self.procedure)
+    }
+
+    pub fn native(&self) -> NativeEventOperation {
+        self.native
     }
 }

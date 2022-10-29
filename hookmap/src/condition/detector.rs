@@ -128,7 +128,7 @@ impl Detector {
 mod tests {
     use test_case::test_case;
 
-    use crate::condition::view::ViewBuilder;
+    use crate::condition::view::View;
 
     use super::*;
 
@@ -143,7 +143,7 @@ mod tests {
         let mut detector = Detector::default();
 
         let flag = state.create_flag(flag_state);
-        let view = Arc::new(ViewBuilder::new().enabled(flag).build());
+        let view = Arc::new(View::new().enabled(flag));
         detector.observe(Arc::clone(&view));
 
         let detected: Vec<_> = detector
@@ -165,7 +165,7 @@ mod tests {
         let mut detector = Detector::default();
 
         let flag = state.create_flag(flag_state);
-        let view = Arc::new(ViewBuilder::new().disabled(flag).build());
+        let view = Arc::new(View::new().disabled(flag));
         detector.observe(Arc::clone(&view));
 
         let detected: Vec<_> = detector
@@ -178,43 +178,43 @@ mod tests {
         })
     }
 
-    #[test_case(true,  ViewBuilder::enabled,  true,  ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(true,  ViewBuilder::enabled,  true,  ViewBuilder::enabled,  Disabled => Some(ViewChange::Disabled))]
-    #[test_case(true,  ViewBuilder::enabled,  true,  ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(true,  ViewBuilder::enabled,  true,  ViewBuilder::disabled, Disabled => None)]
-    #[test_case(true,  ViewBuilder::enabled,  false, ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(true,  ViewBuilder::enabled,  false, ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(true,  ViewBuilder::enabled,  false, ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(true,  ViewBuilder::enabled,  false, ViewBuilder::disabled, Disabled => Some(ViewChange::Disabled))]
-    #[test_case(true,  ViewBuilder::disabled, true,  ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(true,  ViewBuilder::disabled, true,  ViewBuilder::enabled,  Disabled => Some(ViewChange::Enabled))]
-    #[test_case(true,  ViewBuilder::disabled, true,  ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(true,  ViewBuilder::disabled, true,  ViewBuilder::disabled, Disabled => None)]
-    #[test_case(true,  ViewBuilder::disabled, false, ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(true,  ViewBuilder::disabled, false, ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(true,  ViewBuilder::disabled, false, ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(true,  ViewBuilder::disabled, false, ViewBuilder::disabled, Disabled => Some(ViewChange::Enabled))]
-    #[test_case(false, ViewBuilder::enabled,  true,  ViewBuilder::enabled,  Enabled  => Some(ViewChange::Enabled))]
-    #[test_case(false, ViewBuilder::enabled,  true,  ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(false, ViewBuilder::enabled,  true,  ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(false, ViewBuilder::enabled,  true,  ViewBuilder::disabled, Disabled => None)]
-    #[test_case(false, ViewBuilder::enabled,  false, ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(false, ViewBuilder::enabled,  false, ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(false, ViewBuilder::enabled,  false, ViewBuilder::disabled, Enabled  => Some(ViewChange::Enabled))]
-    #[test_case(false, ViewBuilder::enabled,  false, ViewBuilder::disabled, Disabled => None)]
-    #[test_case(false, ViewBuilder::disabled, true,  ViewBuilder::enabled,  Enabled  => Some(ViewChange::Disabled))]
-    #[test_case(false, ViewBuilder::disabled, true,  ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(false, ViewBuilder::disabled, true,  ViewBuilder::disabled, Enabled  => None)]
-    #[test_case(false, ViewBuilder::disabled, true,  ViewBuilder::disabled, Disabled => None)]
-    #[test_case(false, ViewBuilder::disabled, false, ViewBuilder::enabled,  Enabled  => None)]
-    #[test_case(false, ViewBuilder::disabled, false, ViewBuilder::enabled,  Disabled => None)]
-    #[test_case(false, ViewBuilder::disabled, false, ViewBuilder::disabled, Enabled  => Some(ViewChange::Disabled))]
-    #[test_case(false, ViewBuilder::disabled, false, ViewBuilder::disabled, Disabled => None)]
+    #[test_case(true,  View::enabled,  true,  View::enabled,  Enabled  => None)]
+    #[test_case(true,  View::enabled,  true,  View::enabled,  Disabled => Some(ViewChange::Disabled))]
+    #[test_case(true,  View::enabled,  true,  View::disabled, Enabled  => None)]
+    #[test_case(true,  View::enabled,  true,  View::disabled, Disabled => None)]
+    #[test_case(true,  View::enabled,  false, View::enabled,  Enabled  => None)]
+    #[test_case(true,  View::enabled,  false, View::enabled,  Disabled => None)]
+    #[test_case(true,  View::enabled,  false, View::disabled, Enabled  => None)]
+    #[test_case(true,  View::enabled,  false, View::disabled, Disabled => Some(ViewChange::Disabled))]
+    #[test_case(true,  View::disabled, true,  View::enabled,  Enabled  => None)]
+    #[test_case(true,  View::disabled, true,  View::enabled,  Disabled => Some(ViewChange::Enabled))]
+    #[test_case(true,  View::disabled, true,  View::disabled, Enabled  => None)]
+    #[test_case(true,  View::disabled, true,  View::disabled, Disabled => None)]
+    #[test_case(true,  View::disabled, false, View::enabled,  Enabled  => None)]
+    #[test_case(true,  View::disabled, false, View::enabled,  Disabled => None)]
+    #[test_case(true,  View::disabled, false, View::disabled, Enabled  => None)]
+    #[test_case(true,  View::disabled, false, View::disabled, Disabled => Some(ViewChange::Enabled))]
+    #[test_case(false, View::enabled,  true,  View::enabled,  Enabled  => Some(ViewChange::Enabled))]
+    #[test_case(false, View::enabled,  true,  View::enabled,  Disabled => None)]
+    #[test_case(false, View::enabled,  true,  View::disabled, Enabled  => None)]
+    #[test_case(false, View::enabled,  true,  View::disabled, Disabled => None)]
+    #[test_case(false, View::enabled,  false, View::enabled,  Enabled  => None)]
+    #[test_case(false, View::enabled,  false, View::enabled,  Disabled => None)]
+    #[test_case(false, View::enabled,  false, View::disabled, Enabled  => Some(ViewChange::Enabled))]
+    #[test_case(false, View::enabled,  false, View::disabled, Disabled => None)]
+    #[test_case(false, View::disabled, true,  View::enabled,  Enabled  => Some(ViewChange::Disabled))]
+    #[test_case(false, View::disabled, true,  View::enabled,  Disabled => None)]
+    #[test_case(false, View::disabled, true,  View::disabled, Enabled  => None)]
+    #[test_case(false, View::disabled, true,  View::disabled, Disabled => None)]
+    #[test_case(false, View::disabled, false, View::enabled,  Enabled  => None)]
+    #[test_case(false, View::disabled, false, View::enabled,  Disabled => None)]
+    #[test_case(false, View::disabled, false, View::disabled, Enabled  => Some(ViewChange::Disabled))]
+    #[test_case(false, View::disabled, false, View::disabled, Disabled => None)]
     fn two_flags(
         f1: bool,
-        f1_register: fn(ViewBuilder, FlagIndex) -> ViewBuilder,
+        f1_register: fn(View, FlagIndex) -> View,
         f2: bool,
-        f2_register: fn(ViewBuilder, FlagIndex) -> ViewBuilder,
+        f2_register: fn(View, FlagIndex) -> View,
         f1_change: FlagChange,
     ) -> Option<ViewChange> {
         let mut state = FlagState::default();
@@ -223,10 +223,10 @@ mod tests {
         let f1 = state.create_flag(f1);
         let f2 = state.create_flag(f2);
 
-        let view = ViewBuilder::new();
+        let view = View::new();
         let view = f1_register(view, f1);
         let view = f2_register(view, f2);
-        let view = Arc::new(view.build());
+        let view = view.into();
         detector.observe(Arc::clone(&view));
 
         let detected: Vec<_> = detector.iter_detected(&mut state, f1, f1_change).collect();

@@ -1,114 +1,166 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
+use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
 use crate::condition::flag::FlagState;
-use crate::condition::view::{View, ViewBuilder};
-use crate::runtime::hook::HookAction;
+use crate::condition::view::View;
+use crate::storage::action::HookAction;
+use crate::storage::procedure::{OptionalProcedure, Procedure, ProcedureHook, RequiredProcedure};
+use crate::storage::{InputHookStorage, ViewHookStorage};
 
-use super::storage::{FlagHookStorage, InputHookStorage};
-
-#[derive(Debug, Default)]
-pub(super) struct HotkeyStorage {
-    input_storage: InputHookStorage,
-    flag_storage: FlagHookStorage,
+#[derive(Debug, Clone)]
+pub(super) struct Context {
+    pub(super) state: Arc<Mutex<FlagState>>,
+    pub(super) view: Arc<View>,
+    pub(super) native: NativeEventOperation,
 }
 
-impl HotkeyStorage {
-    pub(super) fn destruct(self) -> (InputHookStorage, FlagHookStorage) {
-        (self.input_storage, self.flag_storage)
+impl Context {
+    pub(super) fn replace_view(&self, view: Arc<View>) -> Self {
+        Self {
+            view,
+            ..self.clone()
+        }
+    }
+
+    pub(super) fn replace_native(&self, native: NativeEventOperation) -> Self {
+        Self {
+            native,
+            ..self.clone()
+        }
+    }
+}
+
+impl Default for Context {
+    fn default() -> Self {
+        Self {
+            view: Arc::default(),
+            state: Arc::default(),
+            native: NativeEventOperation::Dispatch,
+        }
+    }
+}
+
+#[derive(Debug, Default)]
+pub(super) struct InputHookRegistrar {
+    storage: InputHookStorage,
+}
+
+impl InputHookRegistrar {
+    pub(super) fn into_inner(self) -> InputHookStorage {
+        self.storage
     }
 
     pub(super) fn remap(
         &mut self,
-        view: Arc<View>,
         target: Button,
         behavior: Button,
-        state: &mut FlagState,
+        context: &Context,
+        view_storage: &mut ViewHookStorage,
     ) {
-        let flag = state.create_flag(false);
-        let enabled_view = Arc::new(ViewBuilder::new().merge(&*view).enabled(flag).build());
+        let flag = context.state.lock().unwrap().create_flag(false);
+        let view = View::new().merge(&*context.view).enabled(flag).into();
 
-        self.input_storage.on_press_exclusive.register_specific(
-            view,
-            target,
-            Arc::new(HookAction::RemapPress {
+        self.storage.remap_on_press.get(target).add_action(
+            Arc::clone(&context.view),
+            HookAction::RemapPress {
                 button: behavior,
                 flag_index: flag,
-            }),
+            },
         );
 
-        self.input_storage.on_release.register_specific(
-            enabled_view,
-            target,
-            Arc::new(HookAction::RemapRelease {
-                button: behavior,
+        self.storage
+            .remap_on_press
+            .get(target)
+            .add_action(Arc::clone(&view), HookAction::DisableFlag(flag));
+
+        view_storage.add_action_on_disabled(
+            view,
+            HookAction::RemapRelease {
+                button: target,
                 flag_index: flag,
-            }),
+            },
         );
     }
 
     pub(super) fn on_press(
         &mut self,
-        view: Arc<View>,
         target: Button,
-        action: HookAction<ButtonEvent>,
+        procedure: RequiredProcedure<ButtonEvent>,
+        context: &Context,
     ) {
-        self.input_storage
-            .on_press
-            .register_specific(view, target, Arc::new(action));
+        self.storage.on_press.get(target).add_procedure(
+            Arc::clone(&context.view),
+            ProcedureHook::new(Procedure::Required(procedure), context.native),
+        )
     }
 
     pub(super) fn on_release(
         &mut self,
-        view: Arc<View>,
         target: Button,
-        action: HookAction<ButtonEvent>,
-        state: &mut FlagState,
+        procedure: RequiredProcedure<ButtonEvent>,
+        context: &Context,
     ) {
-        let flag = state.create_flag(false);
-        let enabled_view = Arc::new(ViewBuilder::new().merge(&*view).enabled(flag).build());
-
-        self.input_storage.on_press.register_specific(
-            view,
-            target,
-            Arc::new(HookAction::EnableFlag(flag)),
-        );
-
-        self.input_storage.on_release.register_specific(
-            Arc::clone(&enabled_view),
-            target,
-            Arc::new(HookAction::DisableFlag(flag)),
-        );
-
-        self.flag_storage
-            .register_on_disabled(enabled_view, Arc::new(action));
-    }
-
-    pub(super) fn disable(&mut self, view: Arc<View>, target: Button) {
-        self.input_storage.on_press.register_specific(
-            Arc::clone(&view),
-            target,
-            Arc::new(HookAction::Block),
-        );
-
-        self.input_storage.on_release.register_specific(
-            Arc::clone(&view),
-            target,
-            Arc::new(HookAction::Block),
+        self.storage.on_release.get(target).add_procedure(
+            Arc::clone(&context.view),
+            ProcedureHook::new(Procedure::Required(procedure), context.native),
         );
     }
 
-    pub(super) fn mouse_cursor(&mut self, view: Arc<View>, action: HookAction<CursorEvent>) {
-        self.input_storage
-            .mouse_cursor
-            .register(view, Arc::new(action));
+    pub(super) fn on_release_certainly(
+        &mut self,
+        target: Button,
+        procedure: OptionalProcedure<ButtonEvent>,
+        context: &Context,
+        view_storage: &mut ViewHookStorage,
+    ) {
+        let flag = context.state.lock().unwrap().create_flag(false);
+        let view = View::new().merge(&*context.view).enabled(flag).into();
+
+        self.storage
+            .on_press
+            .get(target)
+            .add_action(Arc::clone(&context.view), HookAction::EnableFlag(flag));
+
+        self.storage
+            .on_release
+            .get(target)
+            .add_action(Arc::clone(&context.view), HookAction::DisableFlag(flag));
+
+        view_storage.add_procedure_on_disabled(view, procedure);
     }
 
-    pub(super) fn mouse_wheel(&mut self, view: Arc<View>, action: HookAction<WheelEvent>) {
-        self.input_storage
-            .mouse_wheel
-            .register(view, Arc::new(action));
+    pub(super) fn disable(&mut self, target: Button, context: &Context) {
+        self.storage
+            .on_press
+            .get(target)
+            .add_action(Arc::clone(&context.view), HookAction::Block);
+        self.storage
+            .on_release
+            .get(target)
+            .add_action(Arc::clone(&context.view), HookAction::Block);
+    }
+
+    pub(super) fn mouse_cursor(
+        &mut self,
+        procedure: RequiredProcedure<CursorEvent>,
+        context: &Context,
+    ) {
+        self.storage.mouse_cursor.add_procedure(
+            Arc::clone(&context.view),
+            ProcedureHook::new(Procedure::Required(procedure), context.native),
+        );
+    }
+
+    pub(super) fn mouse_wheel(
+        &mut self,
+        procedure: RequiredProcedure<WheelEvent>,
+        context: &Context,
+    ) {
+        self.storage.mouse_wheel.add_procedure(
+            Arc::clone(&context.view),
+            ProcedureHook::new(Procedure::Required(procedure), context.native),
+        );
     }
 }

@@ -1,11 +1,12 @@
 pub(crate) mod action;
-mod hook;
-mod procedure;
+pub(crate) mod hook;
+pub mod procedure;
 
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
+use hookmap_core::button::Button;
+use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
 use crate::condition::detector::{Detector, FlagChange, ViewChange};
 use crate::condition::flag::{FlagIndex, FlagState};
@@ -13,12 +14,9 @@ use crate::condition::view::View;
 
 use action::HookAction;
 use hook::Hook;
-use procedure::{OptionalProcedure, Procedure};
+use procedure::{OptionalProcedure, Procedure, ProcedureHook};
 
-fn runnables<'a, T>(
-    hooks: &'a [Hook<T>],
-    state: &'a FlagState,
-) -> impl Iterator<Item = Arc<T>> + 'a {
+fn runnables<'a, T>(hooks: &'a [Hook<T>], state: &'a FlagState) -> impl Iterator<Item = &T> + 'a {
     hooks
         .iter()
         .filter(|hook| hook.is_runnable(state))
@@ -26,12 +24,12 @@ fn runnables<'a, T>(
 }
 
 #[derive(Debug)]
-pub(crate) struct InputHooks<T, E> {
-    actions: Vec<Hook<T>>,
-    procedures: Vec<Hook<Procedure<E>>>,
+pub(crate) struct InputHooks<E> {
+    actions: Vec<Hook<Arc<HookAction>>>,
+    procedures: Vec<Hook<ProcedureHook<E>>>,
 }
 
-impl<T, E> Default for InputHooks<T, E> {
+impl<E> Default for InputHooks<E> {
     fn default() -> Self {
         Self {
             actions: Vec::new(),
@@ -40,38 +38,78 @@ impl<T, E> Default for InputHooks<T, E> {
     }
 }
 
-impl<T, E> InputHooks<T, E> {
-    pub(crate) fn add_action(&mut self, view: Arc<View>, action: T) {
+impl<E> InputHooks<E> {
+    pub(crate) fn add_action(&mut self, view: Arc<View>, action: HookAction) {
         self.actions.push(Hook::new(view, Arc::new(action)));
     }
 
-    pub(crate) fn add_procedure(&mut self, view: Arc<View>, procedure: Procedure<E>) {
-        self.procedures.push(Hook::new(view, Arc::new(procedure)));
+    pub(crate) fn add_procedure(&mut self, view: Arc<View>, procedure: ProcedureHook<E>) {
+        self.procedures.push(Hook::new(view, procedure));
     }
 
-    pub(crate) fn filter(&self, state: &FlagState) -> (Vec<Arc<T>>, Vec<Arc<Procedure<E>>>) {
-        (
-            runnables(&self.actions, state).collect(),
-            runnables(&self.procedures, state).collect(),
-        )
+    pub(crate) fn filter(
+        &self,
+        state: &FlagState,
+    ) -> (
+        Vec<Arc<HookAction>>,
+        Vec<Arc<Procedure<E>>>,
+        NativeEventOperation,
+    ) {
+        let actions: Vec<_> = runnables(&self.actions, state).map(Arc::clone).collect();
+        let mut native = actions
+            .iter()
+            .map(|action| action.native())
+            .find(|native| *native == NativeEventOperation::Block)
+            .unwrap_or(NativeEventOperation::Dispatch);
+        let procedures: Vec<_> = runnables(&self.procedures, state)
+            .inspect(|proc| native = proc.native().or(native))
+            .map(ProcedureHook::procedure)
+            .collect();
+
+        (actions, procedures, native)
     }
 
-    pub(crate) fn find(&self, state: &FlagState) -> (Option<Arc<T>>, Option<Arc<Procedure<E>>>) {
-        (
-            runnables(&self.actions, state).next(),
-            runnables(&self.procedures, state).next(),
-        )
+    pub(crate) fn find(
+        &self,
+        state: &FlagState,
+    ) -> (
+        Option<Arc<HookAction>>,
+        Option<Arc<Procedure<E>>>,
+        NativeEventOperation,
+    ) {
+        let action = runnables(&self.actions, state).next().map(Arc::clone);
+        let procedure = runnables(&self.procedures, state).next();
+        let native = match (
+            action.as_ref().map(|a| a.native()),
+            procedure.as_ref().map(|p| p.native()),
+        ) {
+            (None, None) => NativeEventOperation::Dispatch,
+            (Some(native), None) | (None, Some(native)) => native,
+            (Some(action), Some(procedure)) => action.or(procedure),
+        };
+        (action, procedure.map(ProcedureHook::procedure), native)
+    }
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct ButtonHooks {
+    hooks: HashMap<Button, InputHooks<ButtonEvent>>,
+}
+
+impl ButtonHooks {
+    pub(crate) fn get(&mut self, target: Button) -> &mut InputHooks<ButtonEvent> {
+        self.hooks.entry(target).or_default()
     }
 }
 
 #[derive(Debug, Default)]
 pub(crate) struct InputHookStorage {
-    pub(crate) remap_on_press: InputHooks<HookAction, ButtonEvent>,
-    pub(crate) remap_on_release: InputHooks<HookAction, ButtonEvent>,
-    pub(crate) on_press: InputHooks<HookAction, ButtonEvent>,
-    pub(crate) on_release: InputHooks<HookAction, ButtonEvent>,
-    pub(crate) mouse_cursor: InputHooks<HookAction, CursorEvent>,
-    pub(crate) mouse_wheel: InputHooks<HookAction, WheelEvent>,
+    pub(crate) remap_on_press: ButtonHooks,
+    pub(crate) remap_on_release: ButtonHooks,
+    pub(crate) on_press: ButtonHooks,
+    pub(crate) on_release: ButtonHooks,
+    pub(crate) mouse_cursor: InputHooks<CursorEvent>,
+    pub(crate) mouse_wheel: InputHooks<WheelEvent>,
 }
 
 #[derive(Debug, Clone)]
@@ -122,6 +160,7 @@ impl ViewHookStorage {
         }
     }
 
+    #[allow(unused)]
     pub(crate) fn add_action_on_enabled(&mut self, view: Arc<View>, action: HookAction) {
         let view = ArcPtrKey(view);
         self.register_view(&view);

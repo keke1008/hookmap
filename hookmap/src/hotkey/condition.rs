@@ -1,86 +1,262 @@
+use std::cell::RefCell;
 use std::fmt::Debug;
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Mutex};
 
 use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, NativeEventOperation};
+use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
 use crate::condition::flag::FlagState;
-use crate::condition::view::{View, ViewBuilder};
-use crate::runtime::hook::{FlagEvent, HookAction, OptionalProcedure};
+use crate::condition::view::View;
+
+use crate::storage::action::FlagEvent;
+use crate::storage::procedure::{OptionalProcedure, RequiredProcedure};
+use crate::storage::ViewHookStorage;
 
 use super::flag::Flag;
-use super::storage::FlagHookStorage;
-use super::Hotkey;
+use super::registrar::{self, InputHookRegistrar};
+use super::shared::Shared;
 
 #[derive(Debug)]
-pub struct FlagHookRegistrar {
-    storage: FlagHookStorage,
+pub struct HookRegistrar {
+    input_registrar: Shared<RefCell<InputHookRegistrar>>,
+    view_storage: Shared<RefCell<ViewHookStorage>>,
     state: Arc<Mutex<FlagState>>,
-    flag_tx: SyncSender<FlagEvent>,
+    native: NativeEventOperation,
 }
 
-impl FlagHookRegistrar {
-    fn new(flag_tx: SyncSender<FlagEvent>) -> Self {
-        Self {
-            storage: Default::default(),
-            state: Default::default(),
-            flag_tx,
+impl HookRegistrar {
+    fn create_context(&self, view: Arc<View>) -> registrar::Context {
+        registrar::Context {
+            state: Arc::clone(&self.state),
+            view,
+            native: self.native,
         }
+    }
+
+    pub(super) fn new(
+        input_registrar: Shared<RefCell<InputHookRegistrar>>,
+        view_storage: Shared<RefCell<ViewHookStorage>>,
+        state: Arc<Mutex<FlagState>>,
+    ) -> Self {
+        Self {
+            input_registrar,
+            view_storage,
+            state,
+            native: NativeEventOperation::Dispatch,
+        }
+    }
+
+    pub fn remap(&self, view: impl Into<Arc<View>>, target: Button, behavior: Button) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            self.view_storage.apply_mut(|view_storage| {
+                input_registrar.remap(
+                    target,
+                    behavior,
+                    &self.create_context(view.into()),
+                    view_storage,
+                );
+            })
+        });
+
+        self
+    }
+
+    pub fn on_press(
+        &self,
+        view: impl Into<Arc<View>>,
+        target: Button,
+        procedure: impl Into<RequiredProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.on_press(target, procedure.into(), &self.create_context(view.into()));
+        });
+
+        self
+    }
+
+    pub fn on_release(
+        &self,
+        view: impl Into<Arc<View>>,
+        target: Button,
+        procedure: impl Into<RequiredProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.on_release(target, procedure.into(), &self.create_context(view.into()));
+        });
+
+        self
+    }
+
+    pub fn on_release_certainly(
+        &self,
+        view: impl Into<Arc<View>>,
+        target: Button,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            self.view_storage.apply_mut(|view_storage| {
+                input_registrar.on_release_certainly(
+                    target,
+                    procedure.into(),
+                    &self.create_context(view.into()),
+                    view_storage,
+                );
+            });
+        });
+
+        self
+    }
+
+    pub fn mouse_cursor(
+        &self,
+        view: impl Into<Arc<View>>,
+        procedure: impl Into<RequiredProcedure<CursorEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.mouse_cursor(procedure.into(), &self.create_context(view.into()));
+        });
+
+        self
+    }
+
+    pub fn mouse_wheel(
+        &self,
+        view: impl Into<Arc<View>>,
+        procedure: impl Into<RequiredProcedure<WheelEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.mouse_wheel(procedure.into(), &self.create_context(view.into()));
+        });
+
+        self
+    }
+
+    pub fn disable(&self, view: impl Into<Arc<View>>, target: Button) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.disable(target, &self.create_context(view.into()));
+        });
+
+        self
+    }
+
+    pub fn on_view_enabled(
+        &self,
+        view: impl Into<Arc<View>>,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.view_storage.apply_mut(|storage| {
+            storage.add_procedure_on_enabled(view.into(), procedure.into());
+        });
+        self
+    }
+
+    pub fn on_view_disabled(
+        &self,
+        view: impl Into<Arc<View>>,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.view_storage.apply_mut(|storage| {
+            storage.add_procedure_on_disabled(view.into(), procedure.into());
+        });
+        self
+    }
+
+    fn clone_with_native(&self, native: NativeEventOperation) -> Self {
+        Self {
+            input_registrar: self.input_registrar.weak(),
+            view_storage: self.view_storage.weak(),
+            state: Arc::clone(&self.state),
+            native,
+        }
+    }
+
+    pub fn block(&self) -> Self {
+        self.clone_with_native(NativeEventOperation::Block)
+    }
+
+    pub fn dispatch(&self) -> Self {
+        self.clone_with_native(NativeEventOperation::Dispatch)
     }
 }
 
-impl FlagHookRegistrar {
+#[derive(Debug)]
+pub struct ViewContext {
+    state: Arc<Mutex<FlagState>>,
+    flag_tx: SyncSender<FlagEvent>,
+    root_view: Arc<View>,
+    current_view: Arc<View>,
+}
+
+impl ViewContext {
+    pub(super) fn new(
+        state: Arc<Mutex<FlagState>>,
+        flag_tx: SyncSender<FlagEvent>,
+        root_view: Arc<View>,
+        current_view: Arc<View>,
+    ) -> Self {
+        Self {
+            state,
+            flag_tx,
+            root_view,
+            current_view,
+        }
+    }
+
+    fn replace_current_view(&self, current_view: Arc<View>) -> Self {
+        Self {
+            state: Arc::clone(&self.state),
+            flag_tx: self.flag_tx.clone(),
+            root_view: self.root_view(),
+            current_view,
+        }
+    }
+
+    pub fn root_view(&self) -> Arc<View> {
+        Arc::clone(&self.root_view)
+    }
+
+    pub fn current_view(&self) -> Arc<View> {
+        Arc::clone(&self.current_view)
+    }
+
     pub fn create_flag(&self, init_state: bool) -> Flag {
         let index = self.state.lock().unwrap().create_flag(init_state);
         Flag::new(index, Arc::clone(&self.state), self.flag_tx.clone())
     }
-
-    pub fn on_enabled(
-        &mut self,
-        view: Arc<View>,
-        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) {
-        self.storage.register_on_enabled(
-            view,
-            Arc::new(HookAction::Procedure {
-                procedure: procedure.into().into(),
-                native: NativeEventOperation::Dispatch,
-            }),
-        );
-    }
-
-    pub fn on_disabled(
-        &mut self,
-        view: Arc<View>,
-        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) {
-        self.storage.register_on_disabled(
-            view,
-            Arc::new(HookAction::Procedure {
-                procedure: procedure.into().into(),
-                native: NativeEventOperation::Dispatch,
-            }),
-        )
-    }
 }
 
 pub trait HotkeyCondition {
-    fn view(&mut self, hotkey: &mut Hotkey, flag: &mut FlagHookRegistrar) -> Arc<View>;
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View>;
+}
+
+impl<T: HotkeyCondition> HotkeyCondition for Box<T> {
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View> {
+        T::view(self, hook, context)
+    }
+}
+
+impl<T: HotkeyCondition> HotkeyCondition for &mut T {
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View> {
+        T::view(self, hook, context)
+    }
 }
 
 impl HotkeyCondition for Button {
-    fn view(&mut self, hotkey: &mut Hotkey, flag: &mut FlagHookRegistrar) -> Arc<View> {
-        let f = flag.create_flag(false);
-        let view = ViewBuilder::new().enabled(&f).build();
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View> {
+        let f = context.create_flag(false);
+        let v = View::new().enabled(&f);
 
         let f = f.into();
         let f_ = Arc::clone(&f);
-        hotkey
-            .on_press(*self, move |_| f.enable())
-            .on_release(*self, move |_| f_.disable());
+        hook.on_press(context.root_view(), *self, move |_: ButtonEvent| {
+            f.enable();
+        })
+        .on_release(context.root_view(), *self, move |_: ButtonEvent| {
+            f_.disable();
+        });
 
-        view.into()
+        v.into()
     }
 }
 
@@ -96,29 +272,31 @@ impl<T> Inversed<T> {
 }
 
 impl<T: HotkeyCondition> HotkeyCondition for Inversed<T> {
-    fn view(&mut self, hotkey: &mut Hotkey, flag: &mut FlagHookRegistrar) -> Arc<View> {
-        self.condition.view(hotkey, flag).inversed().into()
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View> {
+        self.condition.view(hook, context).inversed().into()
     }
 }
 
 pub struct Multi<'a> {
-    conditions: Vec<Box<dyn HotkeyCondition + 'a>>,
+    conditions: Vec<&'a mut dyn HotkeyCondition>,
 }
 
 impl<'a> Multi<'a> {
-    pub fn new(conditions: Vec<Box<dyn HotkeyCondition + 'a>>) -> Self {
+    pub fn new(conditions: Vec<&'a mut dyn HotkeyCondition>) -> Self {
         Self { conditions }
     }
 }
 
-impl<'a> HotkeyCondition for Multi<'a> {
-    fn view(&mut self, hotkey: &mut Hotkey, flag: &mut FlagHookRegistrar) -> Arc<View> {
+impl HotkeyCondition for Multi<'_> {
+    fn view(&mut self, hook: &mut HookRegistrar, context: &mut ViewContext) -> Arc<View> {
         self.conditions
             .iter_mut()
-            .fold(ViewBuilder::new(), |builder, condition| {
-                builder.merge(&condition.view(hotkey, flag))
+            .fold(View::new(), |acc, condition| {
+                let mut context = context.replace_current_view(Arc::new(acc.clone()));
+                View::new()
+                    .merge(&acc)
+                    .merge(&condition.view(hook, &mut context))
             })
-            .build()
             .into()
     }
 }
@@ -126,32 +304,32 @@ impl<'a> HotkeyCondition for Multi<'a> {
 #[macro_export]
 macro_rules! multi {
     (@inner [ $( $acc:expr ),* ] !$arg:expr $(, $( $rest:tt )* )? ) => {
-        modifiers!(
+        $crate::multi!(
             @inner
             [
                 $( $acc, )*
-                $crate::hotkey::condition::Inversed(Box::new($arg))
+                &mut $crate::hotkey::condition::Inversed::new($arg)
             ]
             $( $( $rest )* )?
         )
     };
 
     (@inner [ $( $acc:expr ),* ] $arg:expr $(, $( $rest:tt )* )? ) => {
-        modifiers!(
+        $crate::multi!(
             @inner
             [
                 $( $acc, )*
-                Box::new($arg)
+                &mut $arg
             ]
             $( $( $rest )* )?
         )
     };
 
     (@inner $acc:tt ) => {
-        $crate::hotkey::conditions::Multi::new(vec!$acc)
+        $crate::hotkey::condition::Multi::new(vec!$acc)
     };
 
     [ $($args:tt)* ] => {
-        $crate::modifiers!(@inner [] $($args)* )
+        $crate::multi!(@inner [] $($args)* )
     };
 }

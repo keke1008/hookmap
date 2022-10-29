@@ -28,7 +28,7 @@ pub mod device {
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
     // Macros
-    pub use super::{each, modifiers, not, seq};
+    pub use super::seq;
 
     pub use super::{device::*, hotkey::Hotkey};
 }

@@ -1,9 +1,6 @@
 //! Items used in macros.
 
 #[doc(hidden)]
-mod args;
-
-#[doc(hidden)]
 pub mod sequence;
 
 /// Expands button names.

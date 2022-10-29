@@ -3,106 +3,36 @@
 pub mod condition;
 pub mod flag;
 
-mod hook;
 mod registrar;
-mod storage;
+mod shared;
 
 use std::cell::RefCell;
-use std::rc::{Rc, Weak};
-use std::sync::mpsc::{self, Receiver, Sender};
-use std::sync::{Arc, Mutex};
+use std::sync::mpsc::{self, Receiver, SyncSender};
+use std::sync::Arc;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
-use crate::condition::flag::FlagState;
 use crate::condition::view::View;
-use crate::runtime::hook::{FlagEvent, HookAction, OptionalProcedure, RequiredProcedure};
 use crate::runtime::Runtime;
+use crate::storage::action::FlagEvent;
+use crate::storage::procedure::{OptionalProcedure, RequiredProcedure};
+use crate::storage::ViewHookStorage;
 
-use self::condition::HotkeyCondition;
-use self::registrar::HotkeyStorage;
+use self::condition::{HookRegistrar, HotkeyCondition, ViewContext};
+use self::registrar::{Context, InputHookRegistrar};
+use self::shared::Shared;
 
 #[derive(Debug)]
-struct Inner {
-    storage: HotkeyStorage,
-    state: Arc<Mutex<FlagState>>,
-    flag_tx: Sender<FlagEvent>,
+struct RuntimeArgs {
+    flag_tx: SyncSender<FlagEvent>,
     flag_rx: Receiver<FlagEvent>,
 }
 
-impl Default for Inner {
+impl Default for RuntimeArgs {
     fn default() -> Self {
-        let (flag_tx, flag_rx) = mpsc::channel();
-        Inner {
-            storage: HotkeyStorage::default(),
-            state: Arc::default(),
-            flag_tx,
-            flag_rx,
-        }
-    }
-}
-
-#[derive(Debug)]
-struct InnerMut {
-    strong: Option<Rc<RefCell<Inner>>>,
-    weak: Weak<RefCell<Inner>>,
-}
-
-impl InnerMut {
-    fn new() -> Self {
-        let inner = Rc::default();
-        let weak = Rc::downgrade(&inner);
-        InnerMut {
-            strong: Some(inner),
-            weak,
-        }
-    }
-
-    fn weak(&self) -> Self {
-        InnerMut {
-            strong: None,
-            weak: self.weak.clone(),
-        }
-    }
-
-    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        f(&mut self.weak.upgrade().unwrap().borrow_mut())
-    }
-
-    fn into_inner(self) -> Option<Inner> {
-        Rc::try_unwrap(self.strong?).map(RefCell::into_inner).ok()
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Context {
-    view: Arc<View>,
-    native: NativeEventOperation,
-}
-
-impl Context {
-    fn replace_view(&self, view: Arc<View>) -> Self {
-        Self {
-            view,
-            ..self.clone()
-        }
-    }
-
-    fn replace_native(&self, native: NativeEventOperation) -> Self {
-        Self {
-            native,
-            ..self.clone()
-        }
-    }
-}
-
-impl Default for Context {
-    fn default() -> Self {
-        Self {
-            view: Arc::default(),
-            native: NativeEventOperation::Dispatch,
-        }
+        let (flag_tx, flag_rx) = mpsc::sync_channel(32);
+        Self { flag_tx, flag_rx }
     }
 }
 
@@ -118,24 +48,12 @@ impl Default for Context {
 /// hotkey.install();
 /// ```
 ///
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Hotkey {
-    inner: InnerMut,
+    input_registrar: Shared<RefCell<InputHookRegistrar>>,
+    view_storage: Shared<RefCell<ViewHookStorage>>,
+    runtime_args: Shared<RuntimeArgs>,
     context: Context,
-}
-
-impl Default for Hotkey {
-    fn default() -> Self {
-        let context = Context {
-            view: Arc::default(),
-            native: NativeEventOperation::Dispatch,
-        };
-
-        Self {
-            inner: InnerMut::new(),
-            context,
-        }
-    }
 }
 
 impl Hotkey {
@@ -165,21 +83,28 @@ impl Hotkey {
     /// ```
     ///
     pub fn install(self) {
-        let Inner {
-            storage,
-            state,
-            flag_tx,
-            flag_rx,
-        } = self
-            .inner
+        let Self {
+            input_registrar,
+            view_storage,
+            context,
+            runtime_args,
+        } = self;
+
+        let input_registrar = input_registrar
+            .into_inner()
+            .map(RefCell::into_inner)
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let view_storage = view_storage
+            .into_inner()
+            .map(RefCell::into_inner)
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let runtime_args = runtime_args
             .into_inner()
             .expect("`Hotkey::install` must be called with root `Hotkey`.");
-        let (input_storage, flag_storage) = storage.destruct();
-
-        let runtime = Runtime::new(input_storage, flag_storage, state);
+        let runtime = Runtime::new(input_registrar.into_inner(), view_storage, context.state);
 
         let input_rx = hookmap_core::install_hook();
-        runtime.start(input_rx, flag_tx, flag_rx);
+        runtime.start(input_rx, runtime_args.flag_tx, runtime_args.flag_rx);
     }
 
     /// Remaps `target` to `behavior`.
@@ -196,13 +121,10 @@ impl Hotkey {
     /// ```
     ///
     pub fn remap(&self, target: Button, behavior: Button) -> &Self {
-        self.inner.apply(|inner| {
-            inner.storage.remap(
-                Arc::clone(&self.context.view),
-                target,
-                behavior,
-                &mut inner.state.lock().unwrap(),
-            )
+        self.input_registrar.apply_mut(|input_registrar| {
+            self.view_storage.apply_mut(|view_storage| {
+                input_registrar.remap(target, behavior, &self.context, view_storage);
+            });
         });
 
         self
@@ -225,14 +147,8 @@ impl Hotkey {
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> &Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .on_press(Arc::clone(&self.context.view), target, action);
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.on_press(target, procedure.into(), &self.context);
         });
 
         self
@@ -253,19 +169,29 @@ impl Hotkey {
     pub fn on_release(
         &self,
         target: Button,
+        procedure: impl Into<RequiredProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.on_release(target, procedure.into(), &self.context);
+        });
+
+        self
+    }
+
+    pub fn on_release_certainly(
+        &self,
+        target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> &Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-        self.inner.apply(|inner| {
-            inner.storage.on_release(
-                Arc::clone(&self.context.view),
-                target,
-                action,
-                &mut inner.state.lock().unwrap(),
-            )
+        self.input_registrar.apply_mut(|input_registrar| {
+            self.view_storage.apply_mut(|view_storage| {
+                input_registrar.on_release_certainly(
+                    target,
+                    procedure.into(),
+                    &self.context,
+                    view_storage,
+                );
+            });
         });
 
         self
@@ -284,15 +210,8 @@ impl Hotkey {
     /// ```
     ///
     pub fn mouse_cursor(&self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> &Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .mouse_cursor(Arc::clone(&self.context.view), action);
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.mouse_cursor(procedure.into(), &self.context);
         });
 
         self
@@ -311,15 +230,8 @@ impl Hotkey {
     /// ```
     ///
     pub fn mouse_wheel(&self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> &Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .mouse_wheel(Arc::clone(&self.context.view), action);
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.mouse_wheel(procedure.into(), &self.context);
         });
 
         self
@@ -337,13 +249,20 @@ impl Hotkey {
     /// ```
     ///
     pub fn disable(&self, target: Button) -> &Self {
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .disable(Arc::clone(&self.context.view), target)
+        self.input_registrar.apply_mut(|input_registrar| {
+            input_registrar.disable(target, &self.context);
         });
 
         self
+    }
+
+    fn clone_with_context(&self, context: Context) -> Self {
+        Hotkey {
+            input_registrar: self.input_registrar.weak(),
+            view_storage: self.view_storage.weak(),
+            runtime_args: self.runtime_args.weak(),
+            context,
+        }
     }
 
     /// Ensure that events are blocked when hooks registered through the return value of this
@@ -362,10 +281,7 @@ impl Hotkey {
     /// ```
     ///
     pub fn block(&self) -> Hotkey {
-        Hotkey {
-            inner: self.inner.weak(),
-            context: self.context.replace_native(NativeEventOperation::Block),
-        }
+        self.clone_with_context(self.context.replace_native(NativeEventOperation::Block))
     }
 
     /// Ensure that events are not blocked when hooks registered through the return value of this
@@ -384,23 +300,28 @@ impl Hotkey {
     /// ```
     ///
     pub fn dispatch(&self) -> Hotkey {
-        Hotkey {
-            inner: self.inner.weak(),
-            context: self.context.replace_native(NativeEventOperation::Dispatch),
-        }
+        self.clone_with_context(self.context.replace_native(NativeEventOperation::Dispatch))
     }
 
-    pub fn conditional(&self, condition: &mut impl HotkeyCondition) -> Self {
-        let mut root = Hotkey {
-            inner: self.inner.weak(),
-            context: Context::default(),
-        };
+    pub fn conditional(&self, mut condition: impl HotkeyCondition) -> Self {
+        let mut hotkey = HookRegistrar::new(
+            self.input_registrar.weak(),
+            self.view_storage.weak(),
+            Arc::clone(&self.context.state),
+        );
 
-        Hotkey {
-            inner: self.inner.weak(),
-            context: self
-                .context
-                .replace_view(condition.view(&mut root, todo!())),
-        }
+        let flag_tx = self.runtime_args.apply(|a| a.flag_tx.clone());
+        let mut context = ViewContext::new(
+            Arc::clone(&self.context.state),
+            flag_tx,
+            Arc::default(),
+            Arc::clone(&self.context.view),
+        );
+
+        let view = View::new()
+            .merge(&self.context.view)
+            .merge(&condition.view(&mut hotkey, &mut context));
+
+        self.clone_with_context(self.context.replace_view(view.into()))
     }
 }

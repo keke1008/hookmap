@@ -35,25 +35,7 @@ impl View {
             disabled_flags: self.enabled_flags.clone(),
         }
     }
-}
 
-fn set_with_extend(target: &mut BitVec, index: usize, state: bool) {
-    let len = target.len();
-
-    if len <= index {
-        target.resize(index + 1, false);
-    }
-
-    target.set(index, state);
-}
-
-#[derive(Debug, Default, Clone, PartialEq, Eq)]
-pub struct ViewBuilder {
-    enabled_flags: BitVec,
-    disabled_flags: BitVec,
-}
-
-impl ViewBuilder {
     pub fn new() -> Self {
         Self::default()
     }
@@ -77,13 +59,16 @@ impl ViewBuilder {
         }
         self
     }
+}
 
-    pub fn build(self) -> View {
-        View {
-            enabled_flags: self.enabled_flags,
-            disabled_flags: self.disabled_flags,
-        }
+fn set_with_extend(target: &mut BitVec, index: usize, state: bool) {
+    let len = target.len();
+
+    if len <= index {
+        target.resize(index + 1, false);
     }
+
+    target.set(index, state);
 }
 
 #[cfg(test)]
@@ -102,10 +87,10 @@ mod tests {
         let mut state = FlagState::default();
         let flag = state.create_flag(true);
 
-        let enable_view = ViewBuilder::new().enabled(flag).build();
+        let enable_view = View::new().enabled(flag);
         assert!(enable_view.is_enabled(&state));
 
-        let disable_view = ViewBuilder::new().disabled(flag).build();
+        let disable_view = View::new().disabled(flag);
         assert!(!disable_view.is_enabled(&state));
 
         let empty_view = View::default();
@@ -117,10 +102,10 @@ mod tests {
         let mut state = FlagState::default();
         let flag = state.create_flag(false);
 
-        let enable_view = ViewBuilder::new().enabled(flag).build();
+        let enable_view = View::new().enabled(flag);
         assert!(!enable_view.is_enabled(&state));
 
-        let disable_view = ViewBuilder::new().disabled(flag).build();
+        let disable_view = View::new().disabled(flag);
         assert!(disable_view.is_enabled(&state));
 
         let empty_view = View::default();
@@ -134,17 +119,13 @@ mod tests {
         let flag2 = state.create_flag(false);
         let flag3 = state.create_flag(true);
 
-        let view = ViewBuilder::new()
-            .enabled(flag1)
-            .disabled(flag2)
-            .enabled(flag3)
-            .build();
+        let view = View::new().enabled(flag1).disabled(flag2).enabled(flag3);
         assert!(view.is_enabled(&state));
 
-        let view = ViewBuilder::new().enabled(flag2).build();
+        let view = View::new().enabled(flag2);
         assert!(!view.is_enabled(&state));
 
-        let view = ViewBuilder::new().disabled(flag1).build();
+        let view = View::new().disabled(flag1);
         assert!(!view.is_enabled(&state));
     }
 }

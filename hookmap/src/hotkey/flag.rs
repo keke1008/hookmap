@@ -5,7 +5,7 @@ use hookmap_core::event::ButtonEvent;
 
 use crate::condition::detector::FlagChange;
 use crate::condition::flag::{FlagIndex, FlagState};
-use crate::runtime::hook::FlagEvent;
+use crate::storage::action::FlagEvent;
 
 #[derive(Debug, Clone)]
 pub struct Flag {
