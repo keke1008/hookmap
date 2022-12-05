@@ -209,8 +209,12 @@ fn into_mouse_event_target(w_param: WPARAM, hook: &MSLLHOOKSTRUCT) -> Option<Mou
         WM_LBUTTONDOWN | WM_LBUTTONUP => Button::LeftButton,
         WM_RBUTTONDOWN | WM_RBUTTONUP => Button::RightButton,
         WM_MBUTTONDOWN | WM_MBUTTONUP => Button::MiddleButton,
-        WM_XBUTTONDOWN | WM_XBUTTONUP if hook.mouseData == XBUTTON1 => Button::SideButton1,
-        WM_XBUTTONDOWN | WM_XBUTTONUP if hook.mouseData == XBUTTON2 => Button::SideButton2,
+        WM_XBUTTONDOWN | WM_XBUTTONUP if hook.mouseData.0 >> 16 == XBUTTON1.0 => {
+            Button::SideButton1
+        }
+        WM_XBUTTONDOWN | WM_XBUTTONUP if hook.mouseData.0 >> 16 == XBUTTON2.0 => {
+            Button::SideButton2
+        }
         _ => return None,
     };
     Some(MouseEventTarget::Button(mouse_button))
