@@ -192,6 +192,14 @@ pub enum Button {
     F24,
     PrintScreen,
 
+    VolumeMute,
+    VolumeDown,
+    VolumeUp,
+    MediaNext,
+    MediaPrevious,
+    MediaStop,
+    MediaPlayPause,
+
     Shift,
     Ctrl,
     Alt,
