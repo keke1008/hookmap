@@ -176,6 +176,15 @@ pub(super) const fn into_button(vkcode: VIRTUAL_KEY) -> Option<Button> {
         VK_F23 => F23,
         VK_F24 => F24,
         VK_SNAPSHOT => PrintScreen,
+
+        VK_VOLUME_MUTE => VolumeMute,
+        VK_VOLUME_DOWN => VolumeDown,
+        VK_VOLUME_UP => VolumeUp,
+        VK_MEDIA_NEXT_TRACK => MediaNext,
+        VK_MEDIA_PREV_TRACK => MediaPrevious,
+        VK_MEDIA_STOP => MediaStop,
+        VK_MEDIA_PLAY_PAUSE => MediaPlayPause,
+
         _ => return None,
     })
 }
@@ -354,6 +363,14 @@ pub(super) const fn from_button(button: Button) -> VIRTUAL_KEY {
         F23 => VK_F23,
         F24 => VK_F24,
         PrintScreen => VK_SNAPSHOT,
+
+        VolumeMute => VK_VOLUME_MUTE,
+        VolumeDown => VK_VOLUME_DOWN,
+        VolumeUp => VK_VOLUME_UP,
+        MediaNext => VK_MEDIA_NEXT_TRACK,
+        MediaPrevious => VK_MEDIA_PREV_TRACK,
+        MediaStop => VK_MEDIA_STOP,
+        MediaPlayPause => VK_MEDIA_PLAY_PAUSE,
 
         Shift | Ctrl | Alt | Super => unreachable!(),
     }
