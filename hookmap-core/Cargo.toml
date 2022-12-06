@@ -1,6 +1,6 @@
 [package]
 name = "hookmap-core"
-version = "0.2.0"
+version = "0.2.1"
 authors = ["keke1008 <keke2222337@gmail.com>"]
 edition = "2021"
 description = "Global hooks and input simulation fo keyboard and mouse."
