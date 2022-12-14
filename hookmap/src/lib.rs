@@ -28,7 +28,10 @@ pub mod device {
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
     // Macros
-    pub use super::seq;
+    pub use crate::multi;
+    pub use crate::seq;
 
     pub use super::{device::*, hotkey::Hotkey};
+    pub use crate::condition::view::View;
+    pub use crate::hotkey::condition::{HookRegistrar, HotkeyCondition, ViewContext};
 }
