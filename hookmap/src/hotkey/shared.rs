@@ -1,7 +1,7 @@
 use std::cell::{Ref, RefCell, RefMut};
 use std::rc::Rc;
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub(super) struct Shared<T>(Rc<RefCell<Option<T>>>);
 
 impl<T> Shared<T> {
@@ -18,12 +18,18 @@ impl<T> Shared<T> {
     }
 
     pub(super) fn try_unwrap(self) -> Option<T> {
-        Rc::try_unwrap(self.0).ok()?.into_inner()
+        self.0.take()
     }
 }
 
 impl<T> Clone for Shared<T> {
     fn clone(&self) -> Self {
         Self(Rc::clone(&self.0))
+    }
+}
+
+impl<T: Default> Default for Shared<T> {
+    fn default() -> Self {
+        Self(Rc::new(RefCell::new(Some(T::default()))))
     }
 }
