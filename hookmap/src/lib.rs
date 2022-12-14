@@ -13,7 +13,8 @@ pub mod hotkey;
 #[doc(hidden)]
 pub mod macros;
 
-pub mod layer;
+pub mod condition;
+pub mod storage;
 
 mod runtime;
 
@@ -27,11 +28,10 @@ pub mod device {
 /// A prelude for conveniently defining hotkeys.
 pub mod prelude {
     // Macros
-    pub use super::{each, modifiers, not, seq};
+    pub use crate::multi;
+    pub use crate::seq;
 
-    pub use super::{
-        device::*,
-        hotkey::interruption::{Filter, Interruption, InterruptionReceiver},
-        hotkey::Hotkey,
-    };
+    pub use super::{device::*, hotkey::Hotkey};
+    pub use crate::condition::view::View;
+    pub use crate::hotkey::condition::{HookRegistrar, HotkeyCondition, ViewContext};
 }

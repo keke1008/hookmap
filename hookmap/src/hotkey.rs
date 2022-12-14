@@ -1,85 +1,37 @@
 //! Registering Hotkeys.
 
-pub mod args;
-pub mod interruption;
-pub mod layer;
+pub mod condition;
+pub mod flag;
 
 mod registrar;
-mod storage;
+mod shared;
 
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::Arc;
 
 use hookmap_core::button::Button;
 use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
 
-use crate::layer::LayerIndex;
-use crate::runtime::hook::{HookAction, OptionalProcedure, RequiredProcedure};
+use crate::condition::view::View;
 use crate::runtime::Runtime;
+use crate::storage::action::FlagEvent;
+use crate::storage::procedure::{OptionalProcedure, RequiredProcedure};
+use crate::storage::ViewHookStorage;
 
-use self::args::ButtonArgs;
-use self::interruption::Interruption;
-use self::layer::{Layer, LayerCreator};
-use self::registrar::HotkeyStorage;
-
-#[derive(Debug, Default)]
-struct Inner {
-    storage: HotkeyStorage,
-    layer_creator: LayerCreator,
-}
+use self::condition::{HookRegistrar, HotkeyCondition, ViewContext};
+use self::registrar::{Context, InputHookRegistrar};
+use self::shared::Shared;
 
 #[derive(Debug)]
-enum InnerMut {
-    Strong(Rc<RefCell<Inner>>),
-    Weak(Weak<RefCell<Inner>>),
+struct RuntimeArgs {
+    flag_tx: SyncSender<FlagEvent>,
+    flag_rx: Receiver<FlagEvent>,
 }
 
-impl Default for InnerMut {
+impl Default for RuntimeArgs {
     fn default() -> Self {
-        Self::Strong(Rc::default())
-    }
-}
-
-impl InnerMut {
-    fn new() -> Self {
-        Self::default()
-    }
-
-    fn apply<R>(&self, f: impl FnOnce(&mut Inner) -> R) -> R {
-        match self {
-            Self::Strong(rc) => f(&mut rc.borrow_mut()),
-            Self::Weak(weak) => f(&mut weak.upgrade().unwrap().borrow_mut()),
-        }
-    }
-
-    fn weak(&self) -> Self {
-        match self {
-            Self::Strong(rc) => Self::Weak(Rc::downgrade(rc)),
-            Self::Weak(weak) => Self::Weak(weak.clone()),
-        }
-    }
-
-    fn into_inner(self) -> Option<Inner> {
-        match self {
-            Self::Strong(rc) => Some(Rc::try_unwrap(rc).unwrap().into_inner()),
-            Self::Weak(_) => None,
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-struct Context {
-    current_layer: LayerIndex,
-    native: NativeEventOperation,
-}
-
-impl Context {
-    fn replace_native(&self, native: NativeEventOperation) -> Self {
-        Self {
-            native,
-            ..self.clone()
-        }
+        let (flag_tx, flag_rx) = mpsc::sync_channel(32);
+        Self { flag_tx, flag_rx }
     }
 }
 
@@ -95,26 +47,12 @@ impl Context {
 /// hotkey.install();
 /// ```
 ///
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Hotkey {
-    inner: InnerMut,
+    input_registrar: Shared<InputHookRegistrar>,
+    view_storage: Shared<ViewHookStorage>,
+    runtime_args: Shared<RuntimeArgs>,
     context: Context,
-}
-
-impl Default for Hotkey {
-    fn default() -> Self {
-        let mut layer_creator = LayerCreator::new();
-        let root_layer = layer_creator.create_independent_layer(true);
-        let context = Context {
-            current_layer: root_layer,
-            native: NativeEventOperation::Dispatch,
-        };
-
-        Self {
-            inner: InnerMut::new(),
-            context,
-        }
-    }
 }
 
 impl Hotkey {
@@ -144,26 +82,26 @@ impl Hotkey {
     /// ```
     ///
     pub fn install(self) {
-        let Inner {
-            storage,
-            layer_creator,
-        } = self
-            .inner
-            .into_inner()
-            .expect("`Hotkey::install` must be called with root `Hotkey`.");
-        let (layer_facade, layer_state, layer_tx, layer_rx) = layer_creator.destruct();
-        let (input_storage, interruption_storage, layer_storage) = storage.destruct();
+        let Self {
+            input_registrar,
+            view_storage,
+            context,
+            runtime_args,
+        } = self;
 
-        let runtime = Runtime::new(
-            input_storage,
-            interruption_storage,
-            layer_storage,
-            layer_state,
-            layer_facade,
-        );
+        let input_registrar = input_registrar
+            .try_unwrap()
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let view_storage = view_storage
+            .try_unwrap()
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let runtime_args = runtime_args
+            .try_unwrap()
+            .expect("`Hotkey::install` must be called with root `Hotkey`.");
+        let runtime = Runtime::new(input_registrar.into_inner(), view_storage, context.state);
 
         let input_rx = hookmap_core::install_hook();
-        runtime.start(input_rx, layer_tx, layer_rx);
+        runtime.start(input_rx, runtime_args.flag_tx, runtime_args.flag_rx);
     }
 
     /// Remaps `target` to `behavior`.
@@ -179,23 +117,13 @@ impl Hotkey {
     ///     .remap(Button::C, Button::D);
     /// ```
     ///
-    pub fn remap(self, target: impl Into<ButtonArgs>, behavior: Button) -> Self {
-        self.inner.apply(|inner| match &target.into() {
-            ButtonArgs::Each(targets) => inner.storage.remap(
-                self.context.current_layer,
-                targets,
-                behavior,
-                &mut inner.layer_creator,
-            ),
-            ButtonArgs::Not(ignore) => {
-                inner.storage.remap_any(
-                    self.context.current_layer,
-                    Some(Arc::clone(ignore)),
-                    behavior,
-                    &mut inner.layer_creator,
-                );
-            }
-        });
+    pub fn remap(&self, target: Button, behavior: Button) -> &Self {
+        self.input_registrar.get_mut().remap(
+            target,
+            behavior,
+            &self.context,
+            &mut self.view_storage.get_mut(),
+        );
 
         self
     }
@@ -213,29 +141,13 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_press(
-        self,
-        target: impl Into<ButtonArgs>,
+        &self,
+        target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
-    ) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| match &target.into() {
-            ButtonArgs::Each(targets) => {
-                inner
-                    .storage
-                    .on_press(self.context.current_layer, targets, action);
-            }
-            ButtonArgs::Not(ignore) => {
-                inner.storage.on_press_any(
-                    self.context.current_layer,
-                    Some(Arc::clone(ignore)),
-                    action,
-                );
-            }
-        });
+    ) -> &Self {
+        self.input_registrar
+            .get_mut()
+            .on_press(target, procedure.into(), &self.context);
 
         self
     }
@@ -253,33 +165,28 @@ impl Hotkey {
     /// ```
     ///
     pub fn on_release(
-        self,
-        target: impl Into<ButtonArgs>,
-        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
+        &self,
+        target: Button,
+        procedure: impl Into<RequiredProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar
+            .get_mut()
+            .on_release(target, procedure.into(), &self.context);
 
-        self.inner.apply(|inner| match target.into() {
-            ButtonArgs::Each(ref targets) => {
-                inner.storage.on_release(
-                    self.context.current_layer,
-                    targets,
-                    action,
-                    &mut inner.layer_creator,
-                );
-            }
-            ButtonArgs::Not(ignore) => {
-                inner.storage.on_release_any(
-                    self.context.current_layer,
-                    Some(ignore),
-                    action,
-                    &mut inner.layer_creator,
-                );
-            }
-        });
+        self
+    }
+
+    pub fn on_release_certainly(
+        &self,
+        target: Button,
+        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
+    ) -> &Self {
+        self.input_registrar.get_mut().on_release_certainly(
+            target,
+            procedure.into(),
+            &self.context,
+            &mut self.view_storage.get_mut(),
+        );
 
         self
     }
@@ -296,17 +203,10 @@ impl Hotkey {
     ///     .mouse_cursor(|e: CursorEvent| println!("movement distance: {:?}", e.delta));
     /// ```
     ///
-    pub fn mouse_cursor(self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .mouse_cursor(self.context.current_layer, action);
-        });
+    pub fn mouse_cursor(&self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> &Self {
+        self.input_registrar
+            .get_mut()
+            .mouse_cursor(procedure.into(), &self.context);
 
         self
     }
@@ -323,17 +223,10 @@ impl Hotkey {
     ///     .mouse_wheel(|e: WheelEvent| println!("Delta: {}", e.delta));
     /// ```
     ///
-    pub fn mouse_wheel(self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .mouse_wheel(self.context.current_layer, action);
-        });
+    pub fn mouse_wheel(&self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> &Self {
+        self.input_registrar
+            .get_mut()
+            .mouse_wheel(procedure.into(), &self.context);
 
         self
     }
@@ -349,174 +242,21 @@ impl Hotkey {
     /// hotkey.disable(Button::A);
     /// ```
     ///
-    pub fn disable(self, target: impl Into<ButtonArgs>) -> Self {
-        self.inner.apply(|inner| match target.into() {
-            ButtonArgs::Each(ref targets) => {
-                inner.storage.disable(self.context.current_layer, targets)
-            }
-            ButtonArgs::Not(ignore) => {
-                inner
-                    .storage
-                    .disable_any(self.context.current_layer, Some(ignore));
-            }
-        });
+    pub fn disable(&self, target: Button) -> &Self {
+        self.input_registrar
+            .get_mut()
+            .disable(target, &self.context);
 
         self
     }
 
-    /// Registers a `procedure` that will run when the current layer becomes active.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    ///
-    /// let (layer, child) = hotkey.create_layer(false);
-    /// child.on_layer_activated(|_| println!("Activated"));
-    ///
-    /// hotkey.on_press(Button::A, move |_| layer.enable());
-    /// ```
-    ///
-    pub fn on_layer_activated(self, procedure: impl Into<OptionalProcedure<ButtonEvent>>) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .on_layer_activated(self.context.current_layer, action);
-        });
-
-        self
-    }
-
-    /// Registers a `procedure` to be executed when the current layer becomes inactive.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    ///
-    /// let (layer, child) = hotkey.create_layer(true);
-    /// child.on_layer_inactivated(|_|println!("Inactivated"));
-    ///
-    /// hotkey.on_press(Button::A, move |_| layer.disable());
-    /// ```
-    ///
-    pub fn on_layer_inactivated(
-        self,
-        procedure: impl Into<OptionalProcedure<ButtonEvent>>,
-    ) -> Self {
-        let action = HookAction::Procedure {
-            procedure: procedure.into().into(),
-            native: self.context.native,
-        };
-
-        self.inner.apply(|inner| {
-            inner
-                .storage
-                .on_layer_inactivated(self.context.current_layer, action);
-        });
-
-        self
-    }
-
-    /// Creates a new independent layer and returns values to control the new layer and to register hooks
-    /// on the new layer.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use Button::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    ///
-    /// let (layer, child) = hotkey.create_layer(true);
-    /// child.remap(Button::A, Button::B);
-    /// child.on_press(C, move |_| layer.disable());
-    /// ```
-    ///
-    pub fn create_independent_layer(&self, init_state: bool) -> Layer {
-        self.inner.apply(|inner| {
-            let index = inner.layer_creator.create_independent_layer(init_state);
-            inner.layer_creator.wrap_layer(index)
-        })
-    }
-
-    /// Creates a new child layer and returns values to control the new layer and to register hooks
-    /// on the new layer.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use Button::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    ///
-    /// let (layer, child) = hotkey.create_child_layer(true);
-    /// child.remap(Button::A, Button::B);
-    /// child.on_press(C, move |_| layer.disable());
-    /// ```
-    ///
-    pub fn create_child_layer(&self, init_state: bool) -> Layer {
-        self.inner.apply(|inner| {
-            let index = inner
-                .layer_creator
-                .create_child_layer(self.context.current_layer, init_state);
-            inner.layer_creator.wrap_layer(index)
-        })
-    }
-
-    /// Creates a new sync layer and returns values to control the new layer and to
-    /// register hooks on the new layer.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use Button::*;
-    ///
-    /// let mut hotkey = Hotkey::new();
-    ///
-    /// let (layer, child) = hotkey.create_sync_layer(true);
-    /// child.remap(Button::A, Button::B);
-    /// child.on_press(C, move |_| layer.disable());
-    /// ```
-    ///
-    pub fn create_sync_layer(&self, init_state: bool) -> Layer {
-        self.inner.apply(|inner| {
-            let index = inner
-                .layer_creator
-                .create_sync_layer(self.context.current_layer, init_state);
-            inner.layer_creator.wrap_layer(index)
-        })
-    }
-
-    /// Gets keyboard events dynamically.
-    ///
-    /// # Example
-    ///
-    /// ```
-    /// use hookmap::prelude::*;
-    /// use Button::*;
-    ///
-    /// let hotkey = Hotkey::new();
-    /// let i = hotkey.interruption();
-    /// i.spawn(|int| {
-    ///     int.iter().take(3).for_each(|e| println!("{e:?}"));
-    /// });
-    /// ```
-    ///
-    pub fn interruption(&self) -> Interruption {
-        self.inner.apply(|inner| inner.storage.interruption())
+    fn clone_with_context(&self, context: Context) -> Self {
+        Hotkey {
+            input_registrar: self.input_registrar.clone(),
+            view_storage: self.view_storage.clone(),
+            runtime_args: self.runtime_args.clone(),
+            context,
+        }
     }
 
     /// Ensure that events are blocked when hooks registered through the return value of this
@@ -535,10 +275,7 @@ impl Hotkey {
     /// ```
     ///
     pub fn block(&self) -> Hotkey {
-        Hotkey {
-            inner: self.inner.weak(),
-            context: self.context.replace_native(NativeEventOperation::Block),
-        }
+        self.clone_with_context(self.context.replace_native(NativeEventOperation::Block))
     }
 
     /// Ensure that events are not blocked when hooks registered through the return value of this
@@ -557,9 +294,28 @@ impl Hotkey {
     /// ```
     ///
     pub fn dispatch(&self) -> Hotkey {
-        Hotkey {
-            inner: self.inner.weak(),
-            context: self.context.replace_native(NativeEventOperation::Dispatch),
-        }
+        self.clone_with_context(self.context.replace_native(NativeEventOperation::Dispatch))
+    }
+
+    pub fn conditional(&self, mut condition: impl HotkeyCondition) -> Self {
+        let mut hotkey = HookRegistrar::new(
+            self.input_registrar.clone(),
+            self.view_storage.clone(),
+            Arc::clone(&self.context.state),
+        );
+
+        let flag_tx = self.runtime_args.get().flag_tx.clone();
+        let mut context = ViewContext::new(
+            Arc::clone(&self.context.state),
+            flag_tx,
+            Arc::default(),
+            Arc::clone(&self.context.view),
+        );
+
+        let view = View::new()
+            .merge(&self.context.view)
+            .merge(&condition.view(&mut hotkey, &mut context));
+
+        self.clone_with_context(self.context.replace_view(view.into()))
     }
 }
