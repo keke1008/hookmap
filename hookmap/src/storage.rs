@@ -16,7 +16,10 @@ use action::HookAction;
 use hook::Hook;
 use procedure::{OptionalProcedure, Procedure, ProcedureHook};
 
-fn runnables<'a, T>(hooks: &'a [Hook<T>], state: &'a FlagState) -> impl Iterator<Item = &T> + 'a {
+fn runnables<'a, T>(
+    hooks: &'a [Hook<T>],
+    state: &'a FlagState,
+) -> impl Iterator<Item = &'a T> + 'a {
     hooks
         .iter()
         .filter(|hook| hook.is_runnable(state))
