@@ -6,7 +6,6 @@ pub mod flag;
 mod registrar;
 mod shared;
 
-use std::cell::RefCell;
 use std::sync::mpsc::{self, Receiver, SyncSender};
 use std::sync::Arc;
 
@@ -50,8 +49,8 @@ impl Default for RuntimeArgs {
 ///
 #[derive(Debug, Default)]
 pub struct Hotkey {
-    input_registrar: Shared<RefCell<InputHookRegistrar>>,
-    view_storage: Shared<RefCell<ViewHookStorage>>,
+    input_registrar: Shared<InputHookRegistrar>,
+    view_storage: Shared<ViewHookStorage>,
     runtime_args: Shared<RuntimeArgs>,
     context: Context,
 }
@@ -91,15 +90,13 @@ impl Hotkey {
         } = self;
 
         let input_registrar = input_registrar
-            .into_inner()
-            .map(RefCell::into_inner)
+            .try_unwrap()
             .expect("`Hotkey::install` must be called with root `Hotkey`.");
         let view_storage = view_storage
-            .into_inner()
-            .map(RefCell::into_inner)
+            .try_unwrap()
             .expect("`Hotkey::install` must be called with root `Hotkey`.");
         let runtime_args = runtime_args
-            .into_inner()
+            .try_unwrap()
             .expect("`Hotkey::install` must be called with root `Hotkey`.");
         let runtime = Runtime::new(input_registrar.into_inner(), view_storage, context.state);
 
@@ -121,11 +118,12 @@ impl Hotkey {
     /// ```
     ///
     pub fn remap(&self, target: Button, behavior: Button) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            self.view_storage.apply_mut(|view_storage| {
-                input_registrar.remap(target, behavior, &self.context, view_storage);
-            });
-        });
+        self.input_registrar.get_mut().remap(
+            target,
+            behavior,
+            &self.context,
+            &mut self.view_storage.get_mut(),
+        );
 
         self
     }
@@ -147,9 +145,9 @@ impl Hotkey {
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.on_press(target, procedure.into(), &self.context);
-        });
+        self.input_registrar
+            .get_mut()
+            .on_press(target, procedure.into(), &self.context);
 
         self
     }
@@ -171,9 +169,9 @@ impl Hotkey {
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.on_release(target, procedure.into(), &self.context);
-        });
+        self.input_registrar
+            .get_mut()
+            .on_release(target, procedure.into(), &self.context);
 
         self
     }
@@ -183,16 +181,12 @@ impl Hotkey {
         target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            self.view_storage.apply_mut(|view_storage| {
-                input_registrar.on_release_certainly(
-                    target,
-                    procedure.into(),
-                    &self.context,
-                    view_storage,
-                );
-            });
-        });
+        self.input_registrar.get_mut().on_release_certainly(
+            target,
+            procedure.into(),
+            &self.context,
+            &mut self.view_storage.get_mut(),
+        );
 
         self
     }
@@ -210,9 +204,9 @@ impl Hotkey {
     /// ```
     ///
     pub fn mouse_cursor(&self, procedure: impl Into<RequiredProcedure<CursorEvent>>) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.mouse_cursor(procedure.into(), &self.context);
-        });
+        self.input_registrar
+            .get_mut()
+            .mouse_cursor(procedure.into(), &self.context);
 
         self
     }
@@ -230,9 +224,9 @@ impl Hotkey {
     /// ```
     ///
     pub fn mouse_wheel(&self, procedure: impl Into<RequiredProcedure<WheelEvent>>) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.mouse_wheel(procedure.into(), &self.context);
-        });
+        self.input_registrar
+            .get_mut()
+            .mouse_wheel(procedure.into(), &self.context);
 
         self
     }
@@ -249,18 +243,18 @@ impl Hotkey {
     /// ```
     ///
     pub fn disable(&self, target: Button) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.disable(target, &self.context);
-        });
+        self.input_registrar
+            .get_mut()
+            .disable(target, &self.context);
 
         self
     }
 
     fn clone_with_context(&self, context: Context) -> Self {
         Hotkey {
-            input_registrar: self.input_registrar.weak(),
-            view_storage: self.view_storage.weak(),
-            runtime_args: self.runtime_args.weak(),
+            input_registrar: self.input_registrar.clone(),
+            view_storage: self.view_storage.clone(),
+            runtime_args: self.runtime_args.clone(),
             context,
         }
     }
@@ -305,12 +299,12 @@ impl Hotkey {
 
     pub fn conditional(&self, mut condition: impl HotkeyCondition) -> Self {
         let mut hotkey = HookRegistrar::new(
-            self.input_registrar.weak(),
-            self.view_storage.weak(),
+            self.input_registrar.clone(),
+            self.view_storage.clone(),
             Arc::clone(&self.context.state),
         );
 
-        let flag_tx = self.runtime_args.apply(|a| a.flag_tx.clone());
+        let flag_tx = self.runtime_args.get().flag_tx.clone();
         let mut context = ViewContext::new(
             Arc::clone(&self.context.state),
             flag_tx,

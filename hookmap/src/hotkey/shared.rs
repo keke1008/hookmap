@@ -1,43 +1,29 @@
-use std::cell::RefCell;
-use std::rc::{Rc, Weak};
+use std::cell::{Ref, RefCell, RefMut};
+use std::rc::Rc;
 
-#[derive(Debug)]
-pub(super) struct Shared<T> {
-    strong: Option<Rc<T>>,
-    weak: Weak<T>,
-}
-
-impl<T: Default> Default for Shared<T> {
-    fn default() -> Self {
-        let strong = T::default().into();
-        let weak = Rc::downgrade(&strong);
-
-        Self {
-            strong: Some(strong),
-            weak,
-        }
-    }
-}
+#[derive(Debug, Default)]
+pub(super) struct Shared<T>(Rc<RefCell<Option<T>>>);
 
 impl<T> Shared<T> {
-    pub(super) fn weak(&self) -> Self {
-        Self {
-            strong: None,
-            weak: self.weak.clone(),
-        }
+    pub(super) fn get(&self) -> Ref<T> {
+        Ref::map(self.0.borrow(), |t| {
+            t.as_ref().expect("Shared is already unwrapped.")
+        })
     }
 
-    pub(super) fn apply<R>(&self, f: impl FnOnce(&T) -> R) -> R {
-        f(&mut self.weak.upgrade().unwrap())
+    pub(super) fn get_mut(&self) -> RefMut<T> {
+        RefMut::map(self.0.borrow_mut(), |t| {
+            t.as_mut().expect("`Shared` is already unwrapped.")
+        })
     }
 
-    pub(super) fn into_inner(self) -> Option<T> {
-        Rc::try_unwrap(self.strong?).ok()
+    pub(super) fn try_unwrap(self) -> Option<T> {
+        Rc::try_unwrap(self.0).ok()?.into_inner()
     }
 }
 
-impl<T> Shared<RefCell<T>> {
-    pub(super) fn apply_mut<R>(&self, f: impl FnOnce(&mut T) -> R) -> R {
-        f(&mut self.weak.upgrade().unwrap().borrow_mut())
+impl<T> Clone for Shared<T> {
+    fn clone(&self) -> Self {
+        Self(Rc::clone(&self.0))
     }
 }

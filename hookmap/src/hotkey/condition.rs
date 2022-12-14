@@ -1,4 +1,3 @@
-use std::cell::RefCell;
 use std::fmt::Debug;
 use std::sync::mpsc::SyncSender;
 use std::sync::{Arc, Mutex};
@@ -19,8 +18,8 @@ use super::shared::Shared;
 
 #[derive(Debug)]
 pub struct HookRegistrar {
-    input_registrar: Shared<RefCell<InputHookRegistrar>>,
-    view_storage: Shared<RefCell<ViewHookStorage>>,
+    input_registrar: Shared<InputHookRegistrar>,
+    view_storage: Shared<ViewHookStorage>,
     state: Arc<Mutex<FlagState>>,
     native: NativeEventOperation,
 }
@@ -35,8 +34,8 @@ impl HookRegistrar {
     }
 
     pub(super) fn new(
-        input_registrar: Shared<RefCell<InputHookRegistrar>>,
-        view_storage: Shared<RefCell<ViewHookStorage>>,
+        input_registrar: Shared<InputHookRegistrar>,
+        view_storage: Shared<ViewHookStorage>,
         state: Arc<Mutex<FlagState>>,
     ) -> Self {
         Self {
@@ -48,17 +47,12 @@ impl HookRegistrar {
     }
 
     pub fn remap(&self, view: impl Into<Arc<View>>, target: Button, behavior: Button) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            self.view_storage.apply_mut(|view_storage| {
-                input_registrar.remap(
-                    target,
-                    behavior,
-                    &self.create_context(view.into()),
-                    view_storage,
-                );
-            })
-        });
-
+        self.input_registrar.get_mut().remap(
+            target,
+            behavior,
+            &self.create_context(view.into()),
+            &mut self.view_storage.get_mut(),
+        );
         self
     }
 
@@ -68,10 +62,11 @@ impl HookRegistrar {
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.on_press(target, procedure.into(), &self.create_context(view.into()));
-        });
-
+        self.input_registrar.get_mut().on_press(
+            target,
+            procedure.into(),
+            &self.create_context(view.into()),
+        );
         self
     }
 
@@ -81,10 +76,11 @@ impl HookRegistrar {
         target: Button,
         procedure: impl Into<RequiredProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.on_release(target, procedure.into(), &self.create_context(view.into()));
-        });
-
+        self.input_registrar.get_mut().on_release(
+            target,
+            procedure.into(),
+            &self.create_context(view.into()),
+        );
         self
     }
 
@@ -94,17 +90,12 @@ impl HookRegistrar {
         target: Button,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            self.view_storage.apply_mut(|view_storage| {
-                input_registrar.on_release_certainly(
-                    target,
-                    procedure.into(),
-                    &self.create_context(view.into()),
-                    view_storage,
-                );
-            });
-        });
-
+        self.input_registrar.get_mut().on_release_certainly(
+            target,
+            procedure.into(),
+            &self.create_context(view.into()),
+            &mut self.view_storage.get_mut(),
+        );
         self
     }
 
@@ -113,10 +104,9 @@ impl HookRegistrar {
         view: impl Into<Arc<View>>,
         procedure: impl Into<RequiredProcedure<CursorEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.mouse_cursor(procedure.into(), &self.create_context(view.into()));
-        });
-
+        self.input_registrar
+            .get_mut()
+            .mouse_cursor(procedure.into(), &self.create_context(view.into()));
         self
     }
 
@@ -125,18 +115,16 @@ impl HookRegistrar {
         view: impl Into<Arc<View>>,
         procedure: impl Into<RequiredProcedure<WheelEvent>>,
     ) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.mouse_wheel(procedure.into(), &self.create_context(view.into()));
-        });
-
+        self.input_registrar
+            .get_mut()
+            .mouse_wheel(procedure.into(), &self.create_context(view.into()));
         self
     }
 
     pub fn disable(&self, view: impl Into<Arc<View>>, target: Button) -> &Self {
-        self.input_registrar.apply_mut(|input_registrar| {
-            input_registrar.disable(target, &self.create_context(view.into()));
-        });
-
+        self.input_registrar
+            .get_mut()
+            .disable(target, &self.create_context(view.into()));
         self
     }
 
@@ -145,9 +133,9 @@ impl HookRegistrar {
         view: impl Into<Arc<View>>,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.view_storage.apply_mut(|storage| {
-            storage.add_procedure_on_enabled(view.into(), procedure.into());
-        });
+        self.view_storage
+            .get_mut()
+            .add_procedure_on_enabled(view.into(), procedure.into());
         self
     }
 
@@ -156,16 +144,16 @@ impl HookRegistrar {
         view: impl Into<Arc<View>>,
         procedure: impl Into<OptionalProcedure<ButtonEvent>>,
     ) -> &Self {
-        self.view_storage.apply_mut(|storage| {
-            storage.add_procedure_on_disabled(view.into(), procedure.into());
-        });
+        self.view_storage
+            .get_mut()
+            .add_procedure_on_disabled(view.into(), procedure.into());
         self
     }
 
     fn clone_with_native(&self, native: NativeEventOperation) -> Self {
         Self {
-            input_registrar: self.input_registrar.weak(),
-            view_storage: self.view_storage.weak(),
+            input_registrar: self.input_registrar.clone(),
+            view_storage: self.view_storage.clone(),
             state: Arc::clone(&self.state),
             native,
         }
