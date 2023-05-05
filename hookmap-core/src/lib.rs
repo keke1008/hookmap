@@ -14,7 +14,9 @@
 
 pub mod button;
 pub mod event;
+pub mod hook;
 
 mod sys;
 
-pub use sys::{install_hook, mouse, uninstall_hook};
+pub use hook::{install_hook, uninstall_hook};
+pub use sys::mouse;

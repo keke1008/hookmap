@@ -2,5 +2,6 @@
 mod windows;
 
 #[cfg(target_os = "windows")]
+pub use self::windows::mouse;
 #[cfg(target_os = "windows")]
-pub use self::windows::{install_hook, mouse, uninstall_hook};
+pub(crate) use self::windows::{install, uninstall};

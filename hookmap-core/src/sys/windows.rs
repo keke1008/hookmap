@@ -5,7 +5,8 @@ mod input;
 mod vkcode;
 
 use crate::button::{Button, ButtonAction};
-use crate::event::{self, EventReceiver};
+
+pub(crate) use self::hook::{install, uninstall};
 
 #[inline]
 fn send_input(button: Button, action: ButtonAction, recursive: bool) {
@@ -128,44 +129,4 @@ pub mod mouse {
     pub fn rotate_recursive(speed: i32) {
         input::rotate_wheel(speed, false);
     }
-}
-
-/// Installs a hook and returns a receiver to receive the generated event.
-///
-/// # Panics
-///
-/// Panics if other hooks are already installed.
-///
-/// # Example
-///
-/// ```no_run
-/// let rx = hookmap_core::install_hook();
-/// ```
-///
-pub fn install_hook() -> EventReceiver {
-    let (tx, rx) = event::channel();
-    hook::install(tx);
-    rx
-}
-
-/// Uninstalls a hook.
-/// After this call, [`install_hook`] can be called again.
-///
-/// # Panics
-///
-/// Panics if the hook is not installed.
-///
-/// # Example
-///
-/// ```no_run
-/// let rx = hookmap_core::install_hook();
-/// hookmap_core::uninstall_hook();
-///
-/// assert!(rx.recv().is_err());
-///
-/// let rx = hookmap_core::install_hook();
-/// ```
-///
-pub fn uninstall_hook() {
-    hook::uninstall();
 }

@@ -2,7 +2,8 @@ mod button_state;
 mod event_broker;
 pub mod interceptor;
 
-use hookmap_core::event::{Event, NativeEventHandler, NativeEventOperation};
+use hookmap_core::event::{Event, NativeEventOperation};
+use hookmap_core::hook::NativeEventHandler;
 
 use self::button_state::RealButtonState;
 use crate::hook::{ButtonState, Hook, HookStorage};

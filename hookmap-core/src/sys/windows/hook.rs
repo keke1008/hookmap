@@ -9,7 +9,8 @@ use std::mem::{self, MaybeUninit};
 use std::sync::{mpsc, Mutex};
 use std::thread::JoinHandle;
 
-use crate::event::{CursorEvent, Event, EventSender, NativeEventOperation};
+use crate::event::{CursorEvent, Event};
+use crate::hook::{EventSender, NativeEventOperation};
 
 use super::button_state::BUTTON_STATE;
 use super::convert::{self, MouseEvent, WindowsCursorEvent};
@@ -18,7 +19,7 @@ use super::input;
 static HOOK_HANDLER: Mutex<Option<HookHandler>> = Mutex::new(None);
 static EVENT_SENDER: Mutex<Option<EventSender>> = Mutex::new(None);
 
-pub(super) fn install(tx: EventSender) {
+pub(crate) fn install(tx: EventSender) {
     let mut hook_handler = HOOK_HANDLER.lock().unwrap();
     if hook_handler.is_some() {
         panic!("Hooks are already installed.");
@@ -28,7 +29,7 @@ pub(super) fn install(tx: EventSender) {
     *hook_handler = Some(HookHandler::install());
 }
 
-pub(super) fn uninstall() {
+pub(crate) fn uninstall() {
     let mut hook_handler = HOOK_HANDLER.lock().unwrap();
     let Some(hook_handler) = hook_handler.take() else {
         panic!("Hooks are not installed.");
@@ -43,11 +44,11 @@ fn call_next_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
 }
 
 fn common_hook_proc(event: Event, code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
-    let native_event_operation = {
+    let rx = {
         let event_sender = EVENT_SENDER.lock().unwrap();
         event_sender.as_ref().unwrap().send(event)
     };
-    match native_event_operation {
+    match rx.recv() {
         NativeEventOperation::Block => LRESULT(1),
         NativeEventOperation::Dispatch => call_next_hook(code, wparam, lparam),
     }
