@@ -1,7 +1,7 @@
 use hookmap_core::{button::Button, event::Event, mouse};
 
 fn main() {
-    let rx = hookmap_core::install_hook();
+    let rx = hookmap_core::install_hook().unwrap();
 
     while let Ok((event, native_handler)) = rx.recv() {
         match event {

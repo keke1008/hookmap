@@ -10,16 +10,17 @@
 //! # Examples
 //!
 //! ```no_run
-//! let rx = hookmap_core::install_hook();
+//! let rx = hookmap_core::install_hook().unwrap();
 //! while let Ok((event, native_handler)) = rx.recv() {
 //!     // **DANGEROUS!** block all events!
 //!     native_handler.block();
 //! }
 //! ```
 
-use std::sync::{
-    atomic::{AtomicBool, Ordering},
-    mpsc::{self, Receiver, RecvError, Sender},
+use std::{
+    error::Error,
+    fmt::{self, Display, Formatter},
+    sync::mpsc::{self, Receiver, RecvError, Sender},
 };
 
 use crate::{event::Event, sys};
@@ -111,57 +112,69 @@ impl EventReceiver {
     }
 }
 
-static HOOK_INSTALLED: AtomicBool = AtomicBool::new(false);
+/// An error returned from the [install_hook] function.
+///
+/// The [install_hook] can only fail if the hook is already installed.
+#[derive(Debug, Clone, Copy)]
+pub struct InstallHookError;
+
+impl Display for InstallHookError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        "hook is already installed".fmt(f)
+    }
+}
+
+impl Error for InstallHookError {}
+
+/// An error returned from the [uninstall_hook] function.
+///
+/// The [uninstall_hook] can only fail if the hook is not installed.
+#[derive(Debug, Clone, Copy)]
+pub struct UninstallHookError;
+
+impl Display for UninstallHookError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        "hook is not installed".fmt(f)
+    }
+}
+
+impl Error for UninstallHookError {}
 
 /// Installs a hook and returns a receiver to receive the generated event.
-///
-/// # Panics
-///
-/// Panics if other hooks are already installed.
 ///
 /// # Example
 ///
 /// ```no_run
-/// let rx = hookmap_core::install_hook();
+/// let rx = hookmap_core::install_hook().unwrap();
 /// ```
 ///
-pub fn install_hook() -> EventReceiver {
-    assert!(
-        !HOOK_INSTALLED.swap(true, Ordering::AcqRel),
-        "Hook is already installed."
-    );
-
+pub fn install_hook() -> Result<EventReceiver, InstallHookError> {
     let (tx, rx) = mpsc::channel();
     let (tx, rx) = (EventSender(tx), EventReceiver(rx));
-    sys::install(tx);
-    rx
+    sys::install(tx)?;
+    Ok(rx)
 }
 
 /// Uninstalls a hook.
 /// After this call, [`install_hook`] can be called again.
 ///
-/// # Panics
-///
-/// Panics if the hook is not installed.
-///
 /// # Example
 ///
 /// ```no_run
-/// let rx = hookmap_core::install_hook();
-/// hookmap_core::uninstall_hook();
+/// let rx = hookmap_core::install_hook().unwrap();
+/// assert!(hookmap_core::uninstall_hook().is_ok());
 ///
 /// assert!(rx.recv().is_err());
 ///
-/// let rx = hookmap_core::install_hook();
+/// assert!(hookmap_core::install_hook().is_ok());
 /// ```
 ///
-pub fn uninstall_hook() {
-    sys::uninstall();
-    HOOK_INSTALLED.store(false, Ordering::Release);
+pub fn uninstall_hook() -> Result<(), UninstallHookError> {
+    sys::uninstall()
 }
 
 impl Drop for EventReceiver {
     fn drop(&mut self) {
-        let _ = std::panic::catch_unwind(uninstall_hook);
+        let _ = uninstall_hook();
     }
 }

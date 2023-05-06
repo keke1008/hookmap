@@ -10,7 +10,7 @@ use std::sync::{mpsc, Mutex};
 use std::thread::JoinHandle;
 
 use crate::event::{CursorEvent, Event};
-use crate::hook::{EventSender, NativeEventOperation};
+use crate::hook::{EventSender, InstallHookError, NativeEventOperation, UninstallHookError};
 
 use super::button_state::BUTTON_STATE;
 use super::convert::{self, MouseEvent, WindowsCursorEvent};
@@ -19,24 +19,28 @@ use super::input;
 static HOOK_HANDLER: Mutex<Option<HookHandler>> = Mutex::new(None);
 static EVENT_SENDER: Mutex<Option<EventSender>> = Mutex::new(None);
 
-pub(crate) fn install(tx: EventSender) {
+pub(crate) fn install(tx: EventSender) -> Result<(), InstallHookError> {
     let mut hook_handler = HOOK_HANDLER.lock().unwrap();
     if hook_handler.is_some() {
-        panic!("Hooks are already installed.");
+        return Err(InstallHookError);
     }
 
     *EVENT_SENDER.lock().unwrap() = Some(tx);
     *hook_handler = Some(HookHandler::install());
+
+    Ok(())
 }
 
-pub(crate) fn uninstall() {
+pub(crate) fn uninstall() -> Result<(), UninstallHookError> {
     let mut hook_handler = HOOK_HANDLER.lock().unwrap();
     let Some(hook_handler) = hook_handler.take() else {
-        panic!("Hooks are not installed.");
+        return Err(UninstallHookError);
     };
 
     hook_handler.uninstall();
     *EVENT_SENDER.lock().unwrap() = None;
+
+    Ok(())
 }
 
 fn call_next_hook(code: i32, wparam: WPARAM, lparam: LPARAM) -> LRESULT {
