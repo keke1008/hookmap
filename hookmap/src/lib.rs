@@ -21,7 +21,8 @@ pub use runtime::interceptor;
 /// Representation of keyboard and mouse events.
 pub mod device {
     pub use hookmap_core::button::{Button, ButtonAction, ButtonKind};
-    pub use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+    pub use hookmap_core::event::{ButtonEvent, CursorEvent, WheelEvent};
+    pub use hookmap_core::hook::NativeEventOperation;
     pub use hookmap_core::mouse;
 }
 

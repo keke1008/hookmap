@@ -1,5 +1,8 @@
-use hookmap_core::button::{Button, ButtonAction};
-use hookmap_core::event::{ButtonEvent, NativeEventOperation};
+use hookmap_core::{
+    button::{Button, ButtonAction},
+    event::ButtonEvent,
+    hook::NativeEventOperation,
+};
 
 use crate::macros::button_arg::ButtonArg;
 

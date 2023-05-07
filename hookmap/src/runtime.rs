@@ -2,8 +2,10 @@ mod button_state;
 mod event_broker;
 pub mod interceptor;
 
-use hookmap_core::event::{Event, NativeEventOperation};
-use hookmap_core::hook::NativeEventHandler;
+use hookmap_core::{
+    event::Event,
+    hook::{NativeEventHandler, NativeEventOperation},
+};
 
 use self::button_state::RealButtonState;
 use crate::hook::{ButtonState, Hook, HookStorage};
@@ -66,7 +68,7 @@ where
     }
 
     pub(crate) fn start(&self) {
-        let event_receiver = hookmap_core::install_hook();
+        let event_receiver = hookmap_core::install_hook().unwrap();
 
         while let Ok((event, native_handler)) = event_receiver.recv() {
             match event {

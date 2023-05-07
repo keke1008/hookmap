@@ -2,7 +2,7 @@
 
 pub use super::event_broker::Filter;
 
-use hookmap_core::event::{ButtonEvent, NativeEventOperation};
+use hookmap_core::{event::ButtonEvent, hook::NativeEventOperation};
 
 use super::event_broker::EventBroker;
 

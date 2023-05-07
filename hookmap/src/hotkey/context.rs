@@ -1,5 +1,5 @@
 use hookmap_core::button::Button;
-use hookmap_core::event::NativeEventOperation;
+use hookmap_core::hook::NativeEventOperation;
 
 use super::hook::Condition;
 use crate::hook::ButtonState;

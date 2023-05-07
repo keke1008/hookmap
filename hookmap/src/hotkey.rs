@@ -11,8 +11,11 @@ use self::storage::HotkeyStorage;
 use crate::macros::button_arg::{ButtonArg, ButtonArgUnit};
 use crate::runtime::Runtime;
 
-use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+use hookmap_core::{
+    button::Button,
+    event::{ButtonEvent, CursorEvent, WheelEvent},
+    hook::NativeEventOperation,
+};
 
 use std::sync::Arc;
 

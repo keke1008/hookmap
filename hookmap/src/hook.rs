@@ -1,5 +1,8 @@
-use hookmap_core::button::Button;
-use hookmap_core::event::{ButtonEvent, CursorEvent, NativeEventOperation, WheelEvent};
+use hookmap_core::{
+    button::Button,
+    event::{ButtonEvent, CursorEvent, WheelEvent},
+    hook::NativeEventOperation,
+};
 
 pub(crate) trait Hook<E> {
     fn native_event_operation(&self) -> NativeEventOperation;
